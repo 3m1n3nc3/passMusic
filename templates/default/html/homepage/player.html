@@ -1,0 +1,63 @@
+<div id="sound-player" class="jp-jplayer"></div>
+
+<section class="current-track">
+  <div class="current-track__actions jp-audio top-player" id="sound-container">
+    <a onclick="prevnext(1)" id="prev-button" class="prev-button ion-ios-skip-backward" title="{$lang->prev_track}"></a>
+    
+    <a class="jp-play ion-ios-play" tabindex="1" title="{$lang->play}"></a>
+    <a class="jp-pause ion-ios-pause" tabindex="1" title="{$lang->pause}"></a>
+    
+    <a onclick="prevnext(2)" id="next-button" class="next-button ion-ios-skip-forward" title="{$lang->next_track}"></a>
+    
+  </div>
+  
+  <div class="current-track__progress">
+    
+    <div class="jp-current-time" id="current-time"></div>
+    
+    <div class="jp-progress">
+      <div class="jp-seek-bar cu">
+        <div class="jp-play-bar"></div>
+      </div>
+    </div>
+    
+    <div class="jp-duration" id="duration-time"></div>
+    
+  </div>
+  
+  <div class="current-track__options">
+    
+    <a href="#" class="lyrics">Lyrics</a>
+    
+    <span class="controls">
+      
+      <a href="#" class="control">
+        <i class="ion-ios-options"></i>
+      </a>
+      
+      <a class="control" id="shuffle-button" onclick="shuffleTracks(1)">
+        <i class="ion-ios-shuffle" id="shuffle-icon"></i>
+      </a>
+      <div style="display: none;" id="shuffle-tracks">0</div>
+      
+      <a class="control" id="repeat-button" onclick="repeatSong(1)">
+        <i class="ion-ios-repeat" id="refresh-icon"></i>
+      </a>
+      <div style="display: none;" id="repeat-song">0</div> 
+      
+      <div class="control volume">
+        <a class="jp-mute ion-ios-volume-high control volume" tabindex="1" title="{$lang->mute}"></a>
+        <a class="jp-unmute ion-ios-volume-mute control volume" tabindex="1" title="{$lang->unmute}"></a>
+
+        <div class="song-volume jp-volume-bar" onclick="playerVolume()" title="{$lang->volume}">
+          <div class="jp-volume-bar-value" id="volume-bar-value"></div>
+        </div>         
+        
+      </a>
+      
+    </span>
+    
+  </div>
+  
+</section>
+<div id="real-play" data-play-type="0" style="display: none;"></div> 

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en" >
+  <head>
+    <meta charset="UTF-8">
+    <title>{$site_title} </title>
+    <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900' rel='stylesheet' type='text/css'>
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/bootstrap.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/font-awesome.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/ionicons.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/nouislider.min.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/styles.css" rel="stylesheet" type="text/css">
+    
+    <style type="text/css">
+      .artist__header {
+        background-image: none;
+      }
+      .artist__header:before {
+        background-image: url({$cover_photo});
+        {$blur_filter}
+      }
+    </style>
+
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.jplayer.min.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/wavesurfer.js"></script>
+
+    <script type="text/javascript">
+      site_url = "{$site_url}"; nowPlaying = viewed_id = 0; player_volume = 60;
+
+      $(document).ready(function() {
+        $("#sound-player").jPlayer({
+          cssSelectorAncestor: '.current-track',
+          play: function() {
+            // Verify if a view has been added already for this track
+            if(viewed_id == nowPlaying) {
+              return false;
+            } else {
+              updateTrackInfo(nowPlaying);
+              prevnext(3);
+            }
+            // Add the play count
+            viewed_id = nowPlaying;
+
+            // Pause or play the wavesurfer 
+            setInterval(function () {
+              var isPaused = $('#sound-player').data().jPlayer.status.paused;
+              var paused = "Is Paused: " + isPaused;
+              if (!isPaused) {wavesurfer.play();}
+            }, 100);
+          },
+          pause: function() {
+            // Pause or play the wavesurfer 
+            setInterval(function () {
+              var isPaused = $('#sound-player').data().jPlayer.status.paused;
+              var paused = "Is Paused: " + isPaused;
+              if (isPaused) {wavesurfer.pause();}
+            }, 100);
+          },
+          ended: function () {
+            // If repeat is not turned on, move to the next song
+            if($('#repeat-song').html() == 0) {
+              $('.current-seek').html($('#sound_ghost_player').html());
+              $('.current-play').show();
+              $('#real-play'+viewed_id).html(0);
+              viewed_id = 0;
+              nextSong(nowPlaying); 
+            }
+          },  
+          supplied: "mp3,m4a,wav",
+          wmode: "window",
+          volume: player_volume,
+          smoothPlayBar: true,
+          keyEnabled: true
+        });       
+      });
+      function updateTrackInfo(id) {
+        // If there's a track id
+        if(id > 0) {
+          // Add the current song class
+          $('#track'+id).addClass('current-song');
+
+          // Add current play class to the Play button and hide it
+          $('#play'+id).addClass('current-play');
+          $('.current-play').hide();
+
+          $('.jp-audio .jp-time-holder').show();
+
+          // Add the active player to the current song
+          $("#song-controls"+id).html($("#seek-bar-song").html());
+
+          // Add the active player class to the current song
+          $("#song-controls"+id).addClass('current-seek');
+
+          // Set the play/pause button position (this is needed for mobile view in order for the play/pause button to be at the same height with the initial play button)
+          $('#track'+id+' .jp-play , #track'+id+' .jp-pause').css({ 'margin-top' : '-' + $('.song-top', '#track'+id).outerHeight() + 'px' });
+
+          prevnext();
+
+          // Bind functionality to the new song selector
+          $("#sound-player").jPlayer("option", "cssSelectorAncestor", '.current-track');
+        }
+      }
+      function playSong(song, id, format, time) {
+
+        // Remove the current-song class (if any)
+        $('.current-song').removeClass('current-song');
+        // Show the previously hidden Play button (if any)
+        $('.current-play').show();
+        $('.current-play').removeClass('current-play');
+        
+        // Remove the active player if exists and set the ghost player
+        $('.current-seek').html($('#sound_ghost_player').html());
+        
+        // Remove the active player class
+        $('.current-seek').removeClass('current-seek');
+        
+        // Define the current playing track
+        nowPlaying = id;
+        
+        // Update the track listing
+        updateTrackInfo(nowPlaying);
+        prevnext(3);
+        
+        // Get the current song name, url and author
+        var trackUrl = $('#song-url'+id).attr('href');
+        var artwork = $('#song-art'+id).attr('src');
+        var songName, shortSongName = songName = $('#song-name'+id).html();
+        var songAuthor = $('#song-author'+id).text();
+        var songAuthorUrl = $('#song-author'+id).attr('href'); 
+        
+        if(songName.length > 30) {
+          var shortSongName = $('#song-name'+id).html();
+        }
+        
+        $('#song-name').html($('<a>', {html: shortSongName, href: trackUrl, title: songName, rel: 'loadpage'}));
+        $('#author-name').html($('<a>', {html: songAuthor, href: songAuthorUrl, title: songAuthor, rel: 'loadpage'}));
+        
+        // $('#topbar-artwork').html($('<a>', {href: trackUrl, rel: 'loadpage', id: 'artwork-container'}));
+        $('#artwork-container').html('<img src="'+artwork+'">');
+        
+        // if the format is mp4, switch it to m4a since mp4 can be audio only
+        if(format == 'mp4') {
+          format = 'm4a';
+        } else if(format == 'wav') {
+          format = 'wav';
+        }
+        
+        if(format == 'mp3') {
+          if (time) {
+            $("#sound-player").jPlayer("setMedia",{mp3:song}).jPlayer("play", time);
+          } else {
+            $("#sound-player").jPlayer("setMedia",{mp3:song}).jPlayer("play");
+          }
+        } else if(format == 'm4a') {
+          if (time) {
+            $("#sound-player").jPlayer("setMedia",{m4a:song}).jPlayer("play", time);
+          } else {
+            $("#sound-player").jPlayer("setMedia",{m4a:song}).jPlayer("play");
+          } 
+        } else if(format == 'wav') {
+          if (time) {
+            $("#sound-player").jPlayer("setMedia",{wav:song}).jPlayer("play", time);
+          } else {
+            $("#sound-player").jPlayer("setMedia",{wav:song}).jPlayer("play");
+          }  
+        }
+        // wavesurfer.playPause();
+      }
+    </script>
+ 
+  </head>
+  <body>
+    <!-- Header has to go in here -->
+    {$header}
+    
+    <!-- Page content has to go in here -->
+    {$content}
+    
+    <!-- player has to go in here -->
+    <!-- {$ player} -->
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/clipboard.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/nouislider.min.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/scripts.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/functions.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/notify.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/bootstrap.js"></script>
+  </body>
+</html>

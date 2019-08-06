@@ -1,0 +1,165 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+
+  <div class="content__middle">
+    <div class="artist">
+      <div class="artist__header">
+        <div class="album__info artist__info track__info">
+          <div class="track__img">
+            <img src="{$track_art}" alt="G-Eazy" />
+          </div>
+          <div class="artist__info__meta">
+            <div id="waveform{$like_id}"></div>
+            <div class="artist__info__type">Track by {$track_author}</div>
+            <div class="artist__info__name">{$track_title}</div>
+            <div class="artist__info__actions">
+              {$play_track}
+              <button class="button-light">Save</button>
+              <div class="count-holder-top">
+                  <i class="ion-ios-radio"></i>
+                  <span style="font-size: 18px;">{$track_views}</span>
+              </div>
+            </div>
+          </div>
+        </div>  
+      </div>
+      
+      <div class="artist__content">
+        <div class="tab-content">
+          <!-- Overview --> 
+          <div class="overview">
+            <div class="overview__artist">
+             
+              <!-- Project Details-->
+              <div class="section-title">
+                <button id="dolike" data-like-id="{$like_id}" data-type="2" class="button-white"><i class="ion-ios-heart{$liked}"></i> Like</button>  
+                <span class="dropdown" style="text-transform: none; letter-spacing: normal; font-size: unset;">
+                  <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                  <i class="ion-ios-more"></i> More
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
+                    <li><a href="#">Start Radio</a></li>
+                    <li><a href="#">Add to playlist</a></li>
+                    <li><a href="#"id="copyable" data-clipboard-text="{$track_link}">Copy Track link</a></li>
+                    <li><a href="#">Delete</a></li> 
+                  </ul>
+                </span>  
+              </div>
+              <div class="latest-release"> 
+                <div class="project_details">
+                  <div class="project_details__text text-justify">{$track_desc}</div> 
+                </div>
+                <h6 id="real_tags">
+                  {$showtags}
+                </h6>
+              </div> 
+
+              <div class="section-title">Release Details</div>
+              <div class="latest-release"> 
+                <div class="project_details">
+                  <div class="row"> 
+                    <div class="project_details__text col-sm-6">
+                      <div class="label"> &copy; {$track_cline} </div> 
+                      <div class="label"> &#8471; {$track_pline} </div> 
+                    </div> 
+                    <div class="project_details__text col-sm-6">
+                      <div class="label"> {$track_year} . Single</div>
+                      <div class="label"> Released: {$track_date}</div>
+                    </div> 
+                  </div>
+                </div>
+              </div> 
+
+              {$artist_card}
+
+              <!-- / -->
+            </div>
+              
+            <!-- related Artists section -->
+            <div class="overview__related">
+              <div class="section-title">Similar Tracks</div>
+
+              <div class="related-artists">
+
+                {$related_tracks}
+
+              </div>
+            </div> 
+            
+          </div> 
+          <!-- / -->        
+          
+        </div>       
+      </div>     
+    </div>   
+  </div>
+  
+  <div class="content__right">    
+    <div class="social">      
+      <div class="friends">   
+
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>         
+          Sam Smith          
+        </a>
+        
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>         
+          Tarah Forsyth          
+        </a>
+        
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>          
+          Ricahrd Tomkins          
+        </a>
+        
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>         
+          Tony Russo          
+        </a>
+        
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>          
+          Alyssa Marist         
+        </a>
+        
+        <a href="#" class="friend">          
+          <i class="ion-android-person"></i>         
+          Ron Samson          
+        </a>
+        
+      </div>     
+      <button class="button-light">Find Friends</button>      
+    </div>    
+  </div>
+  
+</section>
+
+
+<div id="track{$like_id}" style="display: none;"> 
+    <div class="song-art">
+        <a href="{$track_link}" rel="loadpage"><img src="{$track_art}" id="song-art{$like_id}" alt="{$track_title}"></a>
+    </div>
+    <div>
+        <a href="{$track_link}" id="song-url{$like_id}"> <div id="song-name{$like_id}">{$track_title}</div></a>
+    </div>
+    <div id="song-author">
+        <a href="{$track_author_link}" id="song-author{$like_id}">{$track_author}</a>
+    </div>
+</div>
+
+
+<script>
+  var wavesurfer = WaveSurfer.create({
+      container: "#waveform{$like_id}",
+      height: 67,
+      barHeight: 1,
+      waveColor: '#9a1d1d',
+      barGap: 4,
+      barWidth: 2
+  });
+  wavesurfer.load("{$track_audio}");
+  wavesurfer.setMute(true);
+</script>
+{$player}
