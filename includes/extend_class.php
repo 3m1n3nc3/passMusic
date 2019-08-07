@@ -428,20 +428,7 @@ function listTracks($_track, $n, $x=null) {
         <div class="track__popularity">
             '.number_format($_track['views']).'
         </div>
-    </div>
-    <div style="display: none;" id="waveforms'.$_track['id'].'"></div>
-    <div id="real-play'.$_track['id'].'" style="display: none;">0</div>
-    <script>  
-        var wavesurfer = WaveSurfer.create({
-            container: "#waveforms'.$_track['id'].'",
-            height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,  barWidth: 2, progressColor: "#fbfafa"
-        });
-        wavesurfer.load("'.getAudio($_track['audio']).'");
-        wavesurfer.setMute(true);
-        wavesurfer.on("seek", function () {
-            seeker("'.getAudio($_track['audio']).'", "'.$_track['id'].'", "'.$t_format.'", wavesurfer.getCurrentTime());
-        }); 
-    </script> '; 
+    </div> '; 
     return $track;
 }
 
@@ -677,20 +664,9 @@ function mostPopular($artist_id) {
                 </div>
             </div>
         </div>
-    </div>
+    </div> 
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
-    <script>  
-        var wavesurfer = WaveSurfer.create({
-            container: "#waveform'.$track['id'].'",
-            height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,  barWidth: 2, progressColor: "#fbfafa"
-        });
-        wavesurfer.load("'.getAudio($track['audio']).'");
-        wavesurfer.setMute(true);
-        wavesurfer.on("seek", function () {
-            seeker("'.getAudio($track['audio']).'", "'.$track['id'].'", "'.$t_format.'", 
-            wavesurfer.getCurrentTime());
-        }); 
-    </script>';
+    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>';
     return $track ? $card : notAvailable('This '.$role.' has no popular tracks', 'no-padding ');
 }
 

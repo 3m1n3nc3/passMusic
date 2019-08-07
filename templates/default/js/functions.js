@@ -35,6 +35,29 @@ $(document).ready(function() {
 	});
 });
 
+$('#wave_init').each(function(){
+  wavesurfer_in = $('#wave_init');
+    // Generate unique id
+    var wid = '_' + Math.random().toString(36).substr(2, 9);
+    var id = $(wavesurfer_in).data('track-id');
+    var audio = $(wavesurfer_in).data('track-url');
+    var format = $(wavesurfer_in).data('track-format');
+       
+    // Initialize WaveSurfer
+    var wavesurfer = WaveSurfer.create({
+        container: '#waveform' + id,
+        height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,
+        barWidth: 2, progressColor: "#fbfafa"
+    });
+    
+    // Load audio file
+    wavesurfer.load(audio); 
+    wavesurfer.setMute(true);
+    wavesurfer.on("seek", function () {
+        seeker(audio, id, format, wavesurfer.getCurrentTime());
+    });
+});
+
 function prevnext(type) {
   // Type 1: Previous Track
   // Type 2: Next Track

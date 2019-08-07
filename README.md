@@ -16,7 +16,7 @@
 ###New Wave surfer initialization code
     <div id="waveforms'.$track['id'].'"></div>
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
-    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'">
+    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>
 
 ###New Wave surfer initialization function
     $('#wave_init').each(function(){
