@@ -836,8 +836,8 @@ body a:hover {
   background: none;
 }
 .tracks .track__art img {
-  width: 42px;
-  height: 42px;
+  width: 75px;
+  height: 75px;
 }
 .tracks .track__number {
   margin-left: 10px;
