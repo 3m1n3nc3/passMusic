@@ -5,7 +5,8 @@
     <script>  
         var wavesurfer = WaveSurfer.create({
             container: "#waveforms'.$_track['id'].'",
-            height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,  barWidth: 2, progressColor: "#fbfafa"
+            height: 67, barHeight: 1, waveColor: "#9a1d1d", 
+            barGap: 4, barWidth: 2, progressColor: "#fbfafa"
         });
         wavesurfer.load("'.getAudio($_track['audio']).'");
         wavesurfer.setMute(true);
@@ -19,7 +20,11 @@
 
     <div id="waveforms'.$track['id'].'"></div>
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
-    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>
+    <div id="wave_init" 
+        data-track-url="'.getAudio($track['audio']).'" 
+        data-track-id="'.$track['id'].'" 
+        data-track-format="'.$t_format.'">
+    </div>
 
 ### New Wave surfer initialization function
 
@@ -48,9 +53,15 @@
 
 
 *1. Ordered Italic List item 1*
+
 *2. Ordered Italic List item 2*
+
 *3. Ordered Italic List item 3*
 
+
 *- Unordered Italic List item 1*
+
 *- Unordered Italic List item 2*
+
 *- Unordered Italic List item 3*
+
