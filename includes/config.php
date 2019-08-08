@@ -45,7 +45,8 @@ $action = array('homepage'					=> 'homepage',
 				'album'						=> 'album',
 				'track'						=> 'track',
 				'playlist'					=> 'playlist',
-				'project'					=> 'project'
+				'project'					=> 'project',
+				'listen'					=> 'listen'
 				); 
 
 /* 

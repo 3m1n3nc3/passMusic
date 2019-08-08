@@ -24,6 +24,7 @@ function mainContent() {
     $PTMPL['track_views'] = number_format($track['views']);
 	$PTMPL['like_id'] = $track['id'];
 	$PTMPL['track_audio'] = getAudio($track['audio']);
+	$PTMPL['format'] = strtolower(pathinfo($track['audio'], PATHINFO_EXTENSION));
 
 	$databaseCL->like = 'single';
 	$likes = $databaseCL->userLikes(1, $track['id'], 2); //change (1, $t'id'], 2); to (user_id, $t['id'], 2);
@@ -39,7 +40,7 @@ function mainContent() {
 
     $PTMPL['artist_card'] = artistCard($track['artist_id']);
 
-	$play_class = '<button class="button-dark"> <i class="ion-ios-play"></i> Play </button>';
+	$play_class = '<button class="button-dark" id="top-play-btn"> <i class="ion-ios-play jp-play"></i> Play </button>';
 	$play_track = getTrack($track, $play_class);
 	$PTMPL['play_track'] = $track ? $play_track : $play_class;
 

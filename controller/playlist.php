@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $framework, $databaseCL; 
+	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -21,11 +21,11 @@ function mainContent() {
 
 	$PTMPL['liked'] = $likes ? ' text-danger' : '';
 
-	$databaseCL->user_id = 1; 
+	$databaseCL->user_id = $user['uid']; 
 	$get_playlist = $databaseCL->playlistEntry($fetch_playlist['id']); 
 	$featured = $databaseCL->playlistEntry($fetch_playlist['id'], 1)[0]; 
 
-	$play_class = '<button class="button-dark"> <i class="ion-ios-play"></i> Play </button>';
+	$play_class = '<button class="button-dark" id="top-play-btn"> <i class="ion-ios-play"></i> Play </button>';
 	$play_playlist = getTrack($featured, $play_class);
 
 	$PTMPL['play_playlist'] = $featured ? $play_playlist : $play_class;
@@ -51,7 +51,7 @@ function mainContent() {
        -webkit-filter: blur(18px);';
 
     // Check for related playlists 
-    $PTMPL['related_playlists'] = relatedItems(1, $fetch_playlist['id']); 
+    $PTMPL['related_playlists'] = relatedItems(4, $fetch_playlist['id']); 
 
     $PTMPL['artist_card'] = artistCard($fetch_playlist['by']);
 

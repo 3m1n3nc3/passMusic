@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $framework, $databaseCL; 
+	global $PTMPL, $user, $LANG, $SETT, $framework, $databaseCL; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -27,7 +27,7 @@ function mainContent() {
 
 	$PTMPL['liked'] = $likes ? ' text-danger' : '';
 
-	$databaseCL->user_id = 1;
+	$databaseCL->user_id = $user['uid'];
 	$get_album = $databaseCL->albumEntry($fetch_album['id']); 
 	$get_t1 = $databaseCL->albumEntry($fetch_album['id'], 1)[0]; 
 

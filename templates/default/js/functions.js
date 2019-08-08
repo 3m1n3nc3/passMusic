@@ -36,27 +36,50 @@ $(document).ready(function() {
 });
 
 $('#wave_init').each(function(){
-  wavesurfer_in = $('#wave_init');
+  	init = $(this);
     // Generate unique id
     var wid = '_' + Math.random().toString(36).substr(2, 9);
-    var id = $(wavesurfer_in).data('track-id');
-    var audio = $(wavesurfer_in).data('track-url');
-    var format = $(wavesurfer_in).data('track-format');
+    var id = $(init).data('track-id');
+    var audio = $(init).data('track-url');
+    var format = $(init).data('track-format');
        
     // Initialize WaveSurfer
-    var wavesurfer = WaveSurfer.create({
+    wavesurfer = WaveSurfer.create({
         container: '#waveform' + id,
-        height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,
-        barWidth: 2, progressColor: "#fbfafa"
+        waveColor: "#9a1d1d", cursorColor: "#fbfafa", progressColor: "#fbfafa",
+        height: 67, barHeight: 1, barWidth: 2, barGap: 4
     });
     
     // Load audio file
+    wavesurfer.on("finish", function() {
+    	// wavesurfer.destroy();
+    });
     wavesurfer.load(audio); 
     wavesurfer.setMute(true);
     wavesurfer.on("seek", function () {
         seeker(audio, id, format, wavesurfer.getCurrentTime());
     });
+    wavesurfer.on("play", function () { 
+        if (nowPlaying == id) {
+			$("#sound-player").bind($.jPlayer.event.seeked, function(event) {
+				wavesurfer.play(event.jPlayer.status.currentTime); 
+			}); 
+        } else {
+        	wavesurfer.pause();
+			$("#sound-player").unbind($.jPlayer.event.seeked); // Remove all play event listeners 
+        } 
+    });
+}); 
+
+$(".now-waving").on("click touchend", function(e) {
+	$('#now-waving').html(1);
 });
+
+function seeker(song, id, format, time) {
+	real_play = $("#real-play"+id).html();
+	console.log(real_play);
+	if (real_play == 1) playSong(song, id, format, time);
+} 
 
 function prevnext(type) {
   // Type 1: Previous Track
@@ -148,8 +171,7 @@ function nextSong(id) {
 	}
 	
 	// Get the next song element id
-	var nextId = nextSong.attr('id');
-		console.log('shuffle off working '+nextId);
+	var nextId = nextSong.attr('id'); 
 		console.log(nextSong);
 	
 	// If one is available, move to the next track
@@ -157,11 +179,6 @@ function nextSong(id) {
 		document.getElementById(nextId).click();
 	}
 }
-function seeker(song, id, format, time) {
-	let real_play = $("#real-play"+id).html();
-	console.log(real_play);
-	if (real_play == 1) playSong(song, id, format, time);
-} 
 function playerVolume() {
 	// Delay the function for a second to get the latest style value
 	setTimeout(function() {

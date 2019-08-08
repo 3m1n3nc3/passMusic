@@ -1146,16 +1146,19 @@ class databaseCL extends framework {
 	}
 
 	function fetchRelated($id, $type = null) {
+		// 3: Related Playlists
 		// 2: Related tracks
 		// 1: Related artists
 		// 0: Similar albums
-		$limit = 2; // Set the limit dynamically from DB
+		$limit = 3; // Set the limit dynamically from DB
 		if ($type == 1) {
-			$sql = sprintf("SELECT username,fname,lname,photo,cover,verified,uid,label FROM users WHERE uid != '%s' AND (`username` LIKE '%s' OR `fname` LIKE '%s' OR `lname` LIKE '%s' OR `label` LIKE '%s') LIMIT %s", $id, '%'.$this->username.'%', '%'.$this->fname.'%', '%'.$this->lname.'%', '%'.$this->label.'%', $limit);
+			$sql = sprintf("SELECT username,fname,lname,photo,cover,verified,uid,label FROM users WHERE uid != '%s' AND (`username` LIKE '%s' OR `fname` LIKE '%s' OR `lname` LIKE '%s' OR `label` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->username.'%', '%'.$this->fname.'%', '%'.$this->lname.'%', '%'.$this->label.'%', $limit);
 		} elseif ($type == 2) {
-			$sql = sprintf("SELECT art,title,safe_link FROM tracks WHERE id != '%s' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
+			$sql = sprintf("SELECT art,artist_id,title,safe_link FROM tracks WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
+		} elseif ($type == 3) {
+			$sql = sprintf("SELECT * FROM playlist WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', $limit);
 		} else {
-			$sql = sprintf("SELECT * FROM albums WHERE `id` != '%s' AND (`title` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `tags` LIKE '%s') LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->tags.'%', $limit);
+			$sql = sprintf("SELECT * FROM albums WHERE `id` != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->tags.'%', $limit);
 		}
   		return $this->dbProcessor($sql, 1);
 	}

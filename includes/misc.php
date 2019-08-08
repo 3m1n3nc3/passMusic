@@ -16,4 +16,15 @@ $PTMPL['template_path'] = $SETT['template_path'];
 $PTMPL['template_name'] = $SETT['template_name'] = 'default';//$settings['template'];
 $PTMPL['template_url'] = $SETT['template_url'] = $SETT['template_path'].'/'.$SETT['template_name'];
 
+$_SESSION['username'] = 'marxemi';
+// Check who is logged in right now
+if (isset($_SESSION['username'])) { 
+	$user = $framework->userData($_SESSION['username'], 2);
+	$user_role = $framework->userRoles();
+} elseif (isset($_COOKIE['username'])) {
+	$user = $framework->userData($_COOKIE['username'], 2);
+}
 
+if (isset($_GET['profile']) && isset($_GET['username'])) { 
+	$profile = $framework->userData($framework->db_prepare_input($_GET['username']), 2); 
+}

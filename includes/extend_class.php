@@ -288,7 +288,7 @@ function notAvailable($string, $pad='') {
         </div>
     </div>';
 } 
- 
+
 function globalTemplate($type) {
     global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
     if ($type == 1) {
@@ -433,14 +433,14 @@ function listTracks($_track, $n, $x=null) {
 }
 
 function artistAlbums($artist) {
-    global $SETT, $framework, $databaseCL;
+    global $SETT, $user, $framework, $databaseCL;
     $albums = $databaseCL->fetchAlbum($artist, 1);
 
     $card = '';
     if ($albums) {
         foreach ($albums as $rows) {
 
-            $databaseCL->user_id = 1;
+            $databaseCL->user_id = $user['uid'];
             $get_tracks = $databaseCL->albumEntry($rows['id']);
             $link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$rows['safe_link']);
 
@@ -508,6 +508,7 @@ function artistAlbums($artist) {
     }
     return $card;
 }
+
 function getTrack($_track, $play_btn=null) {
     if ($play_btn) {
         $play_class = '';
@@ -517,12 +518,12 @@ function getTrack($_track, $play_btn=null) {
         $play_btn = '';
     } 
     $track = sprintf('
-    <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="splay'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" class="track%s">%s</div>', $play_class, $play_btn);
+    <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="splay'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" class="track%s now-waving">%s</div>', $play_class, $play_btn);
     return $track;
 }
 
 function relatedItems($type, $id) {
-    global $SETT, $databaseCL;
+    global $SETT, $user, $databaseCL, $framework;
 
     // Check for relates albums 
     $related = null;
@@ -532,7 +533,7 @@ function relatedItems($type, $id) {
         $databaseCL->pline = $fetch_album['pline'];
         $databaseCL->cline = $fetch_album['cline']; 
         $databaseCL->tags = $fetch_album['tags'];
-    } else {
+    } elseif ($type == 3) {
         // Fetch similar tracks
         $databaseCL->track = $id;
         $track = $databaseCL->fetchTracks(null, 2)[0];
@@ -544,25 +545,38 @@ function relatedItems($type, $id) {
         $databaseCL->cline = $track['cline'];
         $databaseCL->genre = $track['genre'];
         $databaseCL->tags = $track['tags'];     
+    } elseif ($type == 4) {
+        // Fetch similar playlists
+        $databaseCL->type = 2;
+        $databaseCL->user_id = $user['uid'];
+        $plst = $databaseCL->fetchPlaylist($id)[0];
+        $databaseCL->title = $plst['title'];  
     }
 
+    $sel = 'Undefined Items';
     $card = '';
     if ($type == 1) {
+        $sel = 'Albums';
         $related = $databaseCL->fetchRelated($id);
         if ($related) { 
             shuffle($related);
             foreach ($related as $rel) {
+                $artist = $framework->userData($rel['by'], 1);
                 $link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$rel['safe_link']);
                 $card .= '
                 <a href="'.$link.'" class="related-artist">
                   <span class="related-album__img">
                     <img src="'.getImage($rel['art'], 1, 1).'" alt="'.$rel['title'].'" />
                   </span>
-                  <span class="related-artist__name">'.$rel['title'].'</span>
+                    <span class="related-artist__name">'
+                        .$rel['title']
+                        .' - <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
+                    </span>
                 </a>';
             }
         }
     } elseif ($type == 2) {
+        $sel = 'Artists';
         $related = $databaseCL->fetchRelated($id, 1);
         if ($related) { 
             shuffle($related);
@@ -580,23 +594,49 @@ function relatedItems($type, $id) {
             }
         }
     } elseif ($type == 3) {
+        $sel = 'Tracks';
         $related = $databaseCL->fetchRelated($id, 2);
         if ($related) {
             shuffle($related);
             foreach ($related as $rel) {
+                $artist = $framework->userData($rel['artist_id'], 1);
                 $link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rel['safe_link']);
                 $card .= '
                 <a href="'.$link.'" class="related-artist">
-                  <span class="related-album__img">
-                    <img src="'.getImage($rel['art'], 1, 1).'" alt="'.$rel['title'].'" />
-                  </span>
-                  <span class="related-artist__name">'.$rel['title'].'</span>
+                    <span class="related-album__img">
+                        <img src="'.getImage($rel['art'], 1, 1).'" alt="'.$rel['title'].'" />
+                    </span>
+                    <span class="related-artist__name">'
+                        .$rel['title']
+                        .' - <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
+                    </span>
+                </a>';
+            }
+        }
+    } elseif ($type == 4) {
+        $sel = 'Playlists';
+        $related = $databaseCL->fetchRelated($id, 3);
+        if ($related) {
+            shuffle($related);
+            foreach ($related as $rel) {
+                $artist = $framework->userData($rel['by'], 1);
+                $link = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$rel['plid']);
+                $featured = $databaseCL->playlistEntry($rel['id'], 1)[0];
+                $card .= '
+                <a href="'.$link.'" class="related-artist">
+                    <span class="related-album__img">
+                        <img src="'.getImage($featured['art'], 1, 1).'" alt="'.$rel['title'].'" />
+                    </span>
+                    <span class="related-artist__name">'
+                        .$rel['title']
+                        .' By <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
+                    </span>
                 </a>';
             }
         }
     } 
 
-    return $related ? $card : notAvailable('No similar albums', 'no-');
+    return $related ? $card : notAvailable('No similar '.$sel, 'no-');
 }
 
 function showTags($str) {
@@ -648,7 +688,7 @@ function mostPopular($artist_id) {
     <style type="text/css">height: 28px;</style>
     <div class="latest-release">
         <div class="popular-card__image" style="background-image: url('.getImage($track['art'], 1, 1).');">
-            <i data-track-name="'.$track['title'].'" data-track-id="'.$track['id'].'" id="play'.$track['id'].'" data-track-url="'.getAudio($track['audio']).'" data-track-format="'.$t_format.'" class="track ion-ios-play-circle">
+            <i data-track-name="'.$track['title'].'" data-track-id="'.$track['id'].'" id="play'.$track['id'].'" data-track-url="'.getAudio($track['audio']).'" data-track-format="'.$t_format.'" class="track now-waving ion-ios-play-circle">
             </i> 
         </div>
         <div class="latest-release__song">
@@ -664,7 +704,8 @@ function mostPopular($artist_id) {
                 </div>
             </div>
         </div>
-    </div> 
+    </div>
+    <div id="now-waving" style="display: none;">0</div>
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
     <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>';
     return $track ? $card : notAvailable('This '.$role.' has no popular tracks', 'no-padding ');

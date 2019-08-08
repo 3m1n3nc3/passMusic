@@ -45,15 +45,18 @@
             setInterval(function () {
               var isPaused = $('#sound-player').data().jPlayer.status.paused;
               var paused = "Is Paused: " + isPaused;
-              if (!isPaused) {wavesurfer.play();}
-            }, 100);
+              if (typeof wavesurfer !== 'undefined' && !isPaused) {wavesurfer.play();}
+            }, 100); 
+
+            // If there is a play button at the top of the page hide it 
+            $("#top-play-btn").attr("disabled", "disabled");
           },
           pause: function() {
             // Pause or play the wavesurfer 
             setInterval(function () {
               var isPaused = $('#sound-player').data().jPlayer.status.paused;
               var paused = "Is Paused: " + isPaused;
-              if (isPaused) {wavesurfer.pause();}
+              if (typeof wavesurfer !== 'undefined' && isPaused) {wavesurfer.pause();}
             }, 100);
           },
           ended: function () {
@@ -64,7 +67,11 @@
               $('#real-play'+viewed_id).html(0);
               viewed_id = 0;
               nextSong(nowPlaying); 
+            } else {
+              $("#sound-player").jPlayer("play");
             }
+            // If there is a hidden play button at the top of the page show it
+            $("#top-play-btn").removeAttr("disabled");
           },  
           supplied: "mp3,m4a,wav",
           wmode: "window",

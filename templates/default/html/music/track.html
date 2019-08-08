@@ -149,17 +149,7 @@
     </div>
 </div>
 
-
-<script>
-  var wavesurfer = WaveSurfer.create({
-      container: "#waveform{$like_id}",
-      height: 67,
-      barHeight: 1,
-      waveColor: '#9a1d1d',
-      barGap: 4,
-      barWidth: 2
-  });
-  wavesurfer.load("{$track_audio}");
-  wavesurfer.setMute(true);
-</script>
+<div id="now-waving" style="display: none;">0</div>
+<div id="real-play{$like_id}" style="display: none;">0</div>
+<div id="wave_init" data-track-url="{$track_audio}" data-track-id="{$like_id}" data-track-format="{$format}"></div> 
 {$player}
