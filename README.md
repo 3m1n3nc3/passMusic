@@ -1,8 +1,8 @@
 # passMusic
 
-###Wave surfer default code
+### Wave surfer default code
 
-    `<script>  
+    <script>  
         var wavesurfer = WaveSurfer.create({
             container: "#waveforms'.$_track['id'].'",
             height: 67, barHeight: 1, waveColor: "#9a1d1d",  barGap: 4,  barWidth: 2, progressColor: "#fbfafa"
@@ -12,18 +12,18 @@
         wavesurfer.on("seek", function () {
             seeker("'.getAudio($_track['audio']).'", "'.$_track['id'].'", "'.$t_format.'", wavesurfer.getCurrentTime());
         }); 
-    </script>`
+    </script>
 
 
-###New Wave surfer initialization code
+### New Wave surfer initialization code
 
-    `<div id="waveforms'.$track['id'].'"></div>
+    <div id="waveforms'.$track['id'].'"></div>
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
-    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>`
+    <div id="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>
 
-###New Wave surfer initialization function
+### New Wave surfer initialization function
 
-    `$('#wave_init').each(function(){
+    $('#wave_init').each(function(){
       wavesurfer_in = $('#wave_init');
         // Generate unique id
         var wid = '_' + Math.random().toString(36).substr(2, 9);
@@ -44,7 +44,7 @@
         wavesurfer.on("seek", function () {
             seeker(audio, id, format, wavesurfer.getCurrentTime());
         });
-    });`
+    });
 
 
 *1. Ordered Italic List item 1*
