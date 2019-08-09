@@ -33,7 +33,60 @@ $(document).ready(function() {
 			}
 		}); 
 	});
-});
+}); 
+
+function spinner(type, color, size) {
+	switch(color) {
+		case 1: var color = '-success';
+			break;
+		case 2: var color = '-warning';
+			break;
+		case 3: var color = '-danger';
+			break;
+		case 4: var color = '-info';
+			break;
+		case 5: var color = '-light';
+			break;
+		case 6: var color = '-dark';
+			break;
+		case 7: var color = '-primary';
+			break;
+		default: var color = '-secondary';
+	}
+	if (type == 1) {
+		var type = 'grow';
+	} else {
+		var type = 'border';
+	}
+	if (size == 1) {
+		var size = ' spinner-'+type+'-sm';
+	} else {
+		var size = '';
+	}
+	return '<div class="spinner-'+type+' text'+color+size+'" role="status"> <span class="sr-only">Loading...</span> </div>';
+}
+
+function loadMore(this_) { 
+	$("#load-more").html("<span class='load_anim'>"+spinner(1, 5, 1)+"</span>");
+	var type = $(this_).data("last-type");
+	var last_track = $(this_).data("last-track");
+	var artist_id = $(this_).data("last-artist");
+	var personal = $(this_).data("last-personal");
+	var query = {type: type, last_track: last_track, artist: artist_id, personal:personal};
+
+	$.ajax({
+		type: 'POST',
+		url: site_url+'/connection/moreResults.php',
+		data: query, 
+		dataType: 'JSON',
+		success: function(data) {  
+			$('#more-container').append(data.result);
+			$('#show-more-div').html(data.more);
+			$('#more-container').slideDown("style");
+			$("#load_anim").remove();
+		}
+	}); 
+}
 
 $('#wave_init').each(function(){
   	init = $(this);
@@ -94,8 +147,8 @@ function prevnext(type) {
     // If there's no next track available
     if(!nextId) {
       // If currently on the pages that have tracks with "Load More" buttons
-      if(window.location.search.indexOf('page=radio') > -1 || window.location.search.indexOf('page=explore') > -1 || (window.location.search.indexOf('page=profile') > -1 && window.location.search.indexOf('r=subscriptions') == -1) || (window.location.search.indexOf('a=profile') > -1 && window.location.search.indexOf('r=subscribers') == -1) || (window.location.search.indexOf('a=profile') > -1 && window.location.search.indexOf('r=playlists') == -1) || (window.location.search.indexOf('a=search') > -1 && window.location.search.indexOf('&filter=tracks') > -1) || window.location.href.indexOf(site_url+'/stream') > -1 || window.location.href.indexOf(site_url+'/explore') > -1 || (window.location.href.indexOf(site_url+'/profile') > -1 && ['about', 'subscriptions', 'subscribers', 'playlists'].indexOf(window.location.pathname.split("/").pop()) == -1) || (window.location.href.indexOf(site_url+'/search') > -1 && ['tracks'].indexOf(window.location.pathname.split("/").pop()) > -1 && ['filter'].indexOf(window.location.pathname.split("/").pop()) > -1)) {
-        $('#infinite-load').click();
+      if(window.location.search.indexOf('page=listen') > -1 || window.location.search.indexOf('page=playlist') > -1 || window.location.search.indexOf('page=radio') > -1 || window.location.search.indexOf('page=explore') > -1 || (window.location.search.indexOf('page=profile') > -1 && window.location.search.indexOf('r=subscriptions') == -1) || (window.location.search.indexOf('a=profile') > -1 && window.location.search.indexOf('r=subscribers') == -1) || (window.location.search.indexOf('a=profile') > -1 && window.location.search.indexOf('r=playlists') == -1) || (window.location.search.indexOf('a=search') > -1 && window.location.search.indexOf('&filter=tracks') > -1) || window.location.href.indexOf(site_url+'/stream') > -1 || window.location.href.indexOf(site_url+'/explore') > -1 || (window.location.href.indexOf(site_url+'/profile') > -1 && ['about', 'subscriptions', 'subscribers', 'playlists'].indexOf(window.location.pathname.split("/").pop()) == -1) || (window.location.href.indexOf(site_url+'/search') > -1 && ['tracks'].indexOf(window.location.pathname.split("/").pop()) > -1 && ['filter'].indexOf(window.location.pathname.split("/").pop()) > -1)) {
+        $('#load-more').click();
       }
     }
     return false;

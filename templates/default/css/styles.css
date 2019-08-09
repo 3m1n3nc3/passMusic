@@ -813,6 +813,49 @@ body a:hover {
   margin-left: 100px;
   padding-right: 10px;
 }
+
+.tracks .trackitem {
+  border-top: 1px solid #282828;
+  height: 50px;
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+}
+.tracks .trackitem:hover {
+  background: #282828;
+}
+.tracks .trackitem:last-child {
+  border-bottom: 1px solid #282828;
+}
+.tracks .tracklist__art img {
+  width: 42px;
+  height: 42px;
+}
+.tracks .tracklist__bg_art {
+  width: 48px;
+  height: 48px;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+}  
+.tracks .tracklist__bg_art i {
+  color: white;
+  font-size: 40px;
+  margin: 0 auto;
+  opacity: 1;
+  transition: all 0.5s ease;
+  text-shadow: 1px 5px 15px #181818;
+}
+.tracks .tracklist__bg_art i:hover {
+  cursor: pointer;
+}
+.tracks .tracklist__bg_art:hover i {
+  opacity: 0.5;
+  transition: all 0.5s ease;
+}
+
 .tracks .tracker {
   border-top: 1px solid #282828;
   height: 80px;
@@ -844,9 +887,16 @@ body a:hover {
   color: #aaaaaa;
   width: 12px;
 }
+.tracks .track__download {
+  margin-left: 30px;
+  margin-right: 30px;
+  color: #c8c8c8;
+  font-size: 25px;
+}
 .tracks .track__added {
   margin-left: 30px;
   color: #c8c8c8;
+  font-size: 25px;
 }
 .tracks .subst {
   margin-left: 10px; 
@@ -861,6 +911,9 @@ body a:hover {
   width: 45%;
   margin-left: 30px;
   color: white;
+}
+.tracks .trackitem .track__title {
+  width: 35%; 
 }
 .tracks .track__title_small {
   width: 20%;
@@ -963,7 +1016,7 @@ body a:hover {
   border-radius: 6%;
 }
 .related-artists .related-artist__name {
-  margin-left: 15px;
+  margin-left: 5px;
   color: white;
 }
 .related-artists .related-artist__delete {
@@ -1593,4 +1646,6 @@ animation: seeking .5s linear infinite, seeking-in .5s linear;
 .artist__card .artist__followers .ui {
   font-size: 20px;
 }
-
+.active-black {
+  background: #000000;
+}

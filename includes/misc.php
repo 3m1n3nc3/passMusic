@@ -6,7 +6,7 @@ date_default_timezone_set("Africa/Lagos");
 // Set the site configuration here
 // Default configuration
 $configuration = array('language' => 'english', 'site_name' => 'Passengine', 'site_phone' => '09031983482'
-	, 'twillio_phone' => '+1092292922', 'cleanurl' => 0);
+	, 'twillio_phone' => '+1092292922', 'cleanurl' => 0, 'page_limits' => 1);
 // You can pass this configuration information from a database, your database should contain the default
 // configuration variables
 // $configuration = configuration();

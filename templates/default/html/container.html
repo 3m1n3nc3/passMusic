@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" >
+<html lang="en">
   <head>
     <meta charset="UTF-8">
     <title>{$site_title} </title>
@@ -63,7 +63,13 @@
             // If repeat is not turned on, move to the next song
             if($('#repeat-song').html() == 0) {
               $('.current-seek').html($('#sound_ghost_player').html());
-              $('.current-play').show();
+ 
+              if ($('.current-play').data('hideable') == 1) {
+                $('.current-play').show();
+              } else {
+                $('#trackitem'+nowPlaying).addClass("active-black");
+                $("#icon_play"+nowPlaying).hide();
+              }
               $('#real-play'+viewed_id).html(0);
               viewed_id = 0;
               nextSong(nowPlaying); 
@@ -88,7 +94,12 @@
 
           // Add current play class to the Play button and hide it
           $('#play'+id).addClass('current-play');
-          $('.current-play').hide();
+          if ($('.current-play').data('hideable') == 1) {
+            $('.current-play').hide();
+          } else {
+            $('#trackitem'+nowPlaying).addClass("active-black");
+            $("#icon_play"+nowPlaying).hide();
+          }
 
           $('.jp-audio .jp-time-holder').show();
 
@@ -112,7 +123,12 @@
         // Remove the current-song class (if any)
         $('.current-song').removeClass('current-song');
         // Show the previously hidden Play button (if any)
-        $('.current-play').show();
+        if ($('.current-play').data('hideable') == 1) {
+          $('.current-play').show();
+        } else {
+          $('#trackitem'+nowPlaying).removeClass("active-black");
+          $("#icon_play"+nowPlaying).show();
+        }
         $('.current-play').removeClass('current-play');
         
         // Remove the active player if exists and set the ghost player
@@ -126,7 +142,7 @@
         
         // Update the track listing
         updateTrackInfo(nowPlaying);
-        prevnext(3);
+        //prevnext(3);
         
         // Get the current song name, url and author
         var trackUrl = $('#song-url'+id).attr('href');
@@ -190,6 +206,7 @@
     <script src="{$site_url}/{$template_path}/{$template_name}/js/scripts.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/functions.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/notify.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/popper.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/bootstrap.js"></script>
   </body>
 </html>

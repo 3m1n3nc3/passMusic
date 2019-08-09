@@ -66,39 +66,19 @@
           <div role="tabpanel" class="tab-pane active" id="artist-overview">
             <div class="overview">
               <div class="overview__artist">
-                
-                <!-- Project Details-->
-                <div class="section-title">Biography</div>
-                <div class="latest-release"> 
-                  <div class="project_details">
-                    <div class="project_details__text text-justify">{$introduction}</div> 
-                  </div>
+ 
+                <!-- Project Instrumentals-->
+                <div class="section-title">All tracks by Marxemi</div>
+                <div class="tracks">
+                  {$list_tracks} 
+       <!--            <i class="ion-ios-checkmark-circle added"></i>
+                  <i class="ion-ios-add-circle not-added"></i> -->
+                  <div style="display: none;" id="more-container"></div>
                 </div>
-                <!-- / -->
-                
-                <!-- Most Popular-->
-                <div class="section-title">Most Popular</div>
-                {$most_popular}
-                <!-- / -->
+                <span id="show-more-div">{$load_more_btn}</span> 
 
-                <!-- Singles-->
-                <div class="section-title">Singles</div>
-                <div class="tracks">                   
-                  <div class="tracks__heading">                        
-                    <div class="tracks__heading__number">#</div>                        
-                    <div class="tracks__heading__title">Track Info</div>                      
-                    <div class="tracks__heading__length">                     
-                      <i class="ion-ios-stopwatch"></i>                   
-                    </div>                
-                    <div class="tracks__heading__popularity">                  
-                      <i class="ion-ios-radio"></i>                
-                    </div>               
-                  </div>
-
-                  {$list_tracks}  
-
-                </div> 
-                <!-- / -->
+                <!-- ------------------------------ -->
+ 
               </div>
                 
               <!-- related Artists section -->
@@ -117,19 +97,15 @@
                   </div>
                 </div>
 
-                <div class="section-title">Followers</div> 
+                <div class="section-title">Followers ({$count_followers})</div> 
                 {$followers}
+                <div class="pb-3"></div>
 
-              </div>
+                <div class="section-title">Following ({$count_following})</div> 
+                {$following}
+                <div class="pb-2"></div>
 
-              <div class="overview__albums">                
-                <div class="overview__albums__head">                
-                  <span class="section-title">Albums And EP</span>               
-                </div>   
-
-                {$list_albums}
-                
-              </div>
+              </div> 
               
             </div>
             

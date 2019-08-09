@@ -11,7 +11,8 @@
         wavesurfer.load("'.getAudio($_track['audio']).'");
         wavesurfer.setMute(true);
         wavesurfer.on("seek", function () {
-            seeker("'.getAudio($_track['audio']).'", "'.$_track['id'].'", "'.$t_format.'", wavesurfer.getCurrentTime());
+            seeker("'.getAudio($_track['audio']).'", "'.$_track['id'].'", "'.$t_format.'", 
+            wavesurfer.getCurrentTime());
         }); 
     </script>
 

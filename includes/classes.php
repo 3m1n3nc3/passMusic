@@ -588,12 +588,13 @@ class framework {
 	/**
 	/* generate safelinks from strings E.g: Where is Tommy (where-is-tommy)
 	**/
-	function safeLinks($string) { 
+	function safeLinks($string, $type=null) { 
 		// Replace spaces and special characters with a -
-	    $return = strtolower(trim(preg_replace('~[^0-9a-z]+~i', '-', html_entity_decode(preg_replace('~&([a-z]{1,2})(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', htmlentities($string, ENT_QUOTES, 'UTF-8')), ENT_QUOTES, 'UTF-8')), '-'));
+		$separator = $type ? '_' : '-';
+	    $return = strtolower(trim(preg_replace('~[^0-9a-z]+~i', $separator, html_entity_decode(preg_replace('~&([a-z]{1,2})(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', htmlentities($string, ENT_QUOTES, 'UTF-8')), ENT_QUOTES, 'UTF-8')), $separator));
 	 
 	    // If the link is not safe add a random string
-	    ($string == $return) ? $safelink = $return.'-'.rand(100,900) : $safelink = $return; 
+	    $safelink = ($string == $return) ? $return.'-'.rand(100,900) : $return; 
 	    
 	    return $safelink;
 	}
@@ -1123,6 +1124,8 @@ class databaseCL extends framework {
 	}
 
 	function fetchTracks($artist_id, $type=null) {
+		global $user, $configuration;
+		// 3: Get all tracks by this artist
 		// 2: Get a particular track
 		// 1: Get the most popular track
 		// 0: Get all tracks not in an album
@@ -1130,6 +1133,21 @@ class databaseCL extends framework {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND views = (SELECT MAX(views) FROM tracks WHERE artist_id = '%s')", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id));
 		} elseif ($type == 2) {
 			$sql = sprintf("SELECT * FROM tracks,users WHERE tracks.id = '%s' AND users.uid = tracks.artist_id OR tracks.safe_link = '%s' AND users.uid = tracks.artist_id", $this->db_prepare_input($this->track), $this->db_prepare_input($this->track));
+		} elseif ($type == 3) {
+			if (isset($this->last_id)) { 
+				$next = " AND id > ".$this->last_id;
+			} else {
+				$next = "";
+			}
+			if (isset($this->counter)) {
+				// Count the tracks
+				$sql = sprintf("SELECT COUNT(id) AS counter FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id%s%s", $this->db_prepare_input($artist_id), $next, $this->counter);
+			} elseif (isset($this->personal_id)) {
+				$artist_id = $this->personal_id;
+				$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
+			} else {
+				$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.public = '1'%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
+			} 
 		} else {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id NOT IN (SELECT track FROM albumentry WHERE 1)", $this->db_prepare_input($artist_id));
 		}

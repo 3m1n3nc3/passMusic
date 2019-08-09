@@ -20,8 +20,7 @@ function mainContent() {
 
 	$_albums = $databaseCL->fetchAlbum($artist['uid'], 1);
 	if ($_albums) {
-		$PTMPL['list_albums'] = artistAlbums($artist['uid']
-);
+		$PTMPL['list_albums'] = artistAlbums($artist['uid']);
 	} else {
 		$PTMPL['list_albums'] = notAvailable('This '.$role.' has no albums yet', 'no-padding ');
 	}
@@ -31,11 +30,9 @@ function mainContent() {
 	$databaseCL->fname = $artist['fname'];
 	$databaseCL->lname = $artist['lname'];
 	$databaseCL->label = 'newnify';
-	$PTMPL['related'] = relatedItems(2, $artist['uid']
-);
+	$PTMPL['related'] = relatedItems(2, $artist['uid']);
  
-    $track_list = $databaseCL->fetchTracks($artist['uid']
-);
+    $track_list = $databaseCL->fetchTracks($artist['uid']);
     $list_tracks = '';
     if (is_array($track_list) && COUNT($track_list)>0) {
     	$n = 0;
@@ -48,10 +45,12 @@ function mainContent() {
     }
     $PTMPL['list_tracks'] = $list_tracks;
 
-    $PTMPL['most_popular'] = mostPopular($artist['uid']
-);
+    $PTMPL['most_popular'] = mostPopular($artist['uid']);
 
+    $PTMPL['count_followers'] = count($databaseCL->fetchFollowers($artist['uid'], 1));
+    $PTMPL['count_following'] = count($databaseCL->fetchFollowers($artist['uid'], 2)); 
     $PTMPL['followers'] = showFollowers($artist['uid'], 1);
+    $PTMPL['following'] = showFollowers($artist['uid'], 2);
 
 	// Set the active landing page_title 
 	$theme = new themer('music/artist');

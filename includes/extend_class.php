@@ -91,6 +91,7 @@ function getLocale($type = null, $id = null) {
 }
 
 function getImage($image, $type = null, $a = null, $b = null) {
+    // $a = 1: Get direct link to image
     global $SETT;
     if (!$image) {
       $dir = $SETT['url'] . '/uploads/img/';
@@ -114,14 +115,23 @@ function getImage($image, $type = null, $a = null, $b = null) {
     } 
 
     // Get the directory
-    $cd = $c ? ($b ? getcwd() : '') : ($b ? getcwd() : '');
+    $cd = $b ? getcwd() : '';
     $cd_image = $cd . $_dir . $image;
 
     // Show the image
-    if (file_exists($cd_image)) {
-      $image = $a ? $dir.$image : $cd_image;
+    if ($a == 2) {
+        $image = $a ? $dir.$image : $cd_image;
+        if (@exif_imagetype($image)) {
+          $image = $image;
+        } else {
+            $image = $SETT['url'] . '/uploads/photos/default.png';
+        }
     } else {
-      $image = $SETT['url'] . '/uploads/photos/default.png';
+        if (file_exists($cd_image)) {
+          $image = $a ? $dir.$image : $cd_image;
+        } else {
+          $image = $SETT['url'] . '/uploads/photos/default.png';
+        }
     }
     return $image;
 }
@@ -405,13 +415,14 @@ function listTracks($_track, $n, $x=null) {
             </div>';
     }
     $artist = $framework->userData($_track['artist_id'], 1);
+    $artist_name = $artist['fname'].' '.$artist['lname'];
     $t_format = strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION));
     $track = '
 
     <div class="tracker song-container" id="track'.$_track['id'].'">
         <div class="track__number">'.$n.'</div>
         <div class="track__added subst">
-            <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" class="track song-play-btn fa fa-play-circle ">
+            <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" data-hideable="1" class="track song-play-btn fa fa-play-circle ">
             </div>
         </div>
         <div class="song-art">
@@ -421,7 +432,7 @@ function listTracks($_track, $n, $x=null) {
             <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> <div id="song-name'.$_track['id'].'">'.$_track['title'].'</div></a>
         </div>
         <div class="track__author'.$small.'" id="song-author">
-            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist['fname'].' '.$artist['lname'].' </a>
+            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist_name.' </a>
         </div>
         '.$explicit.'
         <div class="track__length">'.$duration.'</div>
@@ -430,6 +441,44 @@ function listTracks($_track, $n, $x=null) {
         </div>
     </div> '; 
     return $track;
+}
+
+function trackLister($_track, $n, $x=null) {
+    global $SETT, $framework;
+    $artist = $framework->userData($_track['artist_id'], 1);
+    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $explicit = $_track['explicit'] ? '
+    <div class="track__explicit">
+        <span class="label">Explicit</span>
+    </div>' : '';
+
+    $list = '
+    <div class="song-container" id="track'.$_track['id'].'">
+        <div class="trackitem" id="trackitem'.$_track['id'].'">
+            <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'"  data-hideable="0" class="track">
+                <div class="tracklist__bg_art" style="background-image: url('.getImage($_track['art'], 1, 2).')">
+                    <i class="ion-ios-play" id="icon_play'.$_track['id'].'"></i> 
+                    <img style="display: none;" src="'.getImage($_track['art'], 1, 2).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
+                </div>
+            </div>
+            <div class="track__added">
+                <i class="ion-ios-add-circle not-added"></i>
+            </div>
+            <div class="track__title">
+                <span id="song-author'.$_track['id'].'">'.$artist_name.'</span>
+                <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> <div id="song-name'.$_track['id'].'">'.$_track['title'].'</div>
+            </a>
+        </div>
+        <div class="track__download">
+            <a href="'.getAudio($_track['audio']).'" id="download-link" download="'.$framework->safeLinks($artist_name.' '.$_track['title'], 1).'">
+                <i class="ion-ios-cloud-download not-added"></i>
+            </a>
+        </div>
+        '.$explicit.'
+        <div class="track__plays">'.number_format($_track['views']).'</div>
+    </div>
+    </div> ';
+    return $list;
 }
 
 function artistAlbums($artist) {
@@ -518,7 +567,7 @@ function getTrack($_track, $play_btn=null) {
         $play_btn = '';
     } 
     $track = sprintf('
-    <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="splay'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" class="track%s now-waving">%s</div>', $play_class, $play_btn);
+    <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="splay'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'" data-hideable="1" class="track%s now-waving">%s</div>', $play_class, $play_btn);
     return $track;
 }
 
@@ -688,7 +737,7 @@ function mostPopular($artist_id) {
     <style type="text/css">height: 28px;</style>
     <div class="latest-release">
         <div class="popular-card__image" style="background-image: url('.getImage($track['art'], 1, 1).');">
-            <i data-track-name="'.$track['title'].'" data-track-id="'.$track['id'].'" id="play'.$track['id'].'" data-track-url="'.getAudio($track['audio']).'" data-track-format="'.$t_format.'" class="track now-waving ion-ios-play-circle">
+            <i data-track-name="'.$track['title'].'" data-track-id="'.$track['id'].'" id="play'.$track['id'].'" data-track-url="'.getAudio($track['audio']).'" data-track-format="'.$t_format.'" data-hideable="1" class="track now-waving ion-ios-play-circle">
             </i> 
         </div>
         <div class="latest-release__song">
@@ -715,28 +764,30 @@ function showFollowers($user_id, $type=null) {
     global $SETT, $framework, $databaseCL;
     // 1: Sidebar followers
     // 0: Inner followers
-    $followers = $databaseCL->fetchFollowers($user_id, 1);
-    $following = $databaseCL->fetchFollowers($user_id, 1);
+    $followership = $databaseCL->fetchFollowers($user_id, $type);  
     $card = '';
-    if ($type == 1) {
-        if ($followers) {
-            $card = '
-            <div class="related-artists">';
-            foreach ($followers as $rows) {
-                $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['username']);
-                $card .= '
-                <a href="'.$link.'" class="related-artist">
-                    <span class="related-artist__img">
-                        <img src="'.getImage($rows['photo'], 1, 1).'" alt="'.$rows['fname'].' '.$rows['lname'].'" />
-                    </span>
-                    <span class="related-artist__name">'.$rows['fname'].' '.$rows['lname'].'</span>
-                </a>';
+    $c = 0; 
+    if ($followership) {
+        $card = '
+        <div class="related-artists">';
+        foreach ($followership as $rows) {
+            $c++ ;
+            if ($c == 11) {
+                break;
             }
+            $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['username']);
             $card .= '
-            </div>';
-        } else {
-            $card .= notAvailable('No Followers', 'no-padding ');
+            <a href="'.$link.'" class="related-artist">
+                <span class="related-artist__img">
+                    <img src="'.getImage($rows['photo'], 1, 1).'" alt="'.$rows['fname'].' '.$rows['lname'].'" />
+                </span>
+                <span class="related-artist__name">'.$rows['fname'].' '.$rows['lname'].'</span>
+            </a>';
         }
-    }
+        $card .= '
+        </div>';
+    } else {
+        $card .= notAvailable('No Followers', 'no-padding ');
+    } 
     return $card;
 }
