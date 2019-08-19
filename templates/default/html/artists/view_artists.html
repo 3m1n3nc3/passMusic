@@ -1,0 +1,41 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+ 
+  <div class="content__middle">
+    <div class="artist"> 
+
+      {$secondary_navigation}
+
+      <div class="artist__content">
+        <div class="tab-content">
+          <!-- Overview -->
+          <div class="overview">
+            <div class="overview__artist"> 
+              {$content_title}
+              {$artist_card}
+              <div style="display: none;" id="more-container"></div>
+              <span id="show-more-div">{$load_more_btn}</span> 
+              <!-- / -->
+            </div>
+              
+            <!-- related Artists section -->
+            <div class="overview__related">
+              {$sidebar_statistics}
+              {$followers}  
+              {$following} 
+
+            </div> 
+            
+          </div> 
+          <!-- / -->        
+          
+        </div>       
+      </div>     
+    </div>   
+  </div>
+  
+ {$right_sidebar}
+  
+</section> 
+{$player}

@@ -1,0 +1,57 @@
+              <div class="sidebarContent" style="min-height:80px;">
+                <div class="soundBadgeList compact lazyLoadingList">
+                  <ul class="pc-list-nostyle pc-clearfix">
+                     
+             
+                    <li class="soundBadgeList__item">
+                      <div class="soundBadge compact pc-media">
+                        <span class="soundBadge__artwork pc-media-image">
+                          <div class="image m-sound image__lightOutline readOnly customImage pc-artwork pc-artwork-placeholder-7 m-loaded" style="height: 50px; width: 50px;">
+                            <span style="background-image: url(&quot;{$track_art}&quot;); width: 50px; height: 50px; opacity: 1;" class="pc-artwork pc-artwork-placeholder-7  image__full g-opacity-transition" aria-label="{$track_title}" aria-role="img">
+                              <i data-track-name="{$track_title}" data-track-id="{$track_id}" id="play{$track_id}" data-track-url="{$track_audio}" data-track-format="{$track_format}" data-hideable="0" class="track ion-ios-play">
+                              </i> 
+                            </span>
+                          </div> 
+                        </span>
+                        <div class="pc-media-content soundBadge__content">
+                          <div class="soundTitle pc-clearfix pc-hyphenate pc-type-h3">
+                            <div class="soundTitle__titleContainer">
+                              <div class="soundTitle__usernameTitleContainer">
+                                <div class="pc-type-light soundTitle__secondary  pc-truncate">
+                                  <a href="{$profile_link}" class="soundTitle__username pc-link-light">
+                                    <span class="soundTitle__usernameText">{$profile_name}</span>
+                                  </a>
+                                </div>
+                                <a class="soundTitle__title pc-link-light" href="{$track_link}" title="{$track_title}">
+                                  <span class="pc-truncate">{$track_title}</span>
+                                </a>
+                              </div>
+                              <div class="soundTitle__additionalContainer"></div>
+                            </div>
+                          </div>
+                          <ul class="soundStats pc-ministats-group" aria-label="Track stats">
+                            <li title="{$views_count_full} plays" class="pc-ministats-item">
+                              <span class="pc-ministats pc-ministats-small">
+                                <i class="ion-ios-play"></i>
+                                <span class="pc-visuallyhidden">{$views_count_full} plays</span>
+                                <span aria-hidden="true">{$views_count}</span>
+                              </span>
+                            </li>
+                            <li title="{$likes_count_full} likes" class="pc-ministats-item">
+                              <a href="{$likes_link}" rel="nofollow" class="pc-ministats pc-ministats-small">
+                                <i class="ion-ios-heart"></i>
+                                <span class="pc-visuallyhidden">View all likes</span>
+                                <span aria-hidden="true" id="likes-count-{$track_id}">{$likes_count}</span>
+                              </a>
+                            </li> 
+                            <li title="{$like_title}">
+                              {$like_button} 
+                            </li> 
+                          </ul> 
+                        </div>
+                      </div>
+                    </li>
+
+                  </ul>
+                </div>
+              </div>

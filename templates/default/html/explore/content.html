@@ -1,0 +1,42 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+
+  <div class="content__middle">
+    <div class="artist"> 
+
+      {$secondary_navigation}
+      
+      <div class="artist__content">  
+
+        <div class="overview">
+          <div class="overview__artist">
+
+            {$show_top_charts} 
+            {$show_new_tracks}
+            {$show_new_users}
+            {$show_artists_you_may_know}
+            {$playlist_one}
+            {$list_tracks}
+          </div>
+            
+          <!-- related section -->
+          <div class="overview__related" data-overview="1">  
+
+            {$sidebar_statistics}
+            {$sidebar_suggested_users}
+            {$sidebar_suggested_tracks}
+
+          </div> 
+          
+        </div>     
+      </div>     
+    </div>   
+  </div>
+
+  {$right_sidebar}
+ 
+</section>
+
+
+{$player}

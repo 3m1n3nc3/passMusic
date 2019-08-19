@@ -1,0 +1,63 @@
+              <div class="sidebarContent" style="min-height:80px;">
+                <div class="userSuggestionList">
+                  <ul class="pc-list-nostyle pc-clearfix">
+                    <li class="userSuggestionList__item">
+                      <div class="userSuggestion">
+                        <div class="userBadge m-horizontal m-premium">  
+
+                          <div class="userBadge__avatar">
+                            <div class="g-avatar-badge userAvatarBadge">
+                              <div class="g-avatar-badge-body">
+                                <a href="{$profile_link}" class="g-avatar-badge-avatar-link">
+                                  <div class="g-avatar-badge-avatar">
+                                    <div class="image m-user image__lightOutline readOnly customImage pc-artwork pc-artwork-placeholder-7 image__rounded m-loaded{$verified_badge}" style="height: 50px; width: 50px;">
+                                      <span style="background-image: url(&quot;{$profile_photo}&quot;); width: 50px; height: 50px; opacity: 1;" class="pc-artwork pc-artwork-placeholder-7 image__rounded image__full g-opacity-transition" aria-label="{$profile_name}’s avatar" aria-role="img"></span>
+                                    </div> 
+                                  </div>
+                                </a>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div class="userBadge__content pc-media-content">
+                            <div class="userBadge__title">
+                              <h3 class="userBadge__username pc-type-light">
+                                  <a href="{$profile_link}" title="Visit {$profile_name}’s profile" class="userBadge__usernameLink pc-link-light pc-truncate">
+                                    <span class="pc-truncate">{$profile_name}</span>
+                                  </a>
+                              </h3>
+                            </div>
+                            <div class="userBadge__meta">
+                              <div class="userBadge__stats">
+                                <div aria-label="User stats" class="userStats">  
+                                  <ul class="pc-ministats-group">
+                                    <li title="{$follower_count} followers" class="pc-ministats-item">
+                                        <a href="{$followers_link}" rel="nofollow" class="pc-ministats pc-ministats-small">
+                                          <i class="ion-ios-people"></i>
+                                          <span class="pc-visuallyhidden">{$follower_count} followers</span>
+                                          <span aria-hidden="true">{$follower_count}</span>
+                                        </a>
+                                    </li>
+                                    <li title="{$tracks_count} tracks" class="pc-ministats-item">
+                                        <a href="{$tracks_link}" rel="nofollow" class="pc-ministats pc-ministats-small">
+                                          <i class="ion-ios-disc"></i>
+                                          <span class="pc-visuallyhidden">{$tracks_count} tracks</span>
+                                          <span aria-hidden="true">{$tracks_count}</span>
+                                        </a>
+                                    </li>
+                                  </ul>
+                                </div>
+                              </div>
+
+                              <div class="userBadge__actions">
+                                {$follow_btn}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </li>
+
+                  </ul>
+                </div>
+              </div>

@@ -1,0 +1,151 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+
+  <div class="content__middle">
+    <div class="artist{$verified}">
+      <div class="artist__header">
+        <div class="artist__info">
+          <div class="profile__img">
+            <img src="{$profile_photo}" alt="{$fullname}" />
+          </div>
+          <div class="artist__info__meta">
+            <div class="artist__info__type">{$user_role}</div>
+            <div class="artist__info__name">{$fullname}</div>
+            <div class="artist__info__actions"> 
+              {$follow_btn}
+              {$followers_display}
+            </div>
+          </div>
+        </div>
+        
+        <div class="artist__listeners">
+          <div class="artist__listeners__count">15,662,810</div>
+          <div class="artist__listeners__label">Monthly Listeners</div>
+        </div>
+        <div class="artist__navigation">
+          <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active">
+              <a href="#artist-overview" aria-controls="artist-overview" role="tab" data-toggle="tab">Overview</a>
+            </li>
+            <li role="presentation">
+              <a href="#related-artists" aria-controls="related-artists" role="tab" data-toggle="tab">Related Artists</a>
+            </li>
+            <!--<li role="presentation">
+              <a href="#artist-about" aria-controls="artist-about" role="tab" data-toggle="tab">About</a>
+            </li>-->
+          </ul>
+          <div class="artist__navigation__friends">
+            <a href="#">
+              <img src="http://passcolabs.te/uploads/photos/17.jpg" alt="" />
+            </a>
+            <a href="#">
+              <img src="http://passcolabs.te/uploads/photos/5.jpg" alt="" />
+            </a>
+            <a href="#">
+              <img src="http://passcolabs.te/uploads/photos/enlarged-facebook-profile-picture.jpg" alt="" />
+            </a>
+          </div>
+        </div>
+      </div>
+      {$secondary_navigation}
+      
+      <div class="artist__content">
+        <div class="tab-content">
+          <!-- Overview -->
+          <div role="tabpanel" class="tab-pane active" id="artist-overview">
+            <div class="overview">
+              <div class="overview__artist">
+                
+                <!-- Project Details-->
+                <div class="section-title">Biography</div>
+                <div class="latest-release"> 
+                  <div class="project_details">
+                    <div class="project_details__text text-justify">{$introduction}</div> 
+                  </div>
+                </div>
+                <!-- / -->
+                
+                <!-- Most Popular-->
+                <div class="section-title">Most Popular</div>
+                {$most_popular}
+                <!-- / -->
+
+                <!-- Singles-->
+                <div class="section-title">Singles</div>
+                <div class="tracks">                   
+                  <div class="tracks__heading">                        
+                    <div class="tracks__heading__number">#</div>                        
+                    <div class="tracks__heading__title">Track Info</div>                      
+                    <div class="tracks__heading__length">                     
+                      <i class="ion-ios-stopwatch"></i>                   
+                    </div>                
+                    <div class="tracks__heading__popularity">                  
+                      <i class="ion-ios-radio"></i>                
+                    </div>               
+                  </div>
+
+                  {$list_tracks}  
+
+                </div> 
+                <!-- / -->
+              </div>
+                
+              <!-- related Artists section -->
+              <div class="overview__related">
+
+                <div class="section-title">Social Links</div>
+                <div class="related__social">
+                  <div class="social__link">
+                    <a href="http://facebook.com/"><i class="fa fa-facebook-square"></i> Facebook</a>
+                  </div>
+                  <div class="social__link">
+                    <a href="http://twitter.com/"><i class="fa fa-twitter-square"></i> Twitter</a>
+                  </div>
+                  <div class="social__link">
+                    <a href="http://instagram.com/"><i class="fa fa-instagram"></i> Instagram</a>
+                  </div>
+                </div>
+
+                <!-- Show relationships -->
+                {$followers} 
+                {$following} 
+
+              </div>
+
+              <div class="overview__albums">                
+                <div class="overview__albums__head">                
+                  <span class="section-title">Albums And EP</span>               
+                </div>   
+
+                {$list_albums}
+                
+              </div>
+              
+            </div>
+            
+          </div>
+          <!-- / -->
+
+          <!-- Related Artists -->
+          <div role="tabpanel" class="tab-pane" id="related-artists">            
+            <div class="media-cards">  
+              
+              {$related} 
+
+            </div>            
+          </div>
+          <!-- / -->
+
+          <!-- / -->
+        </div>       
+      </div>     
+    </div>   
+  </div>
+
+  {$right_sidebar}
+ 
+</section>
+
+
+{$player}

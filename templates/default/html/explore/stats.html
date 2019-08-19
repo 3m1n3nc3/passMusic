@@ -1,0 +1,36 @@
+            <article class="sidebarModule g-all-transitions-200-linear statsModule">
+              <a href="" class="sidebarHeader g-flex-row-centered-spread pc-link-light outgoing-stats-module pc-border-light-bottom">
+                <h3 class="sidebarHeader__title pc-type-light pc-font-tabular g-flex-row-centered">
+                  <i class="ion-ios-stats"></i>
+                  <span class="sidebarHeader__actualTitle">Stats</span>
+                </h3>
+                <span class="sidebarHeader__more pc-type-h3">View all</span>
+              </a>
+              <div class="sidebarContent" style="min-height: 80px;">
+                <div class="statsBadge">
+                  <table class="statsBadge__recent pc-type-small">
+                    <tbody>
+                      <tr>
+                        <th class="statsBadge__title pc-type-light pc-border-light-right">
+                          Plays last 24 hours
+                        </th>
+                        <th class="statsBadge__title pc-type-light">
+                          Plays last Week
+                        </th>
+                      </tr>
+                      <tr>
+                        <td class="statsBadge__today pc-green statsBadge__value pc-border-light-right">
+                          {$last_24}
+                        </td>
+                        <td class="statsBadge__value pc-text-verylight">
+                          {$last_week}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <p class="statsBadge__total pc-type-small pc-type-light">
+                    <strong>{$total}</strong> plays in total
+                  </p>                
+                </div>
+              </div>              
+            </article>

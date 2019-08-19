@@ -1,0 +1,38 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+
+  <div class="content__middle"> 
+    <div class="artist"> 
+      {$secondary_navigation}
+      
+      <div class="artist__content"> 
+        <div class="overview">
+          <div class="overview__artist">
+            <div class="section-title">{$follow_title}</div>
+              <!-- Following followers -->           
+              <div class="media-cards more-container">
+                {$followers_media_card}   
+              </div> 
+              {$no_followers}
+              <span id="show-more-div">{$load_more_btn}</span> 
+          </div>
+
+          <!-- related items section -->
+          <div class="overview__related">
+            
+            {$sidebar_suggested_users}
+
+          </div>
+
+        </div>
+      </div>     
+    </div>   
+  </div>
+
+  {$right_sidebar}
+ 
+</section>
+
+
+{$player}
