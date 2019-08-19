@@ -14,18 +14,14 @@
         
         <div class="collapse in" id="main">
           
-          <a href="#" class="navigation__list__item">
+          <a href="index.php?page=explore" class="navigation__list__item">
             <i class="ion-ios-browsers"></i>
-            <span>Browse</span>
+            <span>Explore</span>
           </a>
           <a href="#" class="navigation__list__item">
             <i class="ion-ios-pulse"></i>
             <span>Activity</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-radio"></i>
-            <span>Radio</span>
-          </a>
+          </a> 
           
         </div>
       </div>
@@ -43,15 +39,15 @@
         
         <div class="collapse in" id="yourMusic">
           
-          <a href="index.php?page=listen" class="navigation__list__item">
+          <a href="index.php?page=listen&to=tracks" class="navigation__list__item">
             <i class="ion-ios-headset"></i>
             <span>Songs</span>
           </a>
-          <a href="#" class="navigation__list__item">
+          <a href="index.php?page=listen&to=albums" class="navigation__list__item">
             <i class="ion-ios-musical-notes"></i>
             <span>Albums</span>
           </a>
-          <a href="#" class="navigation__list__item">
+          <a href="index.php?page=view_artists" class="navigation__list__item">
             <i class="ion-ios-person"></i>
             <span>Artists</span>
           </a> 
@@ -72,63 +68,16 @@
         
         <div class="collapse in" id="playlists">
           
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Doo Wop</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Pop Classics</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Love $ongs</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Hipster</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>New Music Friday</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Techno Poppers</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Summer Soothers</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Hard Rap</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Pop Rap</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>5 Stars</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Dope Dancin</span>
-          </a>
-          <a href="#" class="navigation__list__item">
-            <i class="ion-ios-musical-notes"></i>
-            <span>Sleep</span>
-          </a>
+          {$show_playlists}
           
         </div>
       </div>
-      <!-- / -->
+ 
     </section>
     
     <section class="playlist">
       <a href="#">
-        <i class="ion-ios-plus-outline"></i>
+        <i class="ion-ios-add-circle-outline"></i>
         New Playlist
       </a>
     </section>

@@ -37,15 +37,14 @@ class framework {
 
 	function userData($user = NULL, $type = NULL) {
         // if type = 0 fetch all users, and use filter to add custom query
-        // if type = 1 users by their user ids
-        // if type = 2 fetch users by their usernames
+        // if type = 1 users by their user ids or fetch users by their usernames
         // if type = 10 fetch users for datatables
 
 	    global $configuration;
 
 	    // Limit clause to enable pagination
         if (isset($this->limit)) {
-            $limit = sprintf('ORDER BY date DESC LIMIT %s, %s', $this->start, $this->limit);
+            $limit = sprintf(' ORDER BY date DESC LIMIT %s, %s', $this->start, $this->limit);
         } else {
             $limit = '';
         }
@@ -55,11 +54,11 @@ class framework {
 	    	$search = $this->search; 	
 	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE username LIKE '%s' OR concat_ws(' ', `f_name`, `l_name`) LIKE '%s' OR country LIKE '%s' OR role LIKE '%s' LIMIT %s", '%'.$search.'%', '%'.$search.'%', '%'.$search.'%', '%'.$search.'%', $configuration['data_limit']);
         } elseif ($type === 0) {
-            $sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE uid <> '' %s %s", $filter, $limit);
+            $sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE 1%s%s", $filter, $limit);
         } elseif ($type === 1) {
 	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE uid = '%s' OR `username` = '%s'", $user, $user); 
-	    }  elseif ($type === 10) {
-	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE %s", $limit);
+	    }  elseif ($type === 3) {
+	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE%s", $limit);
 	    } else {
 	    	// if the username is an email address
 	    	if (filter_var($user, FILTER_VALIDATE_EMAIL)) {
@@ -1113,10 +1112,13 @@ class databaseCL extends framework {
 	}
 
 	function fetchAlbum($artist_id, $type=null) {
+		// 2: Count all of this artists albums
 		// 1: Fetch all of this artists albums
 		// 0 or Null: Fetch one albums
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND `albums`.`by` = '%s' AND `users`.`uid` = `albums`.`by`", $this->db_prepare_input($artist_id));
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT COUNT(id) AS counter FROM albums WHERE `by` = '%s'", $this->db_prepare_input($artist_id));
 		} else {
 			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND (`albums`.`id` = '%s' AND `users`.`uid` = `albums`.`by`) OR (`albums`.`safe_link` = '%s' AND `users`.`uid` = `albums`.`by`)", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id));
 		}
@@ -1125,6 +1127,8 @@ class databaseCL extends framework {
 
 	function fetchTracks($artist_id, $type=null) {
 		global $user, $configuration;
+		// 5: just select all tracks by this artist and return an array of id as list
+		// 4: Count the views on all tracks by this artist
 		// 3: Get all tracks by this artist
 		// 2: Get a particular track
 		// 1: Get the most popular track
@@ -1141,21 +1145,62 @@ class databaseCL extends framework {
 			}
 			if (isset($this->counter)) {
 				// Count the tracks
-				$sql = sprintf("SELECT COUNT(id) AS counter FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id%s%s", $this->db_prepare_input($artist_id), $next, $this->counter);
+				$sql = sprintf("SELECT COUNT(id) AS counter FROM tracks WHERE artist_id = '%s'%s", $this->db_prepare_input($artist_id), $next);
 			} elseif (isset($this->personal_id)) {
 				$artist_id = $this->personal_id;
-				$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
+				$sql = sprintf("SELECT *, (SELECT COUNT(`id`) FROM tracks WHERE artist_id = '%s') AS counter FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
 			} else {
-				$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.public = '1'%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
-			} 
+				$sql = sprintf("SELECT *, (SELECT COUNT(`id`) FROM tracks WHERE artist_id = '%s') AS counter FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.public = '1'%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
+			}
+		} elseif ($type == 4) {
+			$sql = sprintf("SELECT SUM(views) AS counter FROM tracks WHERE `artist_id` = '%s'", $this->db_prepare_input($artist_id));
+		} elseif ($type == 5) {
+			$sql = sprintf("SELECT `id` FROM `tracks` WHERE `artist_id` = '%s'", $this->db_prepare_input($artist_id));
+			$list = $this->dbProcessor($sql, 1);
+			$rows = [];
+			if ($list) {
+				foreach ($list as $key => $value) {
+					$rows[] = $value['id'];
+				}
+			}
+			return $rows;
 		} else {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id NOT IN (SELECT track FROM albumentry WHERE 1)", $this->db_prepare_input($artist_id));
 		}
 		return $this->dbProcessor($sql, 1);
 	}
 
+	function fetchStats($type = null, $id = null) {
+		// $type == 1: Return stats for a particular track
+		// $type == 0 or null: Return stats for a list of tracks (!important => Track and explore page)
+		if ($type == 1) {
+			$sql = sprintf("SELECT (SELECT count(`track`) FROM `views` WHERE `track` = '%s') as total, (SELECT count(`track`) FROM `views` WHERE `track` = '%s' AND CURDATE() = date(`time`)) as today, (SELECT count(`track`) FROM `views` WHERE `track` = '%s' AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`track`) FROM `views` WHERE `track` = '%s' AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week", $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id));
+		} else {
+			if(!$this->track_list) {
+				return;
+			}
+			$sql = sprintf("SELECT (SELECT count(`track`) FROM `views` WHERE `track` IN (%s)) as total, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE() = date(`time`)) as today, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week", $this->track_list, $this->track_list, $this->track_list, $this->track_list);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
 	function userLikes($user_id, $item_id, $type) {
-		if (isset($this->like) && $this->like == 'single') {
+		global $user, $configuration;
+		// $type: 4 = Select this users tracks that have been liked by others
+		// $type: 3 = Liked Tracks Artist (Set $item_id to 0 or Null)
+		// $type: 2 = Track Likes
+		// $type: 1 = Album Likes
+		
+		$limit = (isset($this->limit) && $this->limit === true) ? " LIMIT ".$configuration['page_limits'] : '';
+		if ($type == 3) {
+			$next = isset($this->last_id) ? " AND artist_id > ".$this->last_id : '';
+			$sql = sprintf("SELECT DISTINCT artist_id FROM tracks LEFT JOIN likes ON `tracks`.`id` = `likes`.`item_id` WHERE `likes`.`user_id` = '%s'%s ORDER BY artist_id%s", $user_id, $next, $limit);
+		} elseif ($type == 4) {
+    		$sql = sprintf("SELECT *, (SELECT COUNT(`id`) FROM `tracks` WHERE `id` IN (%s)) AS likes FROM `tracks` WHERE `id` IN (%s)", $this->track_list, $this->track_list);
+		} elseif ($type == 5) {
+			$next = isset($this->last_time) ? " AND time < date('".$this->last_time."')" : '';
+    		$sql = sprintf("SELECT `time`,user_id AS artist_id FROM likes WHERE `item_id` = '%s' AND `type` = '%s'%s ORDER BY `time` DESC%s", $item_id, $this->type, $next, $limit);
+		} else {
 			$sql = sprintf("SELECT user_id, item_id FROM likes WHERE `user_id` = '%s' AND `item_id` = '%s' AND `type` = '%s'", $user_id, $item_id, $type);
 		}
 
@@ -1163,46 +1208,149 @@ class databaseCL extends framework {
   		return $check;
 	}
 
+	function LikesCount($type, $id) {
+		// $type: 3 = Count likes for a provided track or album and sort by time
+		// $type: 2 = Track Likes
+		// $type: 1 = Album Likes
+		//
+		global $user, $configuration;
+		if ($type == 3) {
+			$type = isset($this->like_type) ? $this->like_type : 2;
+			$sql = sprintf("SELECT (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND `type` = '%s') as total, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND CURDATE() = date(`time`) AND `type` = '%s') as today, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND CURDATE()-1 = date(`time`) AND `type` = '%s') as yesterday, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY ) AND `type` = '%s') as last_week", $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type);
+				return $this->dbProcessor($sql, 1);
+		} else {
+			$sql = sprintf("SELECT COUNT(item_id) AS likes_count,item_id FROM likes WHERE `item_id` = '%s' AND `type` = '%s'", $id, $type);
+
+	  		$check = $this->dbProcessor($sql, 1); 
+
+	  		$likes_count = number_format($check[0]['likes_count']);
+	  		$likes_count = '
+	  			<span style="font-size: 18px;">
+	  				<i class="ion-ios-heart text-danger"></i> 
+	  				<span id="likes-count-'.$id.'">'.$likes_count.'</span>
+	  			</span>';
+	  		return $likes_count;
+	  	}
+	}
+
+	function listLikedItems($user_id, $type) {
+		// $type: 2 = Track Likes
+		// $type: 1 = Album Likes
+		// 
+		global $user, $configuration;
+
+		if (isset($this->last_id)) { 
+			$next = " AND likes.id > ".$this->last_id;
+		} else {
+			$next = "";
+		}
+		if ($type == 1) {
+			if (isset($this->counter)) {
+				// Count the albums
+				$sql = sprintf("SELECT COUNT(likes.id) AS counter FROM likes,albums,users WHERE likes.user_id = '%s' AND albums.id = likes.item_id AND users.uid = albums.by AND likes.type = '%s'%s ORDER BY likes.id", $this->db_prepare_input($user_id), $type, $next);
+			} else {
+				$sql = sprintf("SELECT albums.id AS aid,art,fname,lname,safe_link,title,username,release_date,albums.by,likes.id AS like_id FROM likes,albums,users WHERE likes.user_id = '%s' AND albums.id = likes.item_id AND users.uid = albums.by AND likes.type = '%s'%s ORDER BY likes.id LIMIT %s", $this->db_prepare_input($user_id), $type, $next, $configuration['page_limits']);
+			}
+		} elseif ($type == 2) {
+			$limit = isset($this->limit) ? $this->limit : $configuration['page_limits'];
+			if (isset($this->counter)) {
+				// Count the tracks
+				$sql = sprintf("SELECT COUNT(likes.id) AS counter FROM likes,tracks,users WHERE likes.user_id = '%s' AND tracks.id = likes.item_id AND users.uid = tracks.artist_id AND likes.type = '%s'%s ORDER BY likes.id", $this->db_prepare_input($user_id), $type, $next);
+			} else {
+				$sql = sprintf("SELECT (SELECT COUNT(item_id) FROM likes WHERE likes.user_id = '%s' AND likes.type = '%s') AS likes, tracks.id AS id,art,fname,lname,audio,safe_link,title,views,username,artist_id,explicit,likes.id AS like_id FROM likes,tracks,users WHERE likes.user_id = '%s' AND tracks.id = likes.item_id AND users.uid = tracks.artist_id AND likes.type = '%s'%s ORDER BY likes.id LIMIT %s", $this->db_prepare_input($user_id), $type, $this->db_prepare_input($user_id), $type, $next, $limit);
+			}
+		}
+
+  		$check = $this->dbProcessor($sql, 1);
+  		return $check;
+	}
+
 	function fetchRelated($id, $type = null) {
+		global $user, $configuration;
 		// 3: Related Playlists
 		// 2: Related tracks
 		// 1: Related artists
 		// 0: Similar albums
-		$limit = 3; // Set the limit dynamically from DB
+		$limit = isset($this->limit) ? ($this->limit !== true ? " LIMIT ".$this->limit : " LIMIT ".$configuration['page_limits']) : '';
 		if ($type == 1) {
-			$sql = sprintf("SELECT username,fname,lname,photo,cover,verified,uid,label FROM users WHERE uid != '%s' AND (`username` LIKE '%s' OR `fname` LIKE '%s' OR `lname` LIKE '%s' OR `label` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->username.'%', '%'.$this->fname.'%', '%'.$this->lname.'%', '%'.$this->label.'%', $limit);
+			$sql = sprintf("SELECT username,fname,lname,photo,cover,verified,uid,label FROM users WHERE `uid` != '%s' AND `uid` != '%s' AND (`username` LIKE '%s' OR `fname` LIKE '%s' OR `lname` LIKE '%s' OR `label` LIKE '%s') ORDER BY RAND()%s", $user['uid'], $id, '%'.$this->username.'%', '%'.$this->fname.'%', '%'.$this->lname.'%', '%'.$this->label.'%', $limit);
 		} elseif ($type == 2) {
-			$sql = sprintf("SELECT art,artist_id,title,safe_link FROM tracks WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
+			$sql = sprintf("SELECT art,artist_id,title,safe_link FROM tracks WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
 		} elseif ($type == 3) {
-			$sql = sprintf("SELECT * FROM playlist WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', $limit);
+			$sql = sprintf("SELECT * FROM playlist WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', $limit);
 		} else {
-			$sql = sprintf("SELECT * FROM albums WHERE `id` != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() LIMIT %s", $id, '%'.$this->title.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->tags.'%', $limit);
+			$sql = sprintf("SELECT * FROM albums WHERE `id` != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->tags.'%', $limit);
 		}
   		return $this->dbProcessor($sql, 1);
 	}
 
-	function fetchFollowers($user, $type=null) {
-		// 1: get Followers
-		// 0: get Following
+	function fetchTopTracks($type=null, $user_id=null) {
+		global $user, $configuration, $framework;
+		// $type == 2: Select records from users not older than N date
+		// $type == 1: Select records by genre not older than N date
+		// $type == 0 or NULL: Select records by genre or tags
+		//  
+
+		$limit = $configuration['page_limits']; //$configuration['top_limits'];
+		$tags = isset($this->tags) ? ' OR `tags` LIKE \'%'.$this->tags.'%\'' : '';
 		if ($type == 1) {
-			$sql = sprintf("SELECT * FROM relationship LEFT JOIN users ON `relationship`.`follower_id` = `users`.`uid` WHERE `leader_id` = '%s'", $user);
+			$sql = sprintf("SELECT id,audio,art,artist_id,title,safe_link,upload_time,genre,tags,explicit,views FROM tracks WHERE `public` = '1' AND `upload_time` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) AND (`genre` LIKE '%s'%s) ORDER BY views DESC LIMIT %s", '%'.$this->genre.'%', $tags, $limit);
+		} elseif ($type == 2 || $type == 3 || $type == 4) {
+			$sql = sprintf("SELECT id,audio,art,artist_id,title,safe_link,upload_time,genre,tags,explicit,views FROM tracks WHERE `public` = '1' AND (`artist_id` = '%s') ORDER BY views DESC LIMIT %s", $this->genre, $limit);
 		} else {
-			$sql = sprintf("SELECT * FROM relationship LEFT JOIN users ON `relationship`.`leader_id` = `users`.`uid` WHERE `follower_id` = '%s'", $user);
+			$sql = sprintf("SELECT id,audio,art,artist_id,title,safe_link,upload_time,genre,tags,explicit,views FROM tracks WHERE `public` = '1' AND (`genre` LIKE '%s'%s) ORDER BY views DESC LIMIT %s", '%'.$this->genre.'%', $tags, $limit);
+		} 
+  		return $this->dbProcessor($sql, 1);
+	}
+
+	// Fetch the default genres for the site
+	function fetchGenre($string=null) {
+		// $string = isset: get a requested genre or search for it
+		// $string = null: return all available genre's
+		// 
+		if ($string) {
+			$sql = sprintf("SELECT * FROM genre WHERE `name` = '%s' OR `title` LIKE '%s' OR `name` LIKE '%s' ORDER BY id DESC");
+		} else {
+			$sql = sprintf("SELECT * FROM genre WHERE 1 ORDER BY id DESC");
+		} 
+  		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchFollowers($user_id, $type=null) {
+		global $user, $configuration;
+		// 3: Check if a user is following another ($user_id Can be null)
+		// 1: get Followers
+		// 0 or null: get Following
+		// 
+		$next = isset($this->last_id) ? " AND relationship.id > ".$this->last_id : '';
+		$limit = isset($this->limit) ? ($this->limit !== true ? " LIMIT ".$this->limit : " LIMIT ".$configuration['page_limits']) : '';
+		if ($type == 3) {
+			$sql = sprintf("SELECT follower_id FROM relationship WHERE `follower_id` = '%s' AND leader_id` = '%s'", $this->leader_id, $this->follower_id);
+		} if ($type == 1) {
+			$sql = sprintf("SELECT uid,username,fname,lname,label,photo, relationship.id AS order_id, (SELECT COUNT(`follower_id`) FROM relationship WHERE `leader_id` = '%s') AS counter FROM relationship LEFT JOIN users ON `relationship`.`follower_id` = `users`.`uid` WHERE `leader_id` = '%s'%s ORDER BY order_id%s", $user_id, $user_id, $next, $limit);
+		} else {
+			$sql = sprintf("SELECT uid,username,fname,lname,label,photo, relationship.id AS order_id, (SELECT COUNT(`leader_id`) FROM relationship WHERE `follower_id` = '%s') AS counter  FROM relationship LEFT JOIN users ON `relationship`.`leader_id` = `users`.`uid` WHERE `follower_id` = '%s'%s ORDER BY order_id%s", $user_id, $user_id, $next, $limit);
 		}
   		return $this->dbProcessor($sql, 1);
 	}
 
 	function fetchPlaylist($id=null, $type=null) {
+		global $user, $configuration;
 		// $id can be playlist_id or artist_id
 		// 2: Fetch all playlist
+		// 2: Fetch filtered or search playlist
 		// 1: Fetch all of this artists playlist
 		// 0 or Null: Fetch one playlist
+		// 
+		$limit = isset($this->limit) ? $this->limit : $configuration['page_limits']; //$configuration['top_limits'];
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM users,playlist WHERE `playlist`.`by` = '%s' AND `users`.`uid` = `playlist`.`by`", $this->db_prepare_input($id));
 		} elseif ($type == 2) {
 			$sql = "SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND `playlist`.`public` = 1";
+		} elseif ($type == 3) {
+			$sql = sprintf("SELECT * FROM playlist LEFT JOIN playlistentry ON `playlist`.`id` = `playlistentry`.`playlist` WHERE playlist.public = 1 AND playlist.title LIKE '%s' ORDER BY views DESC LIMIT %s", '%'.$this->title.'%', $limit);
 		} else {
-			$sql = sprintf("SELECT * FROM users,playlist WHERE 1 AND (`playlist`.`plid` = '%s' AND `users`.`uid` = `playlist`.`by`) OR (`playlist`.`plid` = '%s' AND `users`.`uid` = `playlist`.`by`)", $this->db_prepare_input($id), $this->db_prepare_input($id));
+			$sql = sprintf("SELECT * FROM users,playlist WHERE 1 AND (`playlist`.`plid` = '%s' AND `users`.`uid` = `playlist`.`by`) OR (`playlist`.`id` = '%s' AND `users`.`uid` = `playlist`.`by`)", $this->db_prepare_input($id), $this->db_prepare_input($id));
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1210,7 +1358,7 @@ class databaseCL extends framework {
 	function playlistEntry($id, $t=null) {
 		$order_limit = $t == 1 ? 'ASC LIMIT 1' : 'ASC';
 
-		if (isset($this->type) && $this->type == 1) {
+		if (isset($this->type) && $this->type == 1 || (isset($this->count) && $this->count == 1)) {
 			// Count all relevant playlist records
 			$sql = sprintf("SELECT count(tracks.id) AS track_count FROM playlistentry,users,tracks WHERE (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`public` = 1) OR (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`uid` = '%s') ORDER BY `playlistentry`.`id` %s", $this->db_prepare_input($id), $this->db_prepare_input($id), $this->user_id, $order_limit);
 		} else {
@@ -1219,7 +1367,27 @@ class databaseCL extends framework {
 		}
 		return $this->dbProcessor($sql, 1);
 	}
+
+	function playlistSubscribers($id, $type = null) {
+		global $user, $configuration;				
+		// 1: Fetch all of the records for this playlist
+		// 2: Fetch fetch a users records for this playlist
+		// 0 or Null: Fetch count records
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `playlistfollows` WHERE `playlist` = '%s'", $this->db_prepare_input($id));
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT * FROM `playlistfollows` WHERE `playlist` = '%s' AND `subscriber` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($this->user_id));
+		} else {
+			$sql = sprintf("SELECT (SELECT count(`playlist`) FROM `playlistfollows` WHERE `playlist` = '%s') as total, (SELECT count(`playlist`) FROM `playlistfollows` WHERE `playlist` = '%s' AND CURDATE() = date(`time`)) as today, (SELECT count(`playlist`) FROM `playlistfollows` WHERE `playlist` = '%s' AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`playlist`) FROM `playlistfollows` WHERE `playlist` = '%s' AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week", $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id));
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchProject($id) {
+		$sql = sprintf("SELECT * FROM `projects` WHERE `projects` = '%s'", $this->db_prepare_input($id));
+	}
 }
+
 /* 
 * Callback for decodeText()
 */

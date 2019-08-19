@@ -17,7 +17,7 @@ $(document).ready(function() {
 		player_volume = localStorage.getItem("volume");
 	}
 
-	$('#dolike').on('click', function() {
+	$('.dolike').on('click', function() {
 		let item_id = $(this).data('like-id');
 		let type_ = $(this).data('type');
 		let table = 'likes'; 
@@ -27,14 +27,62 @@ $(document).ready(function() {
 			url: site_url+'/connection/doAction.php',
 			data: {type: type_, item_id: item_id, table: table},
 			dataType: 'JSON',
-			success: function(data) { 
-				console.log(data.msg);
-				$('#dolike i').toggleClass('text-danger');
+			success: function(data) {
+				var up_likes = data.status == 1 ? Number($('#likes-count-'+item_id).text())+Number(1) : Number($('#likes-count-'+item_id).text())-Number(1);
+				$('#likes-count-'+item_id).text(up_likes);
+				$('.likes-counter-'+item_id).text(up_likes);
+				$('#doLike_'+item_id+' i').toggleClass('text-danger'); 
+				data.status == 1 ? $('#doLike_'+item_id+' i').addClass('ion-ios-heart') : $('#doLike_'+item_id+' i').removeClass('ion-ios-heart'); 
+				data.status == 0 ? $('#doLike_'+item_id+' i').addClass('ion-ios-heart-empty') : $('#doLike_'+item_id+' i').removeClass('ion-ios-heart-empty'); 
+				$('#doLike_'+item_id+' .text').text(data.status == 1 ? 'UNLIKE' : 'LIKE');
+			}
+		}); 
+	});
+
+	$('.dofollow').on('click', function() {
+		let item_id = $(this).data('follow-id');
+		let type_ = 3; 
+
+		$.ajax({
+			type: 'POST',
+			url: site_url+'/connection/doAction.php',
+			data: {type: type_, item_id: item_id},
+			dataType: 'JSON',
+			success: function(data) {
+				var up_likes = data.status == 1 ? Number($('#followers-count-'+item_id).text())+Number(1) : Number($('#followers-count-'+item_id).text())-Number(1);
+				$('#followers-count-'+item_id).text(up_likes);
+				$('.followers-counter-'+item_id).text(up_likes);
+				$('#doFollow_'+item_id+' i').toggleClass('low-blood'); 
+				$('#doFollow_'+item_id).toggleClass('orange hover'); 
+				data.status == 1 ? $('#doFollow_'+item_id+' i').addClass('ion-ios-person') : $('#doFollow_'+item_id+' i').removeClass('ion-ios-person'); 
+				data.status == 0 ? $('#doFollow_'+item_id+' i').addClass('ion-ios-person-add') : $('#doFollow_'+item_id+' i').removeClass('ion-ios-person-add'); 
+				$('#doFollow_'+item_id+' .text').text(data.status == 1 ? 'UNFOLLOW' : 'FOLLOW');
+			}
+		}); 
+	});
+
+	$('.dosubscribe').on('click', function() {
+		let item_id = $(this).data('subscribe-id');
+		let type_ = 4; 
+
+		$.ajax({
+			type: 'POST',
+			url: site_url+'/connection/doAction.php',
+			data: {type: type_, item_id: item_id},
+			dataType: 'JSON',
+			success: function(data) {
+				var plus_it = data.status == 1 ? Number($('#subscribers-count-'+item_id).text())+Number(1) : Number($('#subscribers-count-'+item_id).text())-Number(1);
+				$('#subscribers-count-'+item_id).text(plus_it);
+				$('.subscribers-counter-'+item_id).text(plus_it);
+				$('#doSubscribe_'+item_id).toggleClass('orange hover'); 
+				data.status == 1 ? $('#doSubscribe_'+item_id+' i').addClass('ion-ios-person') : $('#doSubscribe_'+item_id+' i').removeClass('ion-ios-person'); 
+				data.status == 0 ? $('#doSubscribe_'+item_id+' i').addClass('ion-ios-person-add') : $('#doSubscribe_'+item_id+' i').removeClass('ion-ios-person-add'); 
+				$('#doSubscribe_'+item_id+' .text').text(data.status == 1 ? 'UNSUBSCRIBE' : 'SUBSCRIBE');
 			}
 		}); 
 	});
 }); 
-
+ 
 function spinner(type, color, size) {
 	switch(color) {
 		case 1: var color = '-success';
@@ -53,21 +101,23 @@ function spinner(type, color, size) {
 			break;
 		default: var color = '-secondary';
 	}
-	if (type == 1) {
-		var type = 'grow';
-	} else {
-		var type = 'border';
-	}
-	if (size == 1) {
-		var size = ' spinner-'+type+'-sm';
-	} else {
-		var size = '';
-	}
-	return '<div class="spinner-'+type+' text'+color+size+'" role="status"> <span class="sr-only">Loading...</span> </div>';
+	// if (type == 1) {
+	// 	var type = 'grow';
+	// } else {
+	// 	var type = 'border';
+	// }
+	// if (size == 1) {
+	// 	var size = ' spinner-'+type+'-sm';
+	// } else {
+	// 	var size = '';
+	// }
+
+    return '<div id="loader-'+type+'"> <span></span> <span></span> <span></span> </div>';
+	//'<div class="spinner-'+type+' text'+color+size+'" role="status"> <span class="sr-only">Loading...</span> </div>';
 }
 
 function loadMore(this_) { 
-	$("#load-more").html("<span class='load_anim'>"+spinner(1, 5, 1)+"</span>");
+	$("#load-more").html("<span class='load_anim'>"+spinner(4)+"</span>");
 	var type = $(this_).data("last-type");
 	var last_track = $(this_).data("last-track");
 	var artist_id = $(this_).data("last-artist");
@@ -81,6 +131,7 @@ function loadMore(this_) {
 		dataType: 'JSON',
 		success: function(data) {  
 			$('#more-container').append(data.result);
+			$('.more-container').append(data.result);
 			$('#show-more-div').html(data.more);
 			$('#more-container').slideDown("style");
 			$("#load_anim").remove();
@@ -88,7 +139,7 @@ function loadMore(this_) {
 	}); 
 }
 
-$('#wave_init').each(function(){
+$('.wave_init').each(function(){
   	init = $(this);
     // Generate unique id
     var wid = '_' + Math.random().toString(36).substr(2, 9);
@@ -96,6 +147,9 @@ $('#wave_init').each(function(){
     var audio = $(init).data('track-url');
     var format = $(init).data('track-format');
        
+    //Set id to container
+    // $(this).find(".wavesurfer-container").attr("id", id);
+
     // Initialize WaveSurfer
     wavesurfer = WaveSurfer.create({
         container: '#waveform' + id,
@@ -129,8 +183,7 @@ $(".now-waving").on("click touchend", function(e) {
 });
 
 function seeker(song, id, format, time) {
-	real_play = $("#real-play"+id).html();
-	console.log(real_play);
+	real_play = $("#real-play"+id).html(); 
 	if (real_play == 1) playSong(song, id, format, time);
 } 
 

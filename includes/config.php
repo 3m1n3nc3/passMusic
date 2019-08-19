@@ -40,13 +40,16 @@ $SETT['email'] = 'support@passcontest.com';
 */
 $SETT['template_path'] = 'templates';
 
-$action = array('homepage'					=> 'homepage',
-				'artist'					=> 'artist',
-				'album'						=> 'album',
-				'track'						=> 'track',
-				'playlist'					=> 'playlist',
-				'project'					=> 'project',
-				'listen'					=> 'listen'
+$action = array('homepage'			=> 'homepage',
+				'artist'			=> 'artist',
+				'album'				=> 'album',
+				'track'				=> 'track',
+				'playlist'			=> 'playlist',
+				'project'			=> 'project',
+				'listen'			=> 'listen',
+				'follow'			=> 'follow',
+				'view_artists'		=> 'view_artists',
+				'explore'			=> 'explore'
 				); 
 
 /* 

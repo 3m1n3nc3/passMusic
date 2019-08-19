@@ -14,95 +14,92 @@
             <div class="artist__info__name">{$album_title}</div>
             <div class="artist__info__actions">
               {$play_album}
-              <button class="button-light">Save</button> 
+              {$like_display}
             </div>
           </div>
         </div>  
       </div> 
       
-      <div class="artist__content">
-        <div class="tab-content">
-          <!-- Overview --> 
-          <div class="overview">
-            <div class="overview__artist">
-              
-              <!-- Project Details-->
-              <div class="section-title">
-                <button id="dolike" data-like-id="{$like_id}" data-type="1" class="button-white"><i class="ion-ios-heart{$liked}"></i> Like</button>  
-                <span class="dropdown" style="text-transform: none; letter-spacing: normal; font-size: unset;">
-                  <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                  <i class="ion-ios-more"></i> More
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
-                    <li><a href="#">Start Radio</a></li>
-                    <li><a href="#">Add to playlist</a></li>
-                    <li><a href="#"id="copyable" data-clipboard-text="{$album_link}">Copy Album link</a></li>
-                    <li><a href="#">Delete</a></li> 
-                  </ul>
-                </span>  
-              </div>
-              <div class="latest-release"> 
-                <div class="project_details">
-                  <div class="project_details__text text-justify">{$album_desc}</div> 
-                </div>
-                <h6 id="real_tags">
-                  {$showtags}
-                </h6>
-              </div> 
-
-              <div class="section-title">Release Details</div>
-              <div class="latest-release"> 
-                <div class="project_details">
-                  <div class="row"> 
-                    <div class="project_details__text col-sm-6">
-                      <div class="label"> &copy; {$album_cline} </div> 
-                      <div class="label"> &#8471; {$album_pline} </div> 
-                    </div> 
-                    <div class="project_details__text col-sm-6">
-                      <div class="label"> {$album_year} . {$count_tracks} Songs </div>
-                      <div class="label"> Released: {$album_date}</div>
-                    </div> 
-                  </div>
-                </div>
-              </div> 
-
-              {$artist_card}
-
-              <!-- / -->
+      <div class="artist__content"> 
+        <!-- Overview --> 
+        <div class="overview">
+          <div class="overview__artist">
+            
+            <!-- Project Details-->
+            <div class="section-title track__actions">
+              {$like_button}
+              <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
+                <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                <i class="ion-ios-more"></i> More
+                </button>
+                <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
+                  <li><a href="#">Start Radio</a></li>
+                  <li><a href="#">Add to playlist</a></li>
+                  <li><a href="#"id="copyable" data-clipboard-text="{$album_link}">Copy Album link</a></li>
+                  <li><a href="#">Delete</a></li> 
+                </ul>
+              </span>  
             </div>
-              
-            <!-- related Artists section -->
-            <div class="overview__related">
-              <div class="section-title">Similar Albums</div>
-
-              <div class="related-artists">
-
-                {$related_albums}
-
+            <div class="latest-release"> 
+              <div class="project_details">
+                <div class="project_details__text text-justify">{$album_desc}</div> 
               </div>
+              <h6 id="real_tags">
+                {$showtags}
+              </h6>
+            </div> 
+
+            <div class="section-title">Release Details</div>
+            <div class="latest-release"> 
+              <div class="project_details">
+                <div class="row"> 
+                  <div class="project_details__text col-sm-6">
+                    <div class="label"> &copy; {$album_cline} </div> 
+                    <div class="label"> &#8471; {$album_pline} </div> 
+                  </div> 
+                  <div class="project_details__text col-sm-6">
+                    <div class="label"> {$album_year} . {$count_tracks} Songs </div>
+                    <div class="label"> Released: {$album_date}</div>
+                  </div> 
+                </div>
+              </div>
+            </div> 
+
+            {$artist_card}
+
+            <!-- / -->
+          </div>
+              
+          <!-- related Artists section -->
+          <div class="overview__related">
+            <div class="section-title">Similar Albums</div>
+
+            <div class="related-artists">
+
+              {$related_albums}
+
             </div>
+          </div>
 
-            <div class="overview__albums">                          
-              <span class="section-title">Tracks</span>   
+          <div class="overview__albums">                          
+            <span class="section-title">Tracks</span>   
 
-              <div class="album">         
-                
-                <div class="album__tracks">                   
-                  <div class="tracks">                    
-                    <div class="tracks__heading">                        
-                      <div class="tracks__heading__number">#</div>                        
-                      <div class="tracks__heading__title">Track Info</div>                      
-                      <div class="tracks__heading__length">                     
-                        <i class="ion-ios-stopwatch"></i>                   
-                      </div>                
-                      <div class="tracks__heading__popularity">                  
-                        <i class="ion-ios-radio"></i>                
-                      </div>               
-                    </div>
-
-                    {$album}
-                    
+            <div class="album">         
+              
+              <div class="album__tracks">                   
+                <div class="tracks">                    
+                  <div class="tracks__heading">                        
+                    <div class="tracks__heading__number">#</div>                        
+                    <div class="tracks__heading__title">Track Info</div>                      
+                    <div class="tracks__heading__length">                     
+                      <i class="ion-ios-stopwatch"></i>                   
+                    </div>                
+                    <div class="tracks__heading__popularity">                  
+                      <i class="ion-ios-radio"></i>                
+                    </div>               
                   </div>
+
+                  {$album}
                   
                 </div>
                 
@@ -110,10 +107,10 @@
               
             </div>
             
-          </div> 
-          <!-- / -->        
+          </div>
           
-        </div>       
+        </div> 
+        <!-- / -->        
       </div>     
     </div>   
   </div> 

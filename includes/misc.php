@@ -6,7 +6,7 @@ date_default_timezone_set("Africa/Lagos");
 // Set the site configuration here
 // Default configuration
 $configuration = array('language' => 'english', 'site_name' => 'Passengine', 'site_phone' => '09031983482'
-	, 'twillio_phone' => '+1092292922', 'cleanurl' => 0, 'page_limits' => 1);
+	, 'twillio_phone' => '+1092292922', 'cleanurl' => 0, 'page_limits' => 4, 'sidebar_limit' => 5);
 // You can pass this configuration information from a database, your database should contain the default
 // configuration variables
 // $configuration = configuration();
@@ -15,6 +15,7 @@ $configuration = array('language' => 'english', 'site_name' => 'Passengine', 'si
 $PTMPL['template_path'] = $SETT['template_path'];
 $PTMPL['template_name'] = $SETT['template_name'] = 'default';//$settings['template'];
 $PTMPL['template_url'] = $SETT['template_url'] = $SETT['template_path'].'/'.$SETT['template_name'];
+$SETT['working_dir'] = $_SERVER["DOCUMENT_ROOT"];
 
 $_SESSION['username'] = 'marxemi';
 // Check who is logged in right now

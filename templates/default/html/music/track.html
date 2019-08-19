@@ -14,12 +14,12 @@
             <div class="artist__info__type">Track by {$track_author}</div>
             <div class="artist__info__name">{$track_title}</div>
             <div class="artist__info__actions">
-              {$play_track}
-              <button class="button-light">Save</button>
-              <div class="count-holder-top">
+              {$play_track} 
+              <div class="pc-ministats pc-ministats-custom">
                   <i class="ion-ios-radio"></i>
                   <span style="font-size: 18px;">{$track_views}</span>
               </div>
+              {$likes_display}
             </div>
           </div>
         </div>  
@@ -33,18 +33,20 @@
              
               <!-- Project Details-->
               <div class="section-title">
-                <button id="dolike" data-like-id="{$like_id}" data-type="2" class="button-white"><i class="ion-ios-heart{$liked}"></i> Like</button>  
-                <span class="dropdown" style="text-transform: none; letter-spacing: normal; font-size: unset;">
-                  <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                  <i class="ion-ios-more"></i> More
-                  </button>
-                  <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
-                    <li><a href="#">Start Radio</a></li>
-                    <li><a href="#">Add to playlist</a></li>
-                    <li><a href="#"id="copyable" data-clipboard-text="{$track_link}">Copy Track link</a></li>
-                    <li><a href="#">Delete</a></li> 
-                  </ul>
-                </span>  
+                <div class="track__actions">
+                  {$like_button} 
+                  <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
+                    <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                    <i class="ion-ios-more"></i> More
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
+                      <li><a href="#">Start Radio</a></li>
+                      <li><a href="#">Add to playlist</a></li>
+                      <li><a href="#"id="copyable" data-clipboard-text="{$track_link}">Copy Track link</a></li>
+                      <li><a href="#">Delete</a></li> 
+                    </ul>
+                  </span>  
+                </div>
               </div>
               <div class="latest-release"> 
                 <div class="project_details">
@@ -78,6 +80,9 @@
               
             <!-- related Artists section -->
             <div class="overview__related">
+
+              {$sidebar_statistics}
+
               <div class="section-title">Similar Tracks</div>
 
               <div class="related-artists">
@@ -110,7 +115,7 @@
         </a>
         
         <a href="#" class="friend">          
-          <i class="ion-android-person"></i>          
+          <i class="ion-ios-person"></i>          
           Ricahrd Tomkins          
         </a>
         

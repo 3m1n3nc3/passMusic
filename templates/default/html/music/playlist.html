@@ -13,8 +13,7 @@
             <div class="artist__info__type">Playlist created by {$playlist_author}</div>
             <div class="artist__info__name">{$playlist_title}</div>
             <div class="artist__info__actions">
-              {$play_playlist}
-              <button class="button-light">Save</button> 
+              {$play_playlist}{$subscribe_btn}{$subscribers_counter}
             </div>
           </div>
         </div>
@@ -27,9 +26,8 @@
             <div class="overview__artist">
               
               <!-- Project Details-->
-              <div class="section-title">
-                <button id="dolike" data-like-id="{$like_id}" data-type="1" class="button-white"><i class="ion-ios-heart{$liked}"></i> Like</button>  
-                <span class="dropdown" style="text-transform: none; letter-spacing: normal; font-size: unset;">
+              <div class="section-title track__actions"> 
+                <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
                   <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
                   <i class="ion-ios-more"></i> More
                   </button>

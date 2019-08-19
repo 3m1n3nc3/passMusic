@@ -7,7 +7,7 @@ function mainContent() {
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
-	$get_playlist = isset($_GET['playlist']) ? $_GET['playlist'] : '';
+	$get_playlist = isset($_GET['playlist']) ? $_GET['playlist'] : (isset($_GET['id']) ? $_GET['id'] : null);
 	$fetch_playlist = $databaseCL->fetchPlaylist($get_playlist)[0];
 
 	$PTMPL['playlist_title'] = $fetch_playlist['title'];
@@ -19,7 +19,10 @@ function mainContent() {
 	$databaseCL->like = 'single';
 	$likes = $databaseCL->userLikes(1, $fetch_playlist['id'], 1);//change (1, $t'id'], 1) > (user_id, $t['id'], 1)
 
+	// Subscribe and show subscribers
 	$PTMPL['liked'] = $likes ? ' text-danger' : '';
+	$PTMPL['subscribers_counter'] = display_likes_follows(4, $fetch_playlist['id']);
+	$PTMPL['subscribe_btn'] = clickSubscribe($fetch_playlist['id'], $user['uid']);
 
 	$databaseCL->user_id = $user['uid']; 
 	$get_playlist = $databaseCL->playlistEntry($fetch_playlist['id']); 
@@ -55,9 +58,18 @@ function mainContent() {
 
     $PTMPL['artist_card'] = artistCard($fetch_playlist['by']);
 
+    if (isset($_GET['playlist']) && $_GET['playlist'] == 'list') {
+    	$creator_id = isset($_GET['creator']) ? $_GET['creator'] : (isset($user['uid']) ? $user['uid'] : null);
 
-	// Set the active landing page_title 
-	$theme = new themer('music/playlist');
+		$PTMPL['content_title'] = '<div class="section-title">Playlists created by '.$user['fname'].' '.$user['lname'].'</div>';
+    	$PTMPL['artist_card'] = playlistCard($creator_id);
+    	$PTMPL['secondary_navigation'] = secondaryNavigation($creator_id);
+    	$PTMPL['sidebar_statistics'] = sidebar_userSuggestions($creator_id);
+
+		$theme = new themer('artists/view_artists');
+    } else {
+		$theme = new themer('music/playlist');
+    }
 	return $theme->make();
 }
 ?>

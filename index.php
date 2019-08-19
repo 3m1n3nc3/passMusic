@@ -20,6 +20,10 @@ $PTMPL['captcha_url'] = $SETT['url'].$captcha_url;
   
 $PTMPL['language'] = isset($_COOKIE['lang']) ? $_COOKIE['lang'] : '';
 
+// Show the list of playlists
+$PTMPL['show_playlists'] = showPlaylist($user['uid']);
+
+// Dynamically included pages
 $PTMPL['header'] = globalTemplate(1);
 $PTMPL['player'] = globalTemplate(2);
 $PTMPL['sidebar'] = globalTemplate(3);

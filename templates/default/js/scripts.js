@@ -27,16 +27,16 @@ $(window).on("resize load", function(){
 });
 
 // Collapse Toggles
-
 $(".navigation__list__header").on( "click" , function() {
-  
   $(this).toggleClass( "active" );
-  
 });
 
+$(".tab-activator li").on( "click" , function() {
+  $(this).toggleClass( "active" ); 
+  $(this).siblings().removeClass("active");
+});
 
 // Media Queries
-
 $(window).on("resize load", function(){
   if ($(window).width() <= 768){  
     
@@ -56,6 +56,8 @@ $(window).on("resize load", function(){
     
   } 
 });
+
+// ClipboardJS click to copy
 var clipboard = new ClipboardJS('#copyable');
 clipboard.on('success', function(e) { 
   $.notify("Copied", "info");
@@ -63,3 +65,4 @@ clipboard.on('success', function(e) {
 clipboard.on('error', function(e) {
     console.log(e);
 });
+

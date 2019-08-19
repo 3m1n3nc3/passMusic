@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $user, $LANG, $SETT, $framework, $databaseCL; 
+	global $PTMPL, $user, $LANG, $SETT, $user, $framework, $databaseCL; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -19,11 +19,16 @@ function mainContent() {
 	$PTMPL['album_date'] = date('Y-m-d', strtotime($fetch_album['release_date']));
 	$PTMPL['album_year'] = date('Y', strtotime($fetch_album['release_date']));
 	$PTMPL['album_link'] = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$fetch_album['safe_link']);
+
+	// Get the count of likes for this album
 	$PTMPL['like_id'] = $fetch_album['id'];
+	$databaseCL->like_type = 1;
+	$PTMPL['like_display'] = display_likes_follows(3, $fetch_album['id']);
+	$PTMPL['like_button'] = clickLike(1, $fetch_album['id'], $user['uid']);
 
 	// Check if user likes this album
 	$databaseCL->like = 'single';
-	$likes = $databaseCL->userLikes(1, $fetch_album['id'], 1);//change (1, $t'id'], 1) > (user_id, $t['id'], 1)
+	$likes = $databaseCL->userLikes($user['uid'], $fetch_album['id'], 1);//change (1, $t'id'], 1) > (user_id, $t['id'], 1)
 
 	$PTMPL['liked'] = $likes ? ' text-danger' : '';
 

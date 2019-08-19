@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $framework, $databaseCL; 
+	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -17,6 +17,7 @@ function mainContent() {
 	$PTMPL['user_role'] = $role = $framework->userRoles($artist['role']);
 	$PTMPL['fullname'] = $artist['fname'].' '.$artist['lname'];
 	$PTMPL['verified'] = $artist['verified'] ? ' is-verified' : '';
+    $PTMPL['secondary_navigation'] = secondaryNavigation($artist['uid']);
 
 	$_albums = $databaseCL->fetchAlbum($artist['uid'], 1);
 	if ($_albums) {
@@ -25,6 +26,9 @@ function mainContent() {
 		$PTMPL['list_albums'] = notAvailable('This '.$role.' has no albums yet', 'no-padding ');
 	}
 	
+	// Show the count and follow button of followers
+	$PTMPL['followers_display'] = display_likes_follows(null, $artist['uid']); 
+    $PTMPL['follow_btn'] = clickFollow($artist['uid'], $user['uid']);
 
 	$databaseCL->username = $artist['username'];
 	$databaseCL->fname = $artist['fname'];
@@ -47,13 +51,15 @@ function mainContent() {
 
     $PTMPL['most_popular'] = mostPopular($artist['uid']);
 
-    $PTMPL['count_followers'] = count($databaseCL->fetchFollowers($artist['uid'], 1));
-    $PTMPL['count_following'] = count($databaseCL->fetchFollowers($artist['uid'], 2)); 
+	$follower_c = $databaseCL->fetchFollowers($artist['uid'], 1);
+	$follower_f = $databaseCL->fetchFollowers($artist['uid'], 2);
+    $PTMPL['count_followers'] = $follower_c ? count($follower_c) : 0;
+    $PTMPL['count_following'] = $follower_f ? count($follower_f) : 0;  
     $PTMPL['followers'] = showFollowers($artist['uid'], 1);
     $PTMPL['following'] = showFollowers($artist['uid'], 2);
 
 	// Set the active landing page_title 
-	$theme = new themer('music/artist');
+	$theme = new themer('artists/artist');
 	return $theme->make();
 }
 ?>
