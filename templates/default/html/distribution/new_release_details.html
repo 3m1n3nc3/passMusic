@@ -1,0 +1,149 @@
+<main id="main">
+	<section id="contact" class="bg-light">
+		<div class="container">
+			<h2 class="text-secondary">Release Details</h2>
+			<div class="row about-container">
+				<div class="col-lg-12 content p-5 rounded shadow-sm bg-white">
+					{$notification}
+					<div class="form">
+						<form class="contactForm" method="post" action="">
+
+							<small class="form-text text-muted">
+							If this release contains the same featuring Artist(s) for all tracks, please add the featuring Artist(s) to the album title in this format "(Feat. Artist Name)".
+							</small>
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Single/EP/Album Title<i class="text-danger">*</i></span>
+								</div>
+								<input type="text" name="title" class="form-control" value="{$release_title}">
+							</div>
+							
+							<div class="form-group">
+								<label for="description">Description</label>
+								<textarea name="description" class="form-control" id="description" rows="3"> {$release_description}</textarea>
+							</div>
+							
+							<div class="form-row" id="artist_division">
+								<small class="form-text text-muted">
+								The name of the artist attributed to this release, if there is more that one artist please add a new artist, there must always be a primary artist.
+								</small> 
+								<div class="col-8">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend">
+											<span class="input-group-text">Artist Name<i class="text-danger">*</i></span>
+										</div>
+										{$primary_username}
+										<input type="hidden" name="artist_role[]" value="primary">
+										<input type="text" name="artist[]" class="form-control" value="{$release_artist}">
+									</div> 
+								</div>
+								<div class="col">
+									<select class="form-control" disabled> 
+										<option selected>Primary</option>
+									</select>
+								</div> 
+								<div class="col">
+									<button type="button" class="btn btn-secondary border shadow-sm" id="add_artist_btn">Add Artist</button>
+								</div>
+								{$add_more_artists}
+							</div>
+
+							<div class="form-row">
+								<div class="col-6">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend">
+											<span class="input-group-text">Primary Genre<i class="text-danger">*</i></span>
+										</div>
+										<select name="p_genre" class="form-control"> 
+											{$genres_option}
+										</select>
+									</div> 
+								</div>
+								<div class="col-6">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend">
+											<span class="input-group-text">Secondary Genre</span>
+										</div>
+										<select name="s_genre" class="form-control"> 
+											{$genres_option_2}
+										</select>
+									</div> 
+								</div>
+							</div>
+							
+							<div class="form-row"> 
+								<div class="col-10">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend">
+											<span class="input-group-text">Composition Copyright &copy;<i class="text-danger">*</i></span>
+										</div>
+										<input name="c_line" type="text" class="form-control" value="{$release_cline}">
+									</div> 
+								</div>
+								<div class="col">
+									<input name="c_line_year" type="text" class="form-control" value="{$release_cline_year_alt}">
+								</div> 
+							</div>
+							
+							<div class="form-row"> 
+								<div class="col-10">
+									<div class="input-group mb-3">
+										<div class="input-group-prepend">
+											<span class="input-group-text">Recording Copyright &copy;<i class="text-danger">*</i></span>
+										</div>
+										<input name="p_line" type="text" class="form-control" value="{$release_pline}">
+									</div> 
+								</div>
+								<div class="col">
+									<input name="p_line_year" type="text" class="form-control" value="{$release_pline_year_alt}">
+								</div> 
+							</div>
+
+							<small class="form-text text-muted">
+							If you don't have a formally agreed label your artist name or band name will be sufficient, Descriptions such as "Indie", "Independent", "Non" will not be accepted.
+							</small>
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Record Label Name<i class="text-danger">*</i></span>
+								</div>
+								<input name="label" type="text" class="form-control" value="{$release_label}">
+							</div> 
+
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Original Release Date<i class="text-danger">*</i></span>
+								</div>
+								<input name="release_date" type="date" class="form-control" value="{$release_date}">
+							</div> 
+
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Explicit</span>
+								</div>
+								<select name="explicit" class="form-control"> 
+									<option value="1" selected>Explicit</option> 
+									<option value="0">Not Explicit</option>
+								</select>
+							</div> 
+							<button name="submit_details" type="submit" class="btn btn-primary border shadow-sm">Update Release</button>
+						</form>
+					</div>
+				</div>
+				<div class="col-lg-12 m-2">
+					<a href="{$release_home}" class="float-right btn btn-primary border shadow-sm">Continue</a> 
+				</div>
+			</div>
+		</div>
+	</section><!-- #about -->
+</main>
+
+<script>
+	$(document).ready(function() {
+		var i = 1;
+		$('#add_artist_btn').on('click', function() {
+			i++;
+			$('#artist_division').append(
+				'<div class="col-8" id="artist_'+i+'"> <div class="input-group mb-3"> <div class="input-group-prepend"> <span class="input-group-text">Artist Name </span> </div> <input type="text" name="artist[]" class="form-control"> </div> </div> <div class="col"> <select name="artist_role[]" class="form-control"> {$roles_option} </select> </div> ');
+		});
+	})
+</script>

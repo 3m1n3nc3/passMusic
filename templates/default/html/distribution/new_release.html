@@ -1,0 +1,36 @@
+<main id="main">
+	<section id="contact" class="bg-light">
+		<div class="container">
+			<h2 class="text-secondary">Create a new release</h2>
+			<div class="row about-container">
+				<div class="col-lg-12 content order-lg-1 order-2 p-5 rounded shadow-sm bg-white">
+					{$notification}
+					<div class="form">
+						<form class="contactForm" method="post" action="">
+							<small class="form-text text-muted">
+							This will be the title of your release.
+							</small>
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Release Title<i class="text-danger">*</i></span>
+								</div>
+								<input name="title" type="text" class="form-control">
+							</div>
+							<small class="form-text text-muted">
+							If you don't have a UPC / EAN you can leave this blank, but we don't provide it.
+							</small>
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">UPC / EAN</span>
+								</div>
+								<input name="upc" type="text" class="form-control">
+							</div> 
+							<button type="submit" name="create_release" class="btn btn-primary font-weight-bold border shadow-sm">Create Release</button> 
+							<button type="submit" name="create_playlist" class="btn btn-secondary border shadow-sm">Create Playlist</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section><!-- #about -->
+</main>

@@ -1,0 +1,63 @@
+<script type="text/javascript"> 
+    $(document).ready(function() {
+       	new multiple_file_uploader ({
+            form_id: "fileUpload", 
+            autoSubmit: true,
+            server_url: "{$release_audio_url}"  
+        });
+    });
+    function removeAllAudio(rid) {
+		$.ajax({
+			type: 'POST',
+			url: site_url+'/connection/delete.php',
+			data: {data: {action:'release_audio', rel_id:rid}},
+			dataType: 'JSON',
+			success: function(data) {
+
+			}
+		});
+    }
+</script> 
+
+<main id="main">
+	<section id="contact" class="bg-light">
+		<div class="container">
+			<h2 class="text-secondary">Upload Audio Files</h2>
+			<div class="row">
+				<div class="col-lg-12 content p-5 rounded shadow-sm bg-white">
+
+					<small class="form-text text-muted">
+						If this release is an Album select all the tracks before proceeding from the file selection dialog. <br>
+						Your audio should be High Quality Mp3 Or High Quality Wav.<br>
+						Your files should be named with the intended title of the track, Example: <strong>Rise Again.mp3</strong>, if you feature other artists be sure to indicate it like <strong>Rise Again(Feat. Joe Bider).mp3</strong>, no special characters and do not include your artists names.
+					</small>
+
+					<div class="upload-div">
+						<div class="upload_box">
+							<form name="fileUpload" id="fileUpload" action="javascript:void(0);" enctype="multipart/form-data">
+						 	
+							 	<div class="text-center">
+							 		<label class="btn btn-info" for="_multiple_files"><i class="fa fa-plus"></i> Add Audio Files</label>
+									<input type="file" name="multiple_files[]" id="_multiple_files" class="hide_broswe d-none" accept=".mp3,.wav"{$onclick_delete} multiple />
+
+							 		<label class="btn btn-success" for="_upload_button"><i class="fa fa-cloud-upload"></i> Upload</label>
+									<input type="submit" value="Upload" class="upload_button d-none" id="_upload_button" /> 
+								</div>
+
+							</form>
+						</div>	
+
+						<div class="file_boxes">
+
+						</div>
+						<span id="removed_files"></span>
+					</div>
+
+				</div>
+				<div class="col-lg-12 m-2">
+					<a href="{$release_home}" class="float-right btn btn-primary border shadow-sm">Continue</a>  
+				</div>
+			</div>
+		</div>
+	</section><!-- #about -->
+</main>

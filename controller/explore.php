@@ -12,16 +12,6 @@ function mainContent() {
 
     // Show the users tracks stats
     $databaseCL->limit = $configuration['page_limits'];
-    $PTMPL['sidebar_statistics'] = sidebarStatistics($artist_id);
-
-    // Fetch suggested users 
-    $PTMPL['sidebar_suggested_users'] = sidebar_userSuggestions($artist_id); 
-
-    // Fetch suggested tracks
-    $PTMPL['sidebar_suggested_tracks'] = sidebar_trackSuggestions($artist_id); 
-
-    // Show the secondary navigation bar
-    $PTMPL['secondary_navigation'] = secondaryNavigation($artist_id);
 
     // Choose to display sets or the explore page
     if (isset($_GET['sets']) && $_GET['sets'] !== '') {
@@ -76,7 +66,7 @@ function mainContent() {
         $PTMPL['show_artists_you_may_know'] = $show_new_charts ? sprintf($explore_bar, 'Artists you may know', $related_artist_sub, $you_may_know) : ''; 
 
         // Songs playlists
-        $pl_types = array('slow', 'dog', 'food', 'way');
+        $pl_types = array('slow', 'Dog', 'food', 'way', 'play', 'song');
         if ($pl_types) {
             $playlistster = '';
             foreach ($pl_types as $key => $value) {
@@ -91,6 +81,17 @@ function mainContent() {
         $PTMPL['following'] = showFollowers($artist['uid'], 2);
     }
 
+    $PTMPL['sidebar_statistics'] = sidebarStatistics($artist_id);
+ 
+    // Fetch suggested users  
+    $PTMPL['sidebar_suggested_users'] = sidebar_userSuggestions($artist_id); 
+
+    // Fetch suggested tracks
+    $PTMPL['sidebar_suggested_tracks'] = sidebar_trackSuggestions($artist_id); 
+
+    // Show the secondary navigation bar
+    $PTMPL['secondary_navigation'] = secondaryNavigation($artist_id);
+    
 	// Set the active landing page_title 
 	$theme = new themer('explore/content');
 	return $theme->make();

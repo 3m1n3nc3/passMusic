@@ -98,6 +98,86 @@ class marxTime
         return $n_format . $suffix;
     }
 
+    function swissConverter($value, $precision = 2, $format = true) {
+        //Below converts value into bytes depending on input (specify mb, for 
+        //example)
+        $bytes = preg_replace_callback('/^\s*(\d+)\s*(?:([kmgt]?)b?)?\s*$/i', 
+        function ($m) {
+            switch (strtolower($m[2])) {
+              case 't': $m[1] *= 1024;
+              case 'g': $m[1] *= 1024;
+              case 'm': $m[1] *= 1024;
+              case 'k': $m[1] *= 1024;
+            }
+            return $m[1];
+            }, $value);
+        if(is_numeric($bytes)) {
+            if($format === true) {
+                //Below converts bytes into proper formatting (human readable 
+                //basically)
+                $base = log($bytes, 1024);
+                $suffixes = array('', 'KB', 'MB', 'GB', 'TB');   
+
+                return round(pow(1024, $base - floor($base)), $precision) .' '. 
+                         $suffixes[floor($base)];
+            } else {
+                return $bytes;
+            }
+        } else {
+            return NULL; //Change to preferred response
+        }
+    }
+
+    /**
+    * Replace characters in a string
+    */
+    function reconstructString($string = '') {
+        /**
+        * To change the default separator to explode set $this->explode = separator.
+        * To change the default string to search and replace set $this->find = string.
+        * To change the default string used to replace the search string set $this->replace = string.
+        * By default the function returns only the first two array values after exploding the string if it finds more
+        * than one, other wise it will return just one.
+        * To change this behavior set $this->part = key to the array key you want the value returned for you.
+        **/
+        if (isset($this->explode)) {
+            $explode = $this->explode;
+        } else {
+            $explode = '-';
+        }
+
+        if (isset($this->find)) {
+            $find = $this->find;
+        } else {
+            $find = '_';
+        }
+
+        if (isset($this->replace)) {
+            $replace = $this->replace;
+        } else {
+            $replace = ' ';
+        }
+        $filtered_string = str_replace($find, $replace, $string);
+
+        if (stripos($string, $explode)) {
+            $filtered_string = explode($explode, $filtered_string);
+            
+            if (isset($this->part)) {
+                $new_string = $filtered_string[$this->part];
+            } else {
+                if (count($filtered_string) > 1) {
+                    $new_string = $filtered_string[0].' '.$filtered_string[1];
+                } else {
+                    $new_string = $filtered_string[0];
+                }
+            }
+        } else {
+            $new_string = $filtered_string;
+        }
+
+        return $new_string;
+    }
+
     // Time to go function
     function dateDifference($date_1 , $date_2 , $differenceFormat = '%a' )
     {
@@ -156,8 +236,15 @@ class marxTime
             $time = date("D M d - h:i:s A", $d);
         } elseif ($type == 1) {
             $time = date("d/m/Y, h:i A", $d);
+        } elseif ($type == 2) {
+            $time = date("d/m/Y", $d);
         }
         return $time;
+    }
+
+    function percenter($number, $total) {
+        $n = ($number * 100) / $total;
+        return $this->numberFormater($n, 1);
     }
 }
 $marxTime = new marxTime;

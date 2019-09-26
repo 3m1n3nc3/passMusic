@@ -11,21 +11,17 @@
         <div class="tab-content">
           <!-- Overview -->
           <div class="overview">
-            <div class="overview__artist"> 
+            <div class="overview__artist content-holder{$extra_class}"> 
               {$content_title}
               {$artist_card}
               <div style="display: none;" id="more-container"></div>
-              <span id="show-more-div">{$load_more_btn}</span> 
+              <span id="show-more-div">{$load_more_btn}</span>
               <!-- / -->
             </div>
-              
-            <!-- related Artists section -->
-            <div class="overview__related">
-              {$sidebar_statistics}
-              {$followers}  
-              {$following} 
-
-            </div> 
+            {$load_more_div}
+            
+            <!-- Sidebar statsbar or related -->
+            {$small_right_sidebar}
             
           </div> 
           <!-- / -->        

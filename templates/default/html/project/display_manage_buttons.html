@@ -1,0 +1,32 @@
+                  <fieldset class="my-3 container"> 
+                    <legend class="mb-1 text-center text-info">Upload and Manage Project Files</legend> 
+                    <div class="p-3 mb-3 mx-auto text-center">
+                      <button 
+                        class="btn btn-info m-2 mx-auto manage-modal-show"  
+                        data-toggle="modal" 
+                        data-type="6"
+                        data-target="#uploadModal" 
+                        data-project-id="{$project_id}">
+                        <i class="fa fa-file-archive-o"></i> Stem Package
+                      </button>
+
+                      <button 
+                        class="btn btn-info m-2 mx-auto upload-modal-show" 
+                        id="instrumental-modal-show" 
+                        data-toggle="modal" 
+                        data-type="1"
+                        data-target="#uploadModal" 
+                        data-project-id="{$project_id}">
+                        <i class="fa fa-upload"></i> Instrumentals
+                      </button>
+
+                      <button 
+                        class="btn btn-info m-2 mx-auto upload-modal-show" 
+                        id="stem-modal-show" 
+                        data-toggle="modal"
+                        data-type="2"
+                        data-target="#uploadModal" 
+                        data-project-id="{$project_id}">
+                        <i class="fa fa-upload"></i> Stems</button>
+                    </div>
+                  </fieldset>

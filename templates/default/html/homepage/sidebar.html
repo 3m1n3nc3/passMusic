@@ -75,8 +75,13 @@
  
     </section>
     
-    <section class="playlist">
-      <a href="#">
+    <section class="playlist"> 
+      <a href="#"
+        class="playlist-modal-show"
+        id="playlist-modal-show"
+        data-toggle="modal" 
+        data-target="#playlistModal"
+        onclick="playlist_modal(2, {'action': 'c_list'})">
         <i class="ion-ios-add-circle-outline"></i>
         New Playlist
       </a>

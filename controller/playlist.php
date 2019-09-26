@@ -1,5 +1,4 @@
 <?php
-
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL; 
 
@@ -9,9 +8,10 @@ function mainContent() {
 
 	$get_playlist = isset($_GET['playlist']) ? $_GET['playlist'] : (isset($_GET['id']) ? $_GET['id'] : null);
 	$fetch_playlist = $databaseCL->fetchPlaylist($get_playlist)[0];
+	$author = $framework->userData($fetch_playlist['uid'], 1);
 
 	$PTMPL['playlist_title'] = $fetch_playlist['title'];
-	$PTMPL['playlist_author'] = $fetch_playlist['fname'].' '.$fetch_playlist['lname'];  
+	$PTMPL['playlist_author'] = $author['fname'].' '.$author['lname'];  
 	$PTMPL['playlist_link'] = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$fetch_playlist['plid']);
 	$PTMPL['like_id'] = $fetch_playlist['id'];
 
@@ -58,10 +58,14 @@ function mainContent() {
 
     $PTMPL['artist_card'] = artistCard($fetch_playlist['by']);
 
+    $sidebar = new themer('artists/small_right_sidebar');
+    $PTMPL['small_right_sidebar'] = $sidebar->make();
+
     if (isset($_GET['playlist']) && $_GET['playlist'] == 'list') {
     	$creator_id = isset($_GET['creator']) ? $_GET['creator'] : (isset($user['uid']) ? $user['uid'] : null);
+		$author = $framework->userData($creator_id, 1);
 
-		$PTMPL['content_title'] = '<div class="section-title">Playlists created by '.$user['fname'].' '.$user['lname'].'</div>';
+		$PTMPL['content_title'] = '<div class="section-title">Playlists created by '.$author['fname'].' '.$author['lname'].'</div>';
     	$PTMPL['artist_card'] = playlistCard($creator_id);
     	$PTMPL['secondary_navigation'] = secondaryNavigation($creator_id);
     	$PTMPL['sidebar_statistics'] = sidebar_userSuggestions($creator_id);

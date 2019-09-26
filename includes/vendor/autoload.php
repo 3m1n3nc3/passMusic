@@ -11,6 +11,7 @@ require_once(__DIR__ . '/imageResize.php');
 require_once(__DIR__ . '/marxtime.class.php'); 
 require_once(__DIR__ . '/goCaptcha/goCaptcha.php');
 require_once(__DIR__ . '/Twilio/autoload.php'); 
+require_once(__DIR__ . '/getID3-master/getid3/getid3.php'); 
 
 // Create the mail object of class
 $mail = new PHPMailer;

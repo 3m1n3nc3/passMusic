@@ -6,22 +6,66 @@ function messageNotice($str, $type = null) {
     switch ($type) {
         case 1:
             $alert = 'success';
+            $i = 'check-circle';
             break;
 
         case 2:
             $alert = 'warning';
+            $i = 'question-circle';
             break;
 
         case 3:
             $alert = 'danger';
+            $i = 'times-circle';
             break;
 
         default:
             $alert = 'info';
+            $i = 'exclamation-circle';
             break;
     }
-    $string = "
-    <div style='padding: 2px;' class='alert alert-" . $alert . "'> " . $str . " </div>";
+    $string = '
+    <div class="p-3 mx-5 alert alert-' . $alert . '"> 
+        <div class="d-flex">
+            <i class="pr-4 fa fa-2x fa-'.$i.'"></i>
+            <div class="flex-grow-1"><h3 class="text-center font-weight-bolder" style="margin-bottom: 0px;">' . $str . '</h3></div>
+        </div>
+    </div>';
+    return $string;
+}
+
+function bigNotice($str, $type = null, $alt = null) {
+    switch ($type) {
+        case 1:
+            $alert = 'success';
+            $i = 'check-circle';
+            break;
+
+        case 2:
+            $alert = 'warning';
+            $i = 'question-circle';
+            break;
+
+        case 3:
+            $alert = 'danger';
+            $i = 'times-circle';
+            break;
+
+        default:
+            $alert = 'info';
+            $i = 'exclamation-circle';
+            break;
+    }
+    if ($alt) {
+        $extra = $alt;
+    } else {
+        $extra = 'bg-light';
+    }
+    $string = '
+    <div class="h1 d-flex text-'.$alert.' p-4 m-4 '.$extra.' rounded border border-'.$alert.'"> 
+        <i class="pr-4 fa fa-'.$i.'"></i> 
+        <div class="flex-grow-1"><div class="text-center">' . $str . '</div></div>
+    </div>';
     return $string;
 }
 
@@ -90,6 +134,29 @@ function getLocale($type = null, $id = null) {
     }
 }
 
+function fileInfo($file, $type = null) {
+    $getID3 = new getID3;
+    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $source = $file;
+    if ($ext == 'mp3' || $ext == 'wav') {
+        $newFile = getAudio($source, 1);
+    } else {
+        $newFile = getFiles($source, 1);
+    }
+    if (file_exists($newFile) && is_file($newFile)) {
+        if ($type) {
+            // Use Mp3Info to get audio tags
+            $audio_tags = new Mp3Info($newFile);
+            return $duration = floor($audio_tags->duration / 60).':'.floor($audio_tags->duration % 60);
+        } else {
+            // Use getID3 to get file info
+            $FileInfo = $getID3->analyze($newFile);
+            return $FileInfo;
+        }
+    }
+    return;
+}
+
 function getImage($image, $type = null) {
     // $a = 1: Get direct link to image
     global $SETT, $framework;
@@ -116,7 +183,7 @@ function getImage($image, $type = null) {
 
     // Show the image
     if ($framework->trueAjax()) {
-        if (file_exists($_dir.$image)) {
+        if (file_exists($_dir.$image) && is_file($_dir.$image)) {
           $image = $dir_url.$image;
         } else {
           $image = $SETT['url'] . '/uploads/photos/default.png';
@@ -129,7 +196,7 @@ function getImage($image, $type = null) {
             $image = $SETT['url'] . '/uploads/photos/default.png';
         }
     } else {
-        if (file_exists($_dir.$image)) {
+        if (file_exists($_dir.$image) && is_file($_dir.$image)) {
           $image = $dir_url.$image;
         } else {
           $image = $SETT['url'] . '/uploads/photos/default.png';
@@ -158,11 +225,24 @@ function getAudio($source, $t=null) {
     global $SETT, $framework;   
 
     $_source = $SETT['working_dir'].'/uploads/audio/' . $source;
-    if (file_exists($_source)) {
+    if (file_exists($_source) && is_file($_source)) {
         if ($t) {
             return $_source;    
         }
         return $source = $SETT['url'] . '/uploads/audio/' . $source;    
+    }
+    return;
+} 
+
+function getFiles($source, $t=null) {
+    global $SETT, $framework;   
+
+    $_source = $SETT['working_dir'].'/uploads/files/' . $source;
+    if (file_exists($_source) && is_file($_source)) {
+        if ($t) {
+            return $_source;    
+        }
+        return $source = $SETT['url'] . '/uploads/files/' . $source;    
     }
     return;
 } 
@@ -274,55 +354,86 @@ function simpleButtons($class, $title, $link, $x = null) {
     return $btn;
 }
  
-function deleteFile($type, $name, $x = null) {
+function deleteFile($name, $type = null, $fb = null) {
     global $framework;
+ 
+    if ($type) {
+        $path = 'photos';
+    } else { 
+        $path = 'audio';
+    } 
 
-    if ($type == 0) {
-        $ext = 'png';
-        $path = 'img';
-    } elseif ($type == 1) {
-        $ext = 'mp4';
-        $path = 'videos';
-    }
+    if ($framework->trueAjax() || $fb) {
+        $file =  '../uploads/' . $path . '/' . $name;
+    } else {
+        $file =  getcwd() . '/uploads/' . $path . '/' . $name;
+    } 
 
-    $cd = $x ? getcwd() : '..';
-
-    if ($name !== 'default.' . $ext) {
-        if (file_exists($cd . '/uploads/' . $path . '/' . $name)) {
-            unlink($cd . '/uploads/' . $path . '/' . $name);
+    if ($name !== 'default.png') {
+        if (file_exists($file)) { 
+            unlink($file);
             return 1;
-        }
+        } 
     }
     return null;
 }
 
-function notAvailable($string, $pad='') {
-    return
-    '<div class="tracker trackless song-container text-center">
-        <div class="'.$pad.'pad-section">  
-            <i class="ion-ios-help-circle-outline"></i>
-            <p class="small para">' . $string . '</p> 
-        </div>
-    </div>';
+function notAvailable($string, $pad='', $type = null ) {
+    if ($type == null) {
+        $return = 
+        '<div class="tracker trackless song-container text-center">
+            <div class="'.$pad.'pad-section">  
+                <i class="fa fa-cloud-download"></i>
+                <p class="small para">' . $string . '</p> 
+            </div>
+        </div>';
+    } else {
+        if ($pad == '') {
+            $pad = 'display-1';
+        }
+        $return = 
+        '<div class="container text-center">
+            <div class="p-4 m-4 border rounded border-info bg-light text-info">
+                <i class="'.$pad.' ion-ios-help-circle-outline"></i>
+                <p class="'.$pad.'">'.$string.'</p>
+            </div>
+        </div>';
+    }
+    return $return;
 } 
+
+function restrictedContent($content, $tab = null) {
+    global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
+    if (isset($tab)) {
+        if ($content == 1) {
+            $theme = new themer('project/restricted_tabs'); $section = '';
+        }
+    } else {
+        if ($content == 1) {
+            $theme = new themer('project/restricted_tabs_content'); $section = '';
+        } elseif ($content == 2) {
+            $theme = new themer('project/display_project_stems'); $section = '';
+        } elseif ($content == 3) {
+            $theme = new themer('project/display_manage_buttons'); $section = '';
+        }
+    }
+
+    $section = $theme->make();
+    return $section;
+}
 
 function globalTemplate($type) {
     global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
     if ($type == 1) {
-        $theme = new themer('homepage/header');
-        $section = '';
+        $theme = new themer('homepage/header'); $section = '';
     } elseif ($type == 2) {
-        $theme = new themer('homepage/player');
-        $section = '';
+        $theme = new themer('homepage/player'); $section = '';
     } elseif ($type == 3) {
-        $theme = new themer('homepage/sidebar');
-        $section = '';
+        $theme = new themer('homepage/sidebar'); $section = '';
     } elseif ($type == 4) {
-        $theme = new themer('homepage/right_sidebar');
-        $section = '';
+        $theme = new themer('homepage/right_sidebar'); $section = '';
     } else {
-        $theme = new themer('container/footer');
-        $section = '';
+        $theme = new themer('container/footer'); $section = '';
     }
     $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
     $PTMPL['dashboard_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
@@ -355,6 +466,29 @@ function globalTemplate($type) {
     return $section;
 } 
 
+function superGlobalTemplate($type=null) {
+    global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
+    if ($type == 1) {
+        $theme = new themer('distribution/global/header'); $section = '';
+    } else {
+        $theme = new themer('distribution/global/footer'); $section = '';
+    }
+    $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
+    $PTMPL['dashboard_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
+    $PTMPL['user_url'] = $user_url = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
+    $PTMPL['username_url'] = simpleButtons('logout', 'Account', $user_url, 1);
+    $PTMPL['site_title_'] = ucfirst($configuration['site_name']);
+    // $PTMPL['copyright'] = '&copy; ' . ucfirst($LANG['copyright']) . ' ' . date('Y') . ' ' . $contact_['c_line'];
+    $PTMPL['logout_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=true');
+
+    if ($user_role >=3) {
+      $management = cleanUrls($SETT['url'] . '/index.php?page=management');
+      $PTMPL['management'] = simpleButtons("bordered background_green2", 'Manage Site <i class="fa fa-cog"></i>', $management);
+    } 
+    $section = $theme->make();
+    return $section;
+} 
+
 /*
 * Generate a modal menu
 */
@@ -379,13 +513,13 @@ function modal($modal, $content, $title = null, $size = null, $footer = null, $e
     }
     
     $button = '
-    <button type="button" class="close" aria-label="Close" onclick="modal_destroyer(\''.$modal.'Modal\')">
+    <button type="button" class="close" aria-label="Close" onclick="toggleModal(\''.$modal.'Modal\')">
       <span aria-hidden="true">&times;</span>
     </button>';
 
     $title = $title ? 
     '<div class="modal-header">
-      <h5 class="modal-title" id="'.$modal.'ModalLabel">'.$title.'</h5>
+      <h3 class="modal-title font-weight-bold" id="'.$modal.'ModalLabel">'.$title.'</h3>
       '.$button.'
     </div>' : '<div class="modal-header" style="border-bottom: none; padding: 0px;">'.$button.'</div>';
 
@@ -405,6 +539,71 @@ function modal($modal, $content, $title = null, $size = null, $footer = null, $e
     return $modal_menu;
 }
 
+function playlistManager($type = null, $track = null) {
+    global $SETT, $LANG, $user, $framework, $databaseCL, $marxTime;
+    // Type 1: Show modal
+    // Type 2: Create playlist form
+    // Type 3: Add to playlist form
+    if ($type == 1) {
+        $modal = modal('playlist', '<div id="modal-content"></div>', '<span id="modal-title">Playlist</span>', 2);
+        $content = $modal;
+    } elseif ($type == 2) {
+        $processor = $SETT['url'].'/connection/uploader.php?action=playlists';
+        $form = '
+        <form id="create_playlist">
+            <div id="save_message"></div> 
+            <div class="form-group">
+                <label for="title">Title:</label>
+                <input type="text" class="form-control" name="title" placeholder="Title" id="title">
+            </div>
+            <div class="font-weight-bold d-flex pc-font-2" title="Make this instrumental public">
+                <input type="checkbox" name="make_public">
+                    <div class="font-weight-bold mx-2 text-info">Public</div>
+            </div>
+            <div>'.$LANG['public_playlist_notice'].'</div> 
+            <button  
+                type="button"
+                class="btn btn-block btn-info"
+                onclick="playlistAction(2, {\'action\': \'create\'})">
+                <i class="ion-ios-list"></i> Create Playlist
+            </button>            
+        </form>';
+        $content = $form;
+    } elseif ($type == 3) {
+        $list = $databaseCL->fetchPlaylist($user['uid'], 1);
+
+        $option = '';
+        if ($list) {
+            foreach ($list as $row) {
+                $option .= '<option value="'.$row['id'].'">'.$row['title'].'</option>';
+            }
+        }
+        $form = '
+        <form id="add_to_playlist">
+            <div id="save_message"></div> 
+            <div class="form-group">
+                <label for="title">Select Playlist:</label>
+                <select class="form-control" name="playlist">
+                    '.$option.'
+                </select>
+            </div>
+            <button  
+                type="button"
+                class="btn btn-success"
+                onclick="playlistAction(2, {\'action\': \'add\', \'track\': \''.$track.'\'})">
+                <i class="ion-ios-add-circle-outline"></i> Add to Playlist
+            </button>
+            <a href="#"
+                class="btn btn-info"   
+                onclick="playlist_modal(2, {\'action\': \'c_list\'})">
+                <i class="ion-ios-list"></i> '.$LANG['create_playlist'].'
+            </a> 
+        </form>';
+        $content = $form;
+    }
+    return $content;
+}
+
 function listTracks($_track, $n, $x=null) {
     global $SETT, $framework, $databaseCL, $marxTime;
     $explicit = $small = '';
@@ -413,8 +612,7 @@ function listTracks($_track, $n, $x=null) {
     }
     $duration = '00:00';
     if (getAudio($_track['audio'], 1)) {
-        $audio_tags = new Mp3Info(getAudio($_track['audio'], 1));
-        $duration = floor($audio_tags->duration / 60).':'.floor($audio_tags->duration % 60);
+        $duration = fileInfo($_track['audio'])['playtime_string'];
     }
     
     if ($_track['explicit']) {
@@ -448,9 +646,7 @@ function listTracks($_track, $n, $x=null) {
             <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist_name.' </a>
         </div>
         <div class="track__download">
-            <a href="'.getAudio($_track['audio']).'" id="download-link" download="'.$framework->safeLinks($artist_name.' '.$_track['title'], 1).'.'.$t_format.'">
-                <i class="ion-ios-cloud-download not-added"></i>
-            </a>
+            '.showMore_button(1, $_track['id'], '').'
         </div>
         '.$explicit.'
         <div class="track__length">'.$duration.'</div>
@@ -474,6 +670,20 @@ function hiddenPlayer($_track) {
             </div>
         </div>
         <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> <div id="song-name'.$_track['id'].'">'.$_track['title'].'</div></a>
+        <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist_name.' </a>
+    </div> ';
+    return $hidden;
+}
+
+function hiddenInfo($_track) {
+    global $SETT, $user, $framework, $databaseCL;
+    $artist = $framework->userData($_track['artist_id'], 1);
+    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $hidden = '
+    <div class="hidden__item">
+        <img style="display: none;" src="'.getImage($_track['art'], 1, 2).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
+        <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> 
+        <div id="song-name'.$_track['id'].'">'.$_track['title'].'</div></a>
         <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist_name.' </a>
     </div> ';
     return $hidden;
@@ -511,12 +721,10 @@ function trackLister($_track, $n, $x=null) {
             </a>
         </div>
         <div class="track__download">
-            <a href="'.getAudio($_track['audio']).'" id="download-link-'.$_track['id'].'" download="'.$framework->safeLinks($artist_name.' '.$_track['title'], 1).'.'.$t_format.'">
-                <i class="ion-ios-cloud-download not-added"></i>
-            </a>
+           '.showMore_button(1, $_track['id'], '').'
         </div>
         '.$explicit.'
-        <div class="track__plays">'.$count_views.'</div>
+        <div class="track__plays"><i class="ion-ios-play"></i> '.$count_views.'</div>
     </div>
     </div> ';
     return $list;
@@ -532,6 +740,7 @@ function albumsLister($artist, $rows) {
         $get_tracks = $databaseCL->albumEntry($album_id);
         $link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$rows['safe_link']);
         $like_button = clickLike(1, $album_id, $user['uid']);
+        $more_dropdown = showMore_button(2, $album_id, '');
 
         $n = 0;
         if ($get_tracks) {
@@ -560,17 +769,7 @@ function albumsLister($artist, $rows) {
                     </div>
                     <div class="album__actions">
                         '.$like_button.'
-                        <span class="dropdown mx-3">
-                            <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                            <i class="ion-ios-more"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="moreDropdown">
-                                <li><a href="#">Start Radio</a></li>
-                                <li><a href="#">Add to playlist</a></li>
-                                <li><a href="#">Delete</a></li>
-                                <li><a href="#" id="copyable" data-clipboard-text="'.$link.'">Copy Album link</a></li>
-                            </ul>
-                        </span>
+                        '.$more_dropdown.'
                     </div>
                 </div>
             </div>
@@ -607,6 +806,7 @@ function artistAlbums($artist) {
             $get_tracks = $databaseCL->albumEntry($rows['id']);
             $link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$rows['safe_link']);
             $like_button = clickLike(1, $rows['id'], $user['uid']);
+            $more_dropdown = showMore_button(2, $rows['id'], '');
 
             $n = 0;
             if ($get_tracks) {
@@ -635,17 +835,7 @@ function artistAlbums($artist) {
                         </div>
                         <div class="album__actions">
                             '.$like_button.'
-                            <span class="dropdown mx-3">
-                                <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                                <i class="ion-ios-more"></i>
-                                </button>
-                                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="moreDropdown">
-                                    <li><a href="#">Start Radio</a></li>
-                                    <li><a href="#">Add to playlist</a></li>
-                                    <li><a href="#">Delete</a></li>
-                                    <li><a href="#" id="copyable" data-clipboard-text="'.$link.'">Copy Album link</a></li>
-                                </ul>
-                            </span>
+                            '.$more_dropdown.'
                         </div>
                     </div>
                 </div>
@@ -687,7 +877,7 @@ function getTrack($_track, $play_btn=null) {
 function topTracks($type=null, $id=null) {
     global $SETT, $user, $databaseCL, $framework, $marxTime;
 
-    $track_list = $card = $title = $art ='';
+    $track_list = $card = $title = $art = $_title = '';
 
     $_title = 'Top tracks from '; 
     if ($type === 2) {
@@ -701,8 +891,7 @@ function topTracks($type=null, $id=null) {
         $databaseCL->label = $followers['label'];
         $master_list = $databaseCL->fetchRelated($followers['uid'], 1);
     } elseif ($type === 4) {  
-        $_title = ''; 
-        $master_list = $databaseCL->fetchPlaylist('slow', 3);
+        $master_list = $databaseCL->fetchPlaylist(null, 3);
     } else {
         $top = '50 ';
         $_set = $type == 1 ? 'latest' : $_title = 'top';
@@ -720,20 +909,27 @@ function topTracks($type=null, $id=null) {
                 $title = $value['title'].' By '.$v_user['fname'].' '.$v_user['lname'];
                 $title = '<a href="'.cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$value['plid']).'">'.$title.'</a>';
                 $databaseCL->genre = $value['by'];
+                $plst_id = $value['id'];
             } else {
                 $title = $_title.$value['title'];
                 $title = '<a href="'.cleanUrls($SETT['url'] . '/index.php?page=explore&sets='.$_set.'&go='.urlencode($value['name'])).'">'.$title.'</a>';
                 $databaseCL->genre = $value['name'];
             }
-            $top_tracks = $databaseCL->fetchTopTracks($type);
 
             $_topest = $databaseCL->fetchTopTracks($type)[0];
+            $top_tracks = $databaseCL->fetchTopTracks($type);
+            if ($type == 4) {
+                $databaseCL->user_id = $user['uid'];
+                $top_tracks = $databaseCL->playlistEntry($plst_id);
+                $_topest = $databaseCL->playlistEntry($plst_id)[0];
+            } 
+
             $t_format = strtolower(pathinfo($_topest['audio'], PATHINFO_EXTENSION));
             $art = $type == 2 || $type == 3 ? $value['photo'] : $_topest['art'];
 
             if ($top_tracks) {
                 foreach ($top_tracks as $rows) {
-                    $track_list .= hiddenPlayer($rows);
+                    $track_list .= hiddenPlayer($rows); 
                 }
             }
 
@@ -781,6 +977,9 @@ function relatedItems($type, $id) {
         $databaseCL->user_id = $user['uid'];
         $plst = $databaseCL->fetchPlaylist($id)[0];
         $databaseCL->title = $plst['title'];  
+    } elseif ($type == 5) {
+        // Fetch similar projects
+        $similar = $databaseCL->fetchsimilarProjects($id);
     }
 
     $sel = 'Undefined Items';
@@ -808,40 +1007,36 @@ function relatedItems($type, $id) {
     } elseif ($type == 2) {
         $sel = 'Artists';
         $related = $databaseCL->fetchRelated($id, 1);
-        if ($related) { 
+        if ($related) {
             shuffle($related);
             foreach ($related as $rel) {
                 $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rel['username']);
-                $card .= '
-                <div class="media-card">
-                    <a href="'.$link.'">
-                        <div class="media-card__image" style="background-image: url(&quot;'.getImage($rel['photo'], 1, 1).'&quot;);">
-                            <i class="ion-ios-open"></i>
-                        </div>
-                    </a>
-                    <a  href="'.$link.'" class="media-card__footer">'.$rel['fname'].' '.$rel['lname'].'</a>
+                $card .= ' 
+                <div class="media-card"> 
+                     '.smallUser_Card($rel['uid'], null, 1).'
                 </div>';
             }
         }
     } elseif ($type == 3) {
         $sel = 'Tracks';
         $related = $databaseCL->fetchRelated($id, 2);
-        if ($related) {
+        if ($related) { 
             shuffle($related);
-            foreach ($related as $rel) {
-                $artist = $framework->userData($rel['artist_id'], 1);
-                $link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rel['safe_link']);
-                $card .= '
-                <a href="'.$link.'" class="related-artist related-artist__var">
-                    <span class="related-album__img">
-                        <img src="'.getImage($rel['art'], 1, 1).'" alt="'.$rel['title'].'" />
-                    </span>
-                    <span class="related-artist__name">'
-                        .$rel['title']
-                        .' - <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
-                    </span>
-                </a>';
-            }
+            $card .= '
+            <article class="sidebarModule g-all-transitions-200-linear whoToFollowModule" style="display: block;">
+                <a class="sidebarHeader g-flex-row-centered-spread pc-link-light refresh-wtf pc-border-light-bottom" href="#">
+                    <h3 class="sidebarHeader__title pc-type-light pc-font-tabular g-flex-row-centered ">
+                    <i class="ion-ios-disc"></i>
+                    <span class="sidebarHeader__actualTitle">SIMILAR TRACKS</span>
+                    </h3> 
+                </a>  ';
+                foreach ($related as $rel) {
+                    $artist = $framework->userData($rel['artist_id'], 1);
+                    $link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rel['safe_link']);
+                    $card .= smallTracks_Card($rel['track_id'], 1);
+                }
+            $card .= '
+            </article>';
         }
     } elseif ($type == 4) {
         $sel = 'Playlists';
@@ -864,7 +1059,28 @@ function relatedItems($type, $id) {
                 </a>';
             }
         }
-    } 
+    } elseif ($type == 5) {
+        $sel = 'Artists';
+        $related = $databaseCL->fetchsimilarProjects($id);
+        if ($related) {
+            shuffle($related);
+            foreach ($related as $rel) {
+                $link = cleanUrls($SETT['url'] . '/index.php?page=project&project='.$rel['safe_link']);
+                $card .= '
+                <div class="media-card">
+                    <a href="'.$link.'">
+                        <div class="media-card__image" style="background-image: url(&quot;'.getImage($rel['cover'], 1, 1).'&quot;);">
+                            <i class="ion-ios-open"></i>
+                        </div>
+                    </a>
+                    <a  href="'.$link.'" class="media-card__footer">'.$rel['title'].'</a>
+                </div>';
+            }
+            return $card;
+        } else {
+            return;
+        }
+    }  
 
     return $related ? $card : notAvailable('No similar '.$sel, 'no-');
 }
@@ -884,7 +1100,7 @@ function followCards($rows) {
             </a>
             <a  href="%s" class="media-card__footer">%s %s</a>
         </div>';
-    return sprintf($carder, $link, getImage($rows['photo'], 1, 1), $link, $rows['fname'], $rows['lname']);
+    return sprintf($carder, $link, getImage($rows['photo'], 1), $link, $rows['fname'], $rows['lname']);
 }
 
 function showTags($str) {
@@ -979,13 +1195,13 @@ function playlistCard($artist_id) {
                         </a>
                     </div>
                     <a href="'.$link.'">
-                        <div class="artist__name">'.$rows['title'].' by '.$rows['fname'].' '.$rows['lname'].'</div>
+                        <div class="artist__name">'.$rows['title'].'</div>
                     </a>
                     <div class="artist__followers">  
                         <a href="#" title="'.$subcribers_count_full.' Subscribers" class="mr-3"> <i class="ion-ios-people ui ml-3"></i> <span id="subscribers-count-'.$rows['id'].'">'.$subcribers_count.'</span></a>
                         <a href="#" title="'.$count_tracks.' Tracks" class="mr-3"> <i class="ion-ios-disc ui ml-3"></i> '.$count_tracks.'</a>
                     </div>
-                    '.$subscribe_btn.'
+                    '.$subscribe_btn.' Created by '.$rows['fname'].' '.$rows['lname'].'
                 </div>
             </div>';
             $show_playlists .= $cards;
@@ -1019,6 +1235,10 @@ function mostPopular($artist_id, $type=null) {
     $count_views = $marxTime->numberFormater($count_views['total']);
     $count_likes = $databaseCL->LikesCount(3, $track['id'])[0]; 
     $count_likes = $marxTime->numberFormater($count_likes['total']);
+
+    $track_url = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link'].'&id='.$track['id']);
+    $user_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$username);
+
     $card = '
     <style type="text/css">height: 28px;</style>
     <div class="latest-release">
@@ -1030,13 +1250,13 @@ function mostPopular($artist_id, $type=null) {
         <div class="hidden__item">
             <div class="hidden__item" id="song-name'.$track['id'].'">'.$track['title'].'</div>
             <img class="hidden__item" src="'.getImage($track['art'], 1, 2).'" id="song-art'.$track['id'].'" alt="'.$track['title'].'">
-            <a class="hidden__item"href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link'].'&id='.$track['id']).'" id="song-url'.$track['id'].'"> <div id="song-name'.$track['id'].'">'.$track['title'].'</div></a>  
-            <a class="hidden__item" href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$username).' " id="song-author'.$track['id'].'"> '.$artist_name.' </a>
+            <a class="hidden__item"href="'.$track_url.'" id="song-url'.$track['id'].'"> <div id="song-name'.$track['id'].'">'.$track['title'].'</div></a>  
+            <a class="hidden__item" href="'.$user_url.' " id="song-author'.$track['id'].'"> '.$artist_name.' </a>
         </div>
 
         <div class="latest-release__song">
-            <div class="latest-release__song__title__">'
-                .$artist_name.' - '.$track['title'].'
+            <div class="latest-release__song__title__">
+                <a href="'.$user_url.'">'.$artist_name.'</a> - <a href="'.$track_url.'">'.$track['title'].'</a>
             </div>
             <div id="waveform'.$track['id'].'"></div>
             <div class="waveform-container"></div>
@@ -1056,6 +1276,9 @@ function mostPopular($artist_id, $type=null) {
                 </div>
                 <div class="mx-3">
                     '.clickLike(2, $track['id'], $user['uid']).'
+                </div>
+                <div class="mx-3">
+                    '.showMore_button(1, $track['id'], '').'
                 </div>
             </div>
         </div>
@@ -1089,8 +1312,12 @@ function getPage($page = null) {
         } elseif ($_GET['get'] == 'following') {
             $page = 'following';
         } 
+    } elseif ($page == 'project') { 
+        $page = 'projects'; 
+    } elseif ($page == 'homepage') { 
+        $page = 'homepage'; 
     } else {
-        $page = 'homepage';
+        $page = $page;
     }
     return $page;
 }
@@ -1104,9 +1331,9 @@ function secondaryNavigation($user_id) {
     $artists = cleanUrls($SETT['url'] . '/index.php?page=view_artists&artist='.$artist['uid']);
     $home = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']);
     $playlists = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist=list&creator='.$artist['uid']);
+    $projects = cleanUrls($SETT['url'] . '/index.php?page=project&creator='.$artist['uid']);
 
-
-    $linkers = array('profile' => $home, 'albums' => $albums, 'tracks' => $tracks, 'playlist' => $playlists, 'artists' => $artists, 'followers' => $followers);
+    $linkers = array('profile' => $home, 'projects' => $projects, 'albums' => $albums, 'tracks' => $tracks, 'playlist' => $playlists, 'artists' => $artists, 'followers' => $followers);
     $pager = getPage($_GET['page']); 
     $rows = '';
     foreach ($linkers as $key => $value) {
@@ -1140,6 +1367,36 @@ function secondaryNavigation($user_id) {
     return $user ? $card : '';
 }
 
+function showViewers($type = null, $id = null) { 
+    global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
+    $fetch_viewers = $databaseCL->fetchViewers($type, $id);
+    
+    $artists = '';
+    if ($fetch_viewers) {
+        $c = 0;
+        foreach ($fetch_viewers as $key => $veiwers) {
+            $c++ ;
+            if ($c == 10) {
+                break;
+            }
+            $user_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$veiwers['username']);
+            $veiwers_name = $veiwers['fname'].' '.$veiwers['lname'].$veiwers['uid'];
+            $tt = ' data-toggle="tooltip" title="'.$veiwers_name.'" data-placement="left"';
+            $artists .= '
+            <a href="'.$user_url.'"'.$tt.'>
+              <img src="'.getImage($veiwers['photo'], 1).'" alt="'.$veiwers_name.'" />
+            </a>';           
+        }      
+    } else {
+        $artists = '<div style="height: 30px; width: auto;"></div>';
+    }
+    $card = '
+    <div class="artist__navigation__friends">
+        '.$artists.'
+    </div>'; 
+    return $card;
+}
+
 function sidebarStatistics($id, $type=null) {
     global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
     $theme = new themer('explore/stats'); $section = '';
@@ -1154,13 +1411,13 @@ function sidebarStatistics($id, $type=null) {
 
     $statistics = $theme->make();
     return $statistics;
-}  
+}
 
 function sidebar_userSuggestions($artist_id) {
     global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
-    $theme = new themer('explore/suggested_users'); $section = ''; 
+    $theme = new themer('explore/suggested_users'); $suggestions = $suggested = '';
 
-    // Fetch suggested users 
+    // Fetch suggested users (If there are no recommendations fetch all users)
     $related = [];
     $default = $databaseCL->fetchFollowers($artist_id);
     if ($default) {
@@ -1170,12 +1427,15 @@ function sidebar_userSuggestions($artist_id) {
         $databaseCL->label = $last_follow['label'];
         $databaseCL->limit = $configuration['sidebar_limit'];
         $related = $databaseCL->fetchRelated($last_follow['uid'], 1);
+    } else {
+        $framework->limited = $configuration['sidebar_limit'];
+        $related = $framework->userData(null, 0);
     }
     if ($related) { 
         shuffle($related);
         $suggested = '';
         foreach ($related as $rows) { 
-            $template = new themer('explore/suggested_users_cards'); $section = '';
+            $template = new themer('explore/special_users_cards'); $section = '';
             $tracks_count = $databaseCL->fetchTracks($rows['uid'], 3)[0]['counter'];
             $PTMPL['tracks_count'] = $marxTime->numberFormater($tracks_count, 1);
             $PTMPL['tracks_link'] = cleanUrls($SETT['url'].'/index.php?page=listen&to=artist&artist='.$rows['uid']);
@@ -1189,56 +1449,204 @@ function sidebar_userSuggestions($artist_id) {
             $PTMPL['profile_name'] = $rows['fname'] . ' ' . $rows['lname'];
             $PTMPL['profile_photo'] = getImage($rows['photo'], 1);
             $PTMPL['verified_badge'] = $rows['verified'] ? ' verifiedUserBadge' : '';
+            $PTMPL['sidebar_title'] = 'Who to follow';
+            $PTMPL['refresher'] = '<i class="ion-ios-refresh-circle pc-type-h3"></i> Refresh';
 
             $suggested .= $template->make();
         }     
         $PTMPL['suggested_users'] = $suggested;  
-    } 
+    }
 
+    $databaseCL->limit = null;
     $suggestions = $theme->make();
     return $suggestions;
 }    
 
-function sidebar_trackSuggestions($artist_id) {
+function sidebar_trackSuggestions($artist_id, $titler = 'Likes') {
     global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
-    $theme = new themer('explore/suggested_tracks'); $section = ''; 
- 
+    $theme = new themer('explore/suggested_tracks'); $suggestions = $suggested = '';
+    
     $track_likes = $databaseCL->listLikedItems($artist_id, 2);
     if ($track_likes) {
+        $PTMPL['top_title'] = $titler;
         $PTMPL['total_likes'] = $marxTime->numberFormater($track_likes[0]['likes']);
-        $PTMPL['likes_link'] = cleanUrls($SETT['url'] . '/index.php?page=listen&to=tracks&artist='.$artist_id);
+        $PTMPL['all_likes_link'] = cleanUrls($SETT['url'] . '/index.php?page=listen&to=tracks&artist='.$artist_id);
         shuffle($track_likes);
-        $suggested = '';
-        foreach ($track_likes as $rows) {
-            $template = new themer('explore/suggested_tracks_cards'); $section = '';
-            $artist = $framework->userData($rows['artist_id'], 1);
-            $PTMPL['profile_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']);
-            $PTMPL['profile_name'] = $artist['fname'] . ' ' . $artist['lname'];
-            $PTMPL['track_link'] = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rows['safe_link']);
-            $PTMPL['likes_link'] = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rows['safe_link'].'&likes=view');
-            $PTMPL['track_title'] = $rows['title'];
-            $PTMPL['track_art'] = getImage($rows['art'], 1); 
-            $PTMPL['track_id'] = $rows['id'];
-            $PTMPL['track_audio'] = getAudio($rows['audio']);
-            $PTMPL['track_format'] = strtolower(pathinfo($rows['audio'], PATHINFO_EXTENSION));
 
-            $likes = $databaseCL->userLikes($user['uid'], $rows['id'], 2); // check if this track is liked
-            $PTMPL['like_button'] = clickLike(2, $rows['id'], $user['uid'], null);
-            $PTMPL['like_title'] = $likes ? 'Unlike '.$rows['title'] : 'Like '.$rows['title'];
-            $count_likes = $databaseCL->LikesCount(3, $rows['id'])[0];
-            $count_views = $databaseCL->fetchStats(1, $rows['id'])[0];
-            $PTMPL['likes_count'] = $marxTime->numberFormater($count_likes['total']);
-            $PTMPL['views_count'] = $marxTime->numberFormater($count_views['total']);
-            $PTMPL['likes_count_full'] = $marxTime->numberFormater($count_likes['total'], 1);
-            $PTMPL['views_count_full'] = $marxTime->numberFormater($count_views['total'], 1);
+        foreach ($track_likes as $rows) { 
 
-            $suggested .= $template->make();
+            $suggested .= smallTracks_Card($rows['id']);
+
         }
     }
     $PTMPL['suggested_track_cards'] = $suggested; 
     $suggestions = $theme->make();
     return $suggestions;
+}
+
+function releasesCard($id = null) {
+    global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
+    $theme = new themer('distribution/global/release_card_pending'); $release = '';
+    
+    $get_release = $databaseCL->fetchReleases(1, $id)[0];
+    $r_artist = $databaseCL->fetchRelease_Artists(1, $id)[0];
+    $r_audio = $databaseCL->fetchRelease_Audio(null, $id);
+    $r_audio_count = $r_audio ? count($r_audio) : 0;
+
+    $PTMPL['release_audio_count'] = $r_audio_count > 0  ? '<span class="mr-4"><i class="ion-ios-musical-notes"></i> '.$r_audio_count.' Tracks</span>' : '';
+    $PTMPL['release_title'] = $get_release['title'];
+    $release_home_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$get_release['release_id']);
+    $release_publ_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=publish&rel_id='.$get_release['release_id']);
+    $PTMPL['release_upc'] = $get_release['upc'];
+    $PTMPL['release_artist'] = $r_artist ? '<span class="mr-4"><i class="ion-ios-microphone"></i> '.$r_artist['name'].'</span>' : '';
+    $PTMPL['create_date'] = $marxTime->dateFormat($get_release['date'], 2);
+    $PTMPL['release_artwork'] = getImage($get_release['art'], 1);
+    $PTMPL['release_album_single'] = $r_audio_count > 0 ? ($r_audio_count > 1  ? '<span class="mr-4"><i class="ion-ios-albums"></i> Album</span>' : '<span class="mr-4"><i class="ion-ios-disc"></i> Single</span>') : '';
+
+    $step_1 = $get_release['title'] != '' ? $marxTime->percenter(10, 100) : 0;
+    $step_2 = $get_release['c_line'] != '' && $get_release['p_line'] != '' && $get_release['label'] != '' && $get_release['release_date'] != '' ? $marxTime->percenter(25, 100) : 0;
+    $step_3 = $r_audio_count > 0 ? $marxTime->percenter(25, 100) : 0;
+    $step_4 = $get_release['art'] != '' ? $marxTime->percenter(25, 100) : 0;
+    $step_5 = $r_artist != '' ? $marxTime->percenter(15, 100) : 0;
+    $PTMPL['release_progress'] = $progress = $step_1 + $step_2 + $step_3 + $step_4 + $step_5;
+    $PTMPL['release_progress_text'] = $progress == 100 ? sprintf($LANG['release_complete'], $progress) : sprintf($LANG['release_almost_complete'], $progress);
+    $PTMPL['release_button'] = $progress !== $progress ? '<a href="'.$release_publ_url.'" class="btn btn-success float-right mx-2">Publish Release</a>' : '<a href="'.$release_home_url.'" class="btn btn-primary float-right mx-2">Complete Release</a>'; 
+
+    $PTMPL['footer_content'] = $get_release['status'] == 1 ?
+    '<div class="pc_rel__footer">
+        <span class="pc_rel__notice-title">
+            '.$PTMPL['release_progress_text'].'
+            '.$PTMPL['release_button'].'
+        </span> 
+        <div class="progress mt-auto" style="height:10px;">
+            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" style="width:'
+            .$PTMPL['release_progress'].'%"></div>
+        </div>
+    </div>'  :  releasesTracklist($id, 1);
+  
+    $databaseCL->status = null;
+    $release = $theme->make();
+    return $release;
 } 
+
+function releasesTracklist($id = null, $hidden = null) {
+    global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
+
+    $get_release = $databaseCL->fetchReleases(1, $id)[0];
+    $r_audio = $databaseCL->fetchRelease_Audio(null, $id);
+    $r_audio_count = $r_audio ? count($r_audio) : 0;
+
+    $list_tracks = '';$i = 0;
+    if ($r_audio) {
+        foreach ($r_audio as $t_key => $tracks) {
+            $i++;
+            $isrc = $tracks['isrc'] ? $tracks['isrc'] : 'N/A';
+            $list_tracks .= '
+            <div class="pc_rel__track-row d-flex justify-content-between">
+                <span role="index">'.$i.'</span> 
+                <span role="title">'.$tracks['title'].'</span> 
+                <span role="isrc">'.$isrc.'</span> 
+                <span role="duration">'.$duration = fileInfo($tracks['audio'])['playtime_string'].'</span>
+            </div>';
+        } 
+    }
+
+    $button = $hide = '';
+    if ($hidden) {
+        $button = 
+        '<div class="pc_rel__tracks-header" id="track'.$get_release['id'].'" onclick="toggleList('.$get_release['id'].')">
+            <span>View Tracklist</span>
+            <span><i class="fa fa-chevron-down"></i></span>
+        </div>';
+        $hide = ' d-none';
+    }
+
+    $list = 
+    '<div class="pc_rel__tracks"> 
+        '.$button.'
+        <div class="pc_rel__tracks-content'.$hide.'" id="track_list'.$get_release['id'].'">
+            <div class="pc_rel__track-row-headers d-flex justify-content-between">
+                <span role="index">#</span> 
+                <span role="title">Title of Track</span> 
+                <span role="isrc">ISRC</span> 
+                <span role="duration">
+                    <i class="fa fa-clock-o"></i>
+                </span>
+            </div> 
+             '.$list_tracks.'
+        </div>
+    </div>';
+    return $list;
+}
+
+function showMore_button($type = 0, $item_id = null, $x='More') {
+    global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime, $page_name;
+    $download = $un_playlist = $t_id = '';
+
+    $databaseCL->track = $t_id = $item_id;  
+    $track = $type == 1 ? $databaseCL->fetchTracks(null, 2)[0] : $databaseCL->fetchAlbum($item_id)[0];
+    $creator = $type == 1 ? $track['artist_id'] : $track['by']; 
+    $artist = $type == 1 ? $framework->userData($creator, 1) : $framework->userData($creator, 1); 
+    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $page = getPage($page_name);
+
+    if ($type == 1) {
+        $track_link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
+        $t_format = strtolower(pathinfo($track['audio'], PATHINFO_EXTENSION));
+        $download = '<li><a href="'.getAudio($track['audio']).'" id="download-link-'.$track['id'].'" download="'.$framework->safeLinks($artist_name.' '.$track['title'], 1).'.'.$t_format.'"><i class="fa fa-cloud-download mx-2"></i> Download</a></li>'; 
+    } elseif ($type == 2) {
+        $databaseCL->track = null;
+        $albums = $track;
+        $track_link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$albums['safe_link']);
+        $album = $databaseCL->albumEntry($item_id);
+        if ($album) {
+            $rows = [];
+            foreach ($album as $value) {
+                $rows[] .= $value['id'];
+            }
+            $t_id = implode(',', $rows);
+        }
+    }
+    if ($page == 'playlist') {
+        $playlist = $databaseCL->fetchPlaylist($_GET['playlist'])[0];
+        $plst = $playlist['id'];
+        $un_playlist = '
+        <li><a href="#" onclick="deleteItem({\'type\': \'1\', \'action\': \'pl_entry\', \'track\': \''.$t_id.'\', \'pl\': \''.$plst.'\'})"><i class="ion-ios-remove-circle-outline"></i> Remove from playlist</a></li>';
+    }
+    $access = allowAccess($creator);
+    $delete = $access ? '
+    <li><a href="#"><i class="ion-ios-trash mx-2"></i> Delete</a></li>' : '';
+
+    $playlister = ' 
+    <li>
+      <a href="#"
+        class="playlist-modal-show"
+        id="playlist-modal-show"
+        data-toggle="modal" 
+        data-target="#playlistModal"
+        onclick="playlist_modal(2, {\'action\': \'a2list\', \'track\': \''.$t_id.'\', \'type\': '.$type.'})">
+        <i class="ion-ios-add-circle-outline"></i> '.$LANG['add_to_playlist'].'
+      </a>
+    </li>';
+
+    $dropdown = '
+    <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
+        <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true" title="More Options">
+            <i class="ion-ios-more"></i> '.$x.'
+        </button>
+        <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown"> 
+            '.$playlister.'
+            '.$un_playlist.'
+            <li><a href="#"id="copyable" data-clipboard-text="'.$track_link.'">
+                    <i class="ion-ios-copy mx-2"></i> Copy Link 
+                </a>    
+            </li>
+            '.$download.'
+            '.$delete.'
+        </ul>
+    </span>';
+    return $user ? $dropdown : ''; 
+}
 
 function clickLike($type, $item_id, $user_id, $x = 1) {
     global $SETT, $user, $framework, $databaseCL; 
@@ -1253,13 +1661,13 @@ function clickLike($type, $item_id, $user_id, $x = 1) {
 
     $button = '<button data-icon-only="'.$x.'" data-like-id="'.$item_id.'" data-type="'.$type.'" class="dolike button-white" id="doLike_'.$item_id.'"><i class="ion-ios-heart'.$liked.'"></i> <span class="text">'.$liked_t.'</span></button>';
 
-    $div_button = '<div data-like-id="'.$item_id.'" data-type="'.$type.'" class="dolike" id="doLike_'.$item_id.'"><i class="ion-ios-heart'.$e.$hover.' border'.$liked.'"></i></div>'; 
+    $div_button = '<div data-like-id="'.$item_id.'" data-type="'.$type.'" class="dolike" id="doLike_'.$item_id.'"><i class="ion-ios-heart'.$e.$hover.' '.$liked.'"></i></div>'; 
 
     $button = $x == 1 ? $button : $div_button; 
     return $user ? $button : '';
 }
 
-function clickSubscribe($playlist, $user_id, $x = 1) {
+function clickSubscribe($playlist, $user_id) {
     global $SETT, $user, $framework, $databaseCL; 
     // $type: 2 = Track Likes
     // $type: 1 = Album Likes
@@ -1355,34 +1763,41 @@ function showFollowers($user_id, $type=null) {
     $follower_count = $marxTime->numberFormater($databaseCL->fetchFollowers($user_id, $type)[0]['counter'], 1);
     if ($type == 1) {
         $rel = 'Followers';
+        $rel_link = cleanUrls($SETT['url'] . '/index.php?page=follow&get=followers&artist='.$user_id);
     } elseif ($type == 2) {
         $rel = 'Following';
+        $rel_link = cleanUrls($SETT['url'] . '/index.php?page=follow&get=followings&artist='.$user_id);
     }
     $card = '';
     $c = 0; 
     if ($followership) {
         $card = '
-        <div class="section-title">'.$rel.' (<span id="'.strtolower($rel).'-count-'.$user_id.'">'.$follower_count.'</span>)</div> 
-        <div class="related-artists pb-3">';
-        foreach ($followership as $rows) { 
-            $c++ ;
-            if ($c == 11) {
-                break;
+        <article class="sidebarModule g-all-transitions-200-linear likesModule">
+            <a class="sidebarHeader g-flex-row-centered-spread pc-link-light  pc-border-light-bottom" rel="nofollow" href="'.$rel_link.'">
+                <h3 class="sidebarHeader__title pc-type-light pc-font-tabular g-flex-row-centered ">
+                    <i class="ion-ios-people"></i>
+                    <span class="sidebarHeader__actualTitle">
+                        <span id="'.strtolower($rel).'-count-'.$user_id.'">'.$follower_count.'</span> '.$rel.'
+                    </span>
+                </h3>
+                <span class="sidebarHeader__more pc-type-h3">View all</span>
+            </a> 
+            <div class="related-artists pb-3">';
+            foreach ($followership as $rows) { 
+                $c++ ;
+                if ($c == 11) {
+                    break;
+                }
+                $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['username']);
+                $card .= smallUser_Card($rows['uid'], null, 1);
             }
-            $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['username']);
             $card .= '
-            <a href="'.$link.'" class="related-artist">
-                <span class="related-artist__img">
-                    <img src="'.getImage($rows['photo'], 1, 1).'" alt="'.$rows['fname'].' '.$rows['lname'].'" />
-                </span>
-                <span class="related-artist__name">'.$rows['fname'].' '.$rows['lname'].'</span>
-            </a>';
-        }
-        $card .= '
-        </div>';
+            </div>
+        </article>';
     } else {
         $card .= notAvailable('No Followers', 'no-padding ');
     } 
+    $databaseCL->limit = null;
     return $followership ? $card : '';
 }
 
@@ -1403,4 +1818,390 @@ function showPlaylist($id = null) {
         }
     }
     return $show_playlists;
+}
+
+function smallUser_Card($id, $button = null, $extra = null) {
+    global $SETT, $PTMPL, $user, $framework, $databaseCL, $marxTime;
+
+    $template = new themer('explore/special_users_cards'); $section = ''; 
+
+    $artist = $framework->userData($id, 1);
+
+    $PTMPL['follow_btn'] = !$button ? clickFollow($artist['uid'], $user['uid']) : $button;
+
+    $tracks_count = $databaseCL->fetchTracks($artist['uid'], 3)[0]['counter'];
+    $PTMPL['tracks_count'] = $marxTime->numberFormater($tracks_count, 1);
+    $PTMPL['tracks_link'] = cleanUrls($SETT['url'].'/index.php?page=listen&to=artist&artist='.$artist['uid']);
+
+    $follower_count = $databaseCL->fetchFollowers($artist['uid'], 1)[0]['counter'];
+    $PTMPL['follower_count'] = $marxTime->numberFormater($follower_count, 1);
+    $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$artist['uid']);
+
+    $PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$artist['username']);
+    $PTMPL['profile_name'] = $artist['fname'] . ' ' . $artist['lname'];
+    $PTMPL['profile_photo'] = getImage($artist['photo'], 1);
+    $PTMPL['verified_badge'] = $artist['verified'] ? ' verifiedUserBadge' : '';
+
+    if ($extra) {
+        $PTMPL['extra_style_input'] = ' userSuggestionList__extra';
+    } 
+
+    $section = $template->make(); 
+    return $section; 
+}
+
+function smallTracks_Card($track_id, $hidden = null) {
+    global $SETT, $PTMPL, $user, $framework, $databaseCL, $marxTime;
+ 
+    $template = new themer('explore/suggested_tracks_cards'); $section = '';
+
+    $databaseCL->track = $track_id;
+    $_track = $databaseCL->fetchTracks($user['uid'], 2)[0];
+
+    if ($hidden) {
+        $PTMPL['hidden_info'] = hiddenInfo($_track);
+    }
+
+    $PTMPL['profile_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$_track['username']);
+    $PTMPL['profile_name'] = $_track['fname'] . ' ' . $_track['lname'];
+    $PTMPL['track_link'] = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link']);
+    $PTMPL['likes_link'] = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&likes=view');
+    $PTMPL['track_title'] = $_track['title'];
+    $PTMPL['track_art'] = getImage($_track['art'], 1); 
+    $PTMPL['track_id'] = $_track['id'];
+    $PTMPL['track_audio'] = getAudio($_track['audio']);
+    $PTMPL['track_format'] = strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION));
+
+    $likes = $databaseCL->userLikes($user['uid'], $_track['id'], 2); // check if this track is liked
+    $PTMPL['like_button'] = clickLike(2, $_track['id'], $user['uid'], null);
+    $PTMPL['like_title'] = $likes ? 'Unlike '.$_track['title'] : 'Like '.$_track['title'];
+    $count_likes = $databaseCL->LikesCount(3, $_track['id'])[0];
+    $count_views = $databaseCL->fetchStats(1, $_track['id'])[0];
+    $PTMPL['likes_count'] = $marxTime->numberFormater($count_likes['total']);
+    $PTMPL['views_count'] = $marxTime->numberFormater($count_views['total']);
+    $PTMPL['likes_count_full'] = $marxTime->numberFormater($count_likes['total'], 1);
+    $PTMPL['views_count_full'] = $marxTime->numberFormater($count_views['total'], 1);
+
+    $section = $template->make(); 
+    return $section; 
+}
+
+function allowAccess($item_id, $type = null, $forced = false) {
+    global $user, $databaseCL;
+    $allow_access = false;
+    
+    $project = $databaseCL->fetchProject($item_id)[0];
+    if ($type == 1) {
+        // Check if this user is colabing or is the project creator
+        $user_colabing = $databaseCL->fetch_projectCollaborators($item_id, 2);
+        if ($user_colabing || $user['uid'] == $project['creator_id']) {
+            $allow_access = true;
+        }  
+    } elseif ($type == 2) {
+        // Check if this user is colabing or is the project creator else check for the extra forced params
+        $top = allowAccess($item_id, 1);
+        if ($top) {
+           $allow_access = true;
+        } elseif ($forced) {
+            $allow_access = true;
+        }
+    } else {
+        // Check if the user (item_id) is the logged in user
+        if ($item_id == $user['uid']) {
+           $allow_access = true;
+        }
+    }
+    return $allow_access;
+}
+
+// Project Controllers
+function clickApprove($project, $user_id, $type = 0) {
+    global $SETT, $LANG, $user, $framework, $databaseCL; 
+    // $type: 1 = Request Access
+    // $type: 0 = Approve or reject
+ 
+    $databaseCL->user_id = $user_id;
+    $check_user = $databaseCL->fetch_projectCollaborators($project, 2)[0]; 
+    $check_request = $databaseCL->fetch_colabRequests($project, 1)[0]; 
+    $tt = '';
+    if ($type == 1) {   
+        if ($check_user && $user_id == $user['uid']) {
+            $tt = ' data-toggle="tooltip" title="'.$LANG['leave_tip'].'" data-placement="top"';
+            $text = 'Leave Project';
+            $class2 = ' orange hover';
+            $type = 2;
+        } elseif ($check_request) { 
+            $text = 'Cancel Request';
+            $class2 = ' orange hover';
+        } else {  
+            $class2 = '';
+            $text = 'Request Entry';
+        } 
+    } else {
+        if ($check_user) { 
+            $tt = ' data-toggle="tooltip" title="'.$LANG['remove_tip'].'" data-placement="left"';
+            $text = 'Remove';
+            $class2 = ' orange hover';
+        } else {  
+            $tt = ' data-toggle="tooltip" title="'.$LANG['approve_tip'].'" data-placement="left"';
+            $text = 'Approve'; 
+            $class2 = '';
+        } 
+    }
+
+    $button = '<button'.$tt.' data-project-id="'.$project.'" data-user-id="'.$user_id.'" data-type="'.$type.'" class="doapprove button-dark p-2'.$class2.'" id="doAction-'.$type.'_'.$user_id.'"><span class="text">'.$text.'</span></button>'; 
+ 
+    return $user ? $button : '';
+}
+
+function sidebar_projectCollaborators($project_id) {
+    global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
+    $theme = new themer('explore/suggested_users'); $section = '';  
+
+    // Fetch collaborators
+    $collabers = $databaseCL->fetch_projectCollaborators($project_id); 
+    $project = $databaseCL->fetchProject($project_id)[0];
+    $PTMPL['sidebar_title'] = 'Collaborating Artists';
+    if ($collabers) {  
+        $projected = '';
+        foreach ($collabers as $rows) { 
+            $template = new themer('explore/special_users_cards');
+
+            if ($user['uid'] == $project['creator_id']) {
+                $btn = clickApprove($rows['project'], $rows['user']);
+            } else {
+                $btn = clickFollow($rows['user'], $user['uid']);
+            }
+                
+            $projected .= smallUser_Card($rows['user'], null, 1);   
+        }     
+        $PTMPL['suggested_users'] = $projected;  
+    } else {
+        $PTMPL['suggested_users'] = notAvailable('There are no collaborators for this project');
+    }
+
+    $section = $theme->make();
+    return $section; 
+}
+
+function projectAudio($_track, $type = null, $creator_id=null) {
+    global $SETT, $LANG, $user, $framework, $databaseCL, $marxTime; 
+
+    $duration = '00:00';
+    $sts = $smsg = $cta = $project_id = $data_type = '';
+    
+    $iconer = '
+        <i class="ion-ios-%s pointer pc-font-3 pc-hover-1"
+            data-toggle="tooltip" data-placement="left" title="%s%S">
+        </i>';
+
+    $allow_access = 0;
+    if ($type == 1 || $type == 2) {
+        $prj = $databaseCL->fetchProject($_track['project'])[0];
+        if ($type == 1) {
+            $audio = $_track['file'];
+            $creator = $_track['user'];
+            $pid = $_track['project'];
+            $title = $_track['title'];
+            $_track['title'] =  $prj['title'];
+            $sts = !$_track['hidden'] ? 'checkmark-circle green' : 'help-circle pc-orange';
+            $cta = $prj['creator_id'] == $user['uid'] ? $LANG['click2update'] : '';
+            $smsg = !$_track['hidden'] ? $LANG['approved'].'. ' : $LANG['pending_instrumental'];
+            $data_type = 5;
+        } elseif ($type == 2) {
+            $audio = $_track['file'];
+            $creator = $_track['user'];
+            $pid = $_track['project'];
+            $title = $_track['title'];
+            $_track['title'] = $databaseCL->fetchTags($_track['tag'])[0]['title'];
+            $sts = $_track['status'] ? 'checkmark-circle green' : 'help-circle pc-orange';
+            $cta = $prj['creator_id'] == $user['uid'] ? $LANG['click2update'] : '';
+            $smsg = $_track['status'] ? $LANG['approved'].'. ' : $LANG['pending_stem'];
+            $data_type = 3;
+        }
+        $status_button = $creator == $user['uid'] || $prj['creator_id'] == $user['uid'] ? '  
+            <a href="#" data-toggle="modal" data-target="#uploadModal" data-track-id="'.$_track['id'].'"
+                data-project-id="'.$pid.'" data-type="'.$data_type.'" class="manage-modal-show">
+                '.sprintf($iconer, $sts, $smsg, $cta).' </a>' : sprintf($iconer, $sts, $smsg, $cta);
+    } else {
+        $audio = $_track['instrumental'];
+        $creator = $_track['creator_id'];
+        $pid = $_track['id'];
+        $title = $LANG['main_track'];
+        $sts = 'checkmark-circle green';
+        $smsg = $LANG['default_track']; 
+        $status_button = $creator == $user['uid'] ? ' 
+            <a href="#" class="upload-modal-show" id="main-instrumental-modal-show"
+                data-toggle="modal" data-type="4" data-target="#uploadModal" data-project-id="'.$pid.'">
+                '.sprintf($iconer, $sts, $smsg, $cta).' </a>' : sprintf($iconer, $sts, $smsg, $cta);
+    }
+
+    $status = '
+        <div class="stem__extra stem_extra_'.$_track['id'].'" title="'.$smsg.'">
+            '.$status_button.'
+        </div>';
+
+    if (getAudio($audio, 1)) {
+        $duration = fileInfo($audio)['playtime_string'];
+    } 
+    $project = $databaseCL->fetchProject($pid)[0];
+    $artist = $framework->userData($creator, 1);
+    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $t_format = strtolower(pathinfo($audio, PATHINFO_EXTENSION)); 
+
+    $allow_access = allowAccess($pid, 2, $project['published']);
+    $download_link = $allow_access ? '
+        <div class="track__download" title="Download '.$title.'">
+            <a href="'.getAudio($audio).'" id="download-link" download="'.strtoupper($title.'-'.$_track['title']).'.'.$t_format.'">
+                <i class="ion-ios-cloud-download not-added pc-shadow-1"></i>
+            </a>
+        </div>' : '';
+
+    $track = $audio ? '
+        <div class="tracker song-container stem_'.$_track['id'].'" id="track'.$_track['id'].'"> 
+            <div class="track__added subst"> 
+                <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($audio).'" data-track-format="'.$t_format.'"  data-hideable="0" class="track">
+                    <div class="tracker__bg_art" style="background-image: url(&quot;'.getImage($project['cover'], 1, 2).'&quot;)">
+                        <i class="ion-ios-play" id="icon_play'.$_track['id'].'"></i> 
+                        <img style="display: none;" src="'.getImage($project['cover'], 1, 2).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
+                    </div>
+                </div>
+            </div>
+            <div class="stem__title">
+                <span id="song-url'.$_track['id'].'"> ' .$title. ' </span>
+            </div>
+            <div class="track__author" id="song-author">
+                <a href="#" id="song-author'.$_track['id'].'"><div id="song-name'.$_track['id'].'">'.$_track['title'].'</div></a>
+            </div>
+            '.$download_link.'
+            <div class="track__length">'.$duration.'</div> 
+            '.$status.'
+        </div> ' : ''; 
+    return $track;
+}
+
+function projectStems($rows) {
+    global $SETT, $LANG, $user, $framework, $databaseCL, $marxTime;
+    $card = '';
+    if ($rows) { 
+        $artist = $framework->userData($rows['user'], 1);
+        $colaber = $databaseCL->fetch_projectCollaborators($rows['user'], 1)[0];
+
+        $get_stems = $databaseCL->fetchStems($rows['user']);
+        $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']);
+        $like_button = clickFollow($rows['user'], $user['uid']);
+
+        $n = 0;
+        if ($get_stems) {
+            $track = $album = '';
+            foreach ($get_stems as $_track) {
+                $n++;
+                $track .= projectAudio($_track, 2);
+            }
+            $list_tracks = $track;
+        } else {
+            $list_tracks = notAvailable($LANG['pending_user_stem']);
+        }
+
+        $card .= '
+        <div class="album">
+            <div class="album__info">
+                <a href="'.$link.'">
+                    <div class="project__stems__art">
+                        <img src="'.getImage($artist['photo'], 1).'" alt="'.$artist['fname'].'" />
+                    </div>
+                </a>
+                <div class="album__info__meta">
+                    <div class="album__year"> JOINED '.date('d M Y', strtotime($colaber['time'])).'</div>
+                    <div class="album__name">
+                        <a href="'.$link.'">'.$artist['fname'].' '.$artist['lname'].'</a>
+                    </div>
+                    <div class="album__actions">
+                        '.$like_button.' 
+                    </div>
+                </div>
+            </div>
+            
+            <div class="album__tracks">
+                <div class="tracks">
+                    '.$list_tracks.'
+                </div>
+            </div>
+        </div>';
+    }
+    return $card;
+}
+
+function specialRequestCard($rows){
+    global $SETT, $user, $framework, $databaseCL, $marxTime; 
+
+    $artist = $framework->userData($rows['user'], 1);
+    
+    $btn = clickApprove($rows['project'], $rows['user']);
+    $projected = smallUser_Card($artist['uid'], null, 1);
+    $card ='
+    <div class="colab-card" id="special-request-'.$rows['user'].'">
+        <div class="colab-card__image" style="background-image: url(&quot;'.getImage($artist['cover'], 1).'&quot;);">
+        </div>
+        <article class="sidebarModule g-all-transitions-200-linear whoToFollowModule" style="display: block;"> 
+            '.$projected.'
+        </article> 
+    </div>';
+    return $card;
+}
+
+function notSpecialCard() {
+    global $SETT, $user, $framework, $databaseCL, $marxTime; 
+
+    $artist = $framework->userData($rows['user'], 1);
+    $card = '
+    <a href="'.$link.'" class="related-artist">
+        <span class="related-artist__img">
+            <img src="'.getImage($artist['photo'], 1, 1).'" alt="'.$artist['fname'].' '.$artist['lname'].'" />
+        </span>
+        <span class="related-artist__name">'.$artist['fname'].' '.$artist['lname'].'</span>
+    </a>';
+    return $card;
+}
+
+function projectsCard($rows, $artist_id = null) {
+    global $SETT, $user, $framework, $databaseCL, $marxTime;
+    $artist = $framework->userData($artist_id, 1);
+
+    $creator = $framework->userData($rows['creator_id'], 1);
+    $link = cleanUrls($SETT['url'] . '/index.php?page=project&project='.$rows['safe_link']);
+    $enter_btn = clickApprove($rows['id'], $user['uid'], 1);  
+
+    $count_stems = $marxTime->numberFormater($rows['count_stems'], 1);
+    $count_instrumentals = $marxTime->numberFormater($rows['count_instrumentals'], 1);
+
+    $collabers = $databaseCL->fetch_projectCollaborators($rows['id'])[0];
+    $collabers_count = $marxTime->numberFormater($collabers['counter']);
+    $collabers_count_full = $marxTime->numberFormater($collabers['counter'], 1); 
+
+    $cards = '
+    <div class="col-md-6">
+        <div class="artist__card mb-2">
+            <div class="free-artist">
+                <div class="album-artist__">
+                    <a href="'.$link.'">
+                        <div class="playlist__image" style="background-image: url(&quot;'.getImage($rows['cover'], 1).'&quot;)">
+                            <i class="ion-ios-play"></i>
+                        </div>
+                    </a>
+                </div>
+                <a href="'.$link.'">
+                    <div class="artist__name">'.$rows['title'].'</div>
+                </a>
+                <div class="artist__followers">
+                    <a href="#" title="'.$collabers_count_full.' Collaborators" class="mr-3"> <i class="ion-ios-people ui ml-3"></i> <span id="collaborators-count-'.$rows['id'].'">'.$collabers_count.'</span></a>
+                    <a href="#" title="'.$count_instrumentals.' Instrumentals" class="mr-3"> <i class="ion-ios-musical-notes ui ml-3"></i> '.$count_instrumentals.'</a>
+                    <a href="#" title="'.$count_stems.' Stems" class="mr-3"> <i class="ion-ios-pulse ui ml-3"></i> '.$count_stems.'</a>
+                </div>
+                '.$enter_btn.' By '.$creator['fname'].' '.$creator['lname'].'
+            </div>
+        </div>
+    </div>';
+ 
+    return $cards;
 }

@@ -81,9 +81,193 @@ $(document).ready(function() {
 			}
 		}); 
 	});
+
+	$('.doapprove').on('click', function() {
+		let project = $(this).data('project-id');
+		let user_id = $(this).data('user-id');
+		var types = $(this).data('type');
+		if (types == 1) {
+			var type_ = 6;
+		} else {
+			var type_ = 5;
+		}
+
+		$.ajax({
+			type: 'POST',
+			url: site_url+'/connection/doAction.php',
+			data: {type: type_, project: project, user_id: user_id},
+			dataType: 'JSON',
+			success: function(data) {
+				var plus_it = data.status == 1 ? Number($('#collaborators-count-'+project).text())+Number(1) : Number($('#collaborators-count-'+project).text())-Number(1);
+				$('#collaborators-count-'+project).text(plus_it);
+				$('.collaborators-counter-'+project).text(plus_it);
+				$('#doAction-'+types+'_'+user_id).toggleClass('orange hover'); 
+				$('#special-request-'+user_id).slideToggle();
+				if (types == 1 || types == 2) {
+					$('#doAction-'+types+'_'+user_id+' .text').text(data.status == 1 ? 'CANCEL REQUEST' : 'REQUEST ENTRY');
+				} else {
+					$('#doAction-'+types+'_'+user_id+' .text').text(data.status == 1 ? 'REMOVE' : 'APPROVE');
+				}
+			}
+		}); 
+	}); 
 }); 
- 
-function spinner(type, color, size) {
+
+function errorMessage(xhr, status, error) { 
+   	const message = 'An Error Occurred - ' + xhr.status + ': ' + xhr.statusText + '<br> ' + error;  
+    const errorMessage = 
+    '<div class="card m-2 text-center">'+
+		'<div class="card-header p-2">Server Response: </div>'+
+		'<div class="card-body p-2 text-info">'+
+			'<div class="card-text font-weight-bold text-danger">'+message+'</div>'
+			+xhr.responseText+
+		'</div>'+
+	'</div>';
+	return errorMessage;
+}
+
+function projectFiles(type, project, id) {
+  // type 1,4: Approve File
+  // type 2,5: Hide File
+  // type 3,6: Delete File
+  if (type == 3 || type == 6) {
+    $(".remove_file, .stem_"+id).slideToggle();
+    $('.modal-dialog .close').click();
+  }
+
+  $.ajax({ 
+    type: 'POST',
+    url: site_url+'/connection/manage_project_files.php',
+    data: {project: project, track_id: id, type: type},
+    dataType: 'JSON',
+    success: function(data) {
+      $('#modal-content').html(data.main_content);
+      $('#hidden-status').text(data.resp);
+      $('.approve_hide').text(data.setting);
+      if (type == 1 || type == 2 || type == 4 || type == 5) {
+        $('.stem_extra_'+id+' i').toggleClass('pc-orange green ion-ios-checkmark-circle ion-ios-help-circle');
+        $('.approve_hide').toggleClass('btn-success btn-warning');
+
+        var action = type == 1 ? 2 : type == 2 ? 1 : type == 4 ? 5 : 4;
+        $('.approve_hide').attr('onclick', 'projectFiles('+action+', '+project+', '+id+')'); 
+      }   
+    }
+  });
+}
+
+function playlistManager(type, project, id) {
+  // type 1,4: Create Playlist
+  // type 2,5: Hide File
+  // type 3,6: Delete File
+  if (type == 3 || type == 6) {
+    $(".remove_file, .stem_"+id).slideToggle();
+    $('.modal-dialog .close').click();
+  }
+
+  $.ajax({ 
+    type: 'POST',
+    url: site_url+'/connection/manage_project_files.php',
+    data: {project: project, track_id: id, type: type},
+    dataType: 'JSON',
+    success: function(data) {
+      $('#modal-content').html(data.main_content);
+      $('#hidden-status').text(data.resp);
+      $('.approve_hide').text(data.setting);
+      if (type == 1 || type == 2 || type == 4 || type == 5) {
+        $('.stem_extra_'+id+' i').toggleClass('pc-orange green ion-ios-checkmark-circle ion-ios-help-circle');
+        $('.approve_hide').toggleClass('btn-success btn-warning');
+
+        var action = type == 1 ? 2 : type == 2 ? 1 : type == 4 ? 5 : 4;
+        $('.approve_hide').attr('onclick', 'projectFiles('+action+', '+project+', '+id+')'); 
+      }   
+    }
+  });
+}
+
+// Set an instrumental to public or project only
+$(document).on('change', '#pub_instr', function(e) {
+  var makePub = $('#pub_instr').prop('checked');
+  var id = $(this).data('id');
+  var project = $(this).data('project');
+  var action = 0;
+  if (makePub) {
+    var action = 1;
+  }
+
+  $.ajax({
+    type: 'POST',
+    url: site_url+'/connection/manage_project_files.php',
+    data: {project:project, track_id:id, action:action, type:7},
+    dataType: 'JSON',
+    success: function(data) {
+      $('#public-status').html(data.resp);
+    }
+  });
+});
+
+// Function to load more results to the page 
+function loadMore(this_) { 
+	$("#load-more").html("<span class='load_anim'>"+spinner(4)+"</span>");
+	var type = $(this_).data("last-type");
+	var last_track = $(this_).data("last-track");
+	var artist_id = $(this_).data("last-artist");
+	var personal = $(this_).data("last-personal");
+	var query = {type: type, last_track: last_track, artist: artist_id, personal:personal};
+
+	$.ajax({
+		type: 'POST',
+		url: site_url+'/connection/moreResults.php',
+		data: query, 
+		dataType: 'JSON',
+		success: function(data) {   
+			$('#more-container').append(data.result);
+			$('.more-container').append(data.result);
+			$('#show-more-div').html(data.more);
+			$('#more-container').slideDown("style");
+			$("#load_anim").remove();
+		}
+	}); 
+}
+
+// Function to load more results to the page 
+function loadMore_improved(this_, data) { 
+	$(".load_more_div").html("<span class='load_anim'>"+spinner(4)+"</span>");
+	var type = 6; 
+	var query = {type: type, data: data};
+
+	$.ajax({
+		type: 'POST',
+		url: site_url+'/connection/moreResults.php',
+		data: query, 
+		dataType: 'JSON',
+		success: function(data) {
+			$('.content-holder').append(data.result);
+			$('.load-more-div').html(data.more);
+			$("#load_anim").remove();
+		}
+	}); 
+}
+
+function options(type, options) {
+	$.ajax({
+		type: 'POST',
+		url: site_url+'/connection/options.php',
+		data: {type: type, data: options}, 
+		dataType: 'JSON',
+		success: function(data) {console.log(options.action);
+			if (options.action == 'publish' && data.resp == 1) {
+				$('#publish_btn_'+options.project).html(data.option);
+				var style = data.status == 0 ? 'success' : 'warn';
+				$.notify(data.msg, style);
+			} else if (options.action == 'c_status' && data.resp == 1) { 
+				var style = data.status == 1 ? 'success' : 'warn';
+				$.notify(data.msg, style);
+			}
+		}
+	});	
+}  
+
+function spinner(type, color, size, x) {
 	switch(color) {
 		case 1: var color = '-success';
 			break;
@@ -101,42 +285,22 @@ function spinner(type, color, size) {
 			break;
 		default: var color = '-secondary';
 	}
-	// if (type == 1) {
-	// 	var type = 'grow';
-	// } else {
-	// 	var type = 'border';
-	// }
-	// if (size == 1) {
-	// 	var size = ' spinner-'+type+'-sm';
-	// } else {
-	// 	var size = '';
-	// }
-
-    return '<div id="loader-'+type+'"> <span></span> <span></span> <span></span> </div>';
-	//'<div class="spinner-'+type+' text'+color+size+'" role="status"> <span class="sr-only">Loading...</span> </div>';
-}
-
-function loadMore(this_) { 
-	$("#load-more").html("<span class='load_anim'>"+spinner(4)+"</span>");
-	var type = $(this_).data("last-type");
-	var last_track = $(this_).data("last-track");
-	var artist_id = $(this_).data("last-artist");
-	var personal = $(this_).data("last-personal");
-	var query = {type: type, last_track: last_track, artist: artist_id, personal:personal};
-
-	$.ajax({
-		type: 'POST',
-		url: site_url+'/connection/moreResults.php',
-		data: query, 
-		dataType: 'JSON',
-		success: function(data) {  
-			$('#more-container').append(data.result);
-			$('.more-container').append(data.result);
-			$('#show-more-div').html(data.more);
-			$('#more-container').slideDown("style");
-			$("#load_anim").remove();
+	if (x) {
+		if (type == 1) {
+			var type = 'grow';
+		} else {
+			var type = 'border';
 		}
-	}); 
+		if (size == 1) {
+			var size = ' spinner-'+type+'-sm';
+		} else {
+			var size = '';
+		}
+		return '<div class="spinner-'+type+' text'+color+size+'" role="status"> <span class="sr-only">Loading...</span> </div>';
+	} else {
+		return '<div id="loader-'+type+'"> <span></span> <span></span> <span></span> </div>';
+	}
+
 }
 
 $('.wave_init').each(function(){

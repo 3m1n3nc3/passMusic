@@ -1094,7 +1094,7 @@ ul ul, ul ol, ol ol, ol ul {
   }
   .tracks .track__popularity {
     display: none;
-  }
+  } 
 }
 .related-artists {
   display: flex;
@@ -1212,8 +1212,8 @@ ul ul, ul ol, ol ol, ol ul {
   flex-flow: row wrap;
 }
 .project__stems__art img {
-  width: 65px;
-  height: 65px;
+  width: 100px;
+  height: 100px;
 }
 .project__stems__meta {
   width: calc( 100% - 150px);
@@ -1225,6 +1225,19 @@ ul ul, ul ol, ol ol, ol ul {
   color: white;
   font-size: 25px;
   font-weight: 100;
+}
+.tracks .stem__title {
+  width: 35%;
+  margin-left: 10px;
+  color: white;
+}
+.tracks .stem__extra {
+  margin-left: 5px;
+  padding-right: 10px;
+  font-size: 15px;
+  width: 70px;
+  color: #fff;
+  text-align: right;
 }
 .album__info__meta {
   width: calc( 100% - 150px);

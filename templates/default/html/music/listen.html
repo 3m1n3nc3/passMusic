@@ -21,7 +21,7 @@
         </div>
         
         <div class="artist__listeners">
-          <div class="artist__listeners__count">15,662,810</div>
+          <div class="artist__listeners__count">{$total_monthly_views}</div>
           <div class="artist__listeners__label">Monthly Listeners</div>
         </div>
         <div class="artist__navigation">
@@ -31,22 +31,9 @@
             </li>
             <li role="presentation">
               <a href="#related-artists" aria-controls="related-artists" role="tab" data-toggle="tab">Related Artists</a>
-            </li>
-            <!--<li role="presentation">
-              <a href="#artist-about" aria-controls="artist-about" role="tab" data-toggle="tab">About</a>
-            </li>-->
+            </li> 
           </ul>
-          <div class="artist__navigation__friends">
-            <a href="#">
-              <img src="http://passcolabs.te/uploads/photos/17.jpg" alt="" />
-            </a>
-            <a href="#">
-              <img src="http://passcolabs.te/uploads/photos/5.jpg" alt="" />
-            </a>
-            <a href="#">
-              <img src="http://passcolabs.te/uploads/photos/enlarged-facebook-profile-picture.jpg" alt="" />
-            </a>
-          </div>
+          {$show_monthly_viewers}
         </div>
       </div>
       {$secondary_navigation}

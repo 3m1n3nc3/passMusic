@@ -7,36 +7,34 @@
       <div class="artist__header">
         <div class="artist__info project_info">
           <div class="profile__img project__img">
-            <img src="http://passcolabs.te/uploads/photos/g_eazy_propic.jpg" alt="G-Eazy" />
+            <img src="{$cover_photo}" alt="G-Eazy" />
           </div>
           <div class="artist__info__meta">
             <div class="artist__info__type">Project</div>
-            <div class="project_info__name">Mother Nature (The Album)</div>
+            <div class="project_info__name">{$project_title}</div>
             <div class="artist__info__actions">
-              <button class="button-red"> <i class="ion-ios-recording"></i> Colab </button> 
-              <button class="button-light more"> <i class="ion-ios-more"></i> </button>
+              {$project_request_entry} 
             </div>
           </div>
         </div>
         
         <div class="artist__listeners">
-          <div class="artist__listeners__count">15,662,810</div>
-          <div class="artist__listeners__label">Monthly Listeners</div>
+          <div class="artist__listeners__count" id="collaborators-count-{$project_id}">{$count_collabers}</div>
+          <div class="artist__listeners__label">Collaborators</div>
         </div>
         <div class="artist__navigation">
-          <ul class="nav nav-tabs tab-activator" role="tablist">
-            <li role="overview" class="active">
+          <ul class="nav nav-tabs" role="tablist">
+            <li role="presentation" class="active">
               <a href="#project-overview" aria-controls="project-overview" role="tab" data-toggle="tab">Overview</a>
             </li>
-            <li role="collaboration">
-              <a href="#colab-requests" aria-controls="colab-requests" role="tab" data-toggle="tab">Colab Requests</a>
-            </li>
-            <li role="related">
+            <li role="presentation">
               <a href="#related-projects" aria-controls="related-projects" role="tab" data-toggle="tab">Related Projects</a>
             </li>
-          </ul> 
+            {$restricted_tabs}
+          </ul>
+          <div class="artist__navigation__friends" style="padding: 30px;">  </div>
         </div>
-      </div>
+      </div> 
       
       <div class="artist__content">
         <div class="tab-content">
@@ -49,323 +47,61 @@
                 <div class="section-title">Project Details</div>
                 <div class="latest-release"> 
                   <div class="project_details">
-                    <div class="project_details__text">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vitae dignissimos temporibus, animi soluta neque assumenda dolorum inventore numquam eveniet alias distinctio, sed iure obcaecati error esse dolores excepturi totam, ut. ipsum dolor sit amet, consectetur adipisicing elit. Quam minus optio repellat provident nam. Nobis porro obcaecati odit, ipsa vitae recusandae, repellat eaque, quas aliquid explicabo a magni harum tenetur? ipsum dolor sit amet, consectetur adipisicing elit. Earum doloribus optio ut iste deserunt est dolor suscipit expedita pariatur eos dolores saepe ratione eaque distinctio totam, tempore voluptatem laboriosam explicabo.</div> 
+                    <div class="project_details__text">{$project_details}</div> 
                   </div>
+         
+                  <!-- Project upload modal buttons -->
+                  {$display_manage_buttons}
+
                 </div>
                 <!-- / -->
-
+                
                 <!-- Project Instrumentals-->
-                <div class="section-title">Project Instrumentals</div>
+                <div class="section-title{$hidden}">Project Instrumentals</div> 
                 <div class="tracks"> 
-                  <div class="tracker">
-                    <div class="track__art">
-                      <img src="http://passcolabs.te/uploads/photos/tth.jpg" alt="These Things Happen" />
-                    </div>
-                    <div class="track__number">1</div>
-                    <div class="track__added">
-                      <i class="ion-plus not-added"></i>
-                    </div>
-                    <div class="track__title">I Mean It</div>
-                    <div class="track__explicit">
-                      <span class="label">Explicit</span>
-                    </div>
-                    <div class="track__plays">74,568,782</div>
-                  </div>
-                  <div class="tracker">
-                    <div class="track__art">
-                      <img src="http://passcolabs.te/uploads/photos/whenDarkOut.jpg" alt="When It's Dark Out" />
-                    </div>
-                    <div class="track__number">2</div>
-                    <div class="track__added">
-                      <i class="ion-checkmark-round added"></i>
-                    </div>
-                    <div class="track__title">Calm Down</div>
-                    <div class="track__explicit">
-                      <span class="label">Explicit</span>
-                    </div>
-                    <div class="track__plays">13,737,506</div>
-                  </div> 
-                </div>
-                <button class="show-more button-light">Show 5 More</button>
-                <button class="add-more button-light">Add More</button>
+
+                  {$main_instrumental}
+                  {$list_instrumentals} 
+
+                </div> 
                 <!-- / -->
               </div>
                 
               <!-- Collaborating Artists section -->
-              <div class="overview__related">
-                <div class="section-title">Collaborating Artists</div>
+              <div class="overview__related overview__border"> 
 
-                <div class="related-artists">
+                {$project_collaborators}
 
-                  <a href="#" class="related-artist">
-                    <span class="related-artist__img">
-                      <img src="http://passcolabs.te/uploads/photos/hoodie.jpg" alt="Hoodie Allen" />
-                    </span>
-                    <span class="related-artist__name">Hoodie Allen</span>
-                    <span class="related-artist__delete"><i class="fa fa-times"></i></span>
-                  </a>
-                  
-                  <a href="#" class="related-artist">
-                    <span class="related-artist__img">
-                      <img src="http://passcolabs.te/uploads/photos/mikestud.jpg" alt="Mike Stud" />
-                    </span>
-                    <span class="related-artist__name">Mike Stud</span>
-                  </a>
-                  
-                  <a href="#" class="related-artist">
-                    <span class="related-artist__img">
-                      <img src="http://passcolabs.te/uploads/photos/drake.jpg" alt="Drake" />
-                    </span>
-                    <span class="related-artist__name">Drake</span>
-                  </a> 
-
-                </div>
               </div>
 
-              <div class="overview__albums">                
-                <div class="overview__albums__head">                
-                  <span class="section-title">Project Stems</span>                 
-                  <span class="view-type">                    
-                    <i class="fa fa-list list active"></i>
-                    <i class="fa fa-th-large card"></i>                    
-                  </span>                  
-                </div>   
-
-                <div class="album">                  
-                  <div class="project__stems">                   
-                    <div class="project__stems__art">                      
-                      <img src="http://passcolabs.te/uploads/photos/whenDarkOut.jpg" alt="When It's Dark Out" />            
-                    </div>
-                    <div class="project__stems__meta">                            
-                      <div class="project__stems_name">Marxemi John</div>                      
-                      <div class="album__actions">                        
-                        <button class="button-light save">Save</button>
-                        <button class="button-light more">
-                        <i class="ion-ios-more"></i>
-                        </button>                       
-                      </div>                      
-                    </div>                   
-                  </div>
-                  
-                  <div class="album__tracks">                   
-                    <div class="tracks">                    
-                      <div class="tracks__heading">                        
-                        <div class="tracks__heading__number">#</div>                       
-                        <div class="tracks__heading__title">Stem</div>                      
-                        <div class="tracks__heading__length">                     
-                          <i class="ion-ios-stopwatch-outline"></i>                   
-                        </div>                
-                        <div class="tracks__heading__popularity">                  
-                          <i class="ion-thumbsup"></i>                
-                        </div>               
-                      </div>
-
-                      <div class="tracker">
-                        <div class="track__number">1</div>
-                        <div class="track__added">
-                          <i class="ion-checkmark-round added"></i>
-                        </div>
-                        <div class="track__title">Intro</div>
-                        <div class="track__explicit">
-                          <span class="label">Explicit</span>
-                        </div>                       
-                        <div class="track__length">1:11</div>                      
-                        <div class="track__popularity">                        
-                          <i class="ion-arrow-graph-up-right"></i>                       
-                        </div>
-                      </div>
-                      
-                      <div class="tracker">
-                        <div class="track__number">2</div>
-                        <div class="track__added">
-                          <i class="ion-checkmark-round added"></i>
-                        </div>
-                        <div class="track__title">Random</div>
-                        <div class="track__explicit">
-                          <span class="label">Explicit</span>
-                        </div>
-                        
-                        <div class="track__length">3:00</div>                       
-                        <div class="track__popularity">                         
-                          <i class="ion-arrow-graph-up-right"></i>                         
-                        </div>
-                      </div>
-                      
-                      <div class="tracker">
-                        <div class="track__number">3</div>
-                        <div class="track__added">
-                          <i class="ion-checkmark-round added"></i>
-                        </div>
-                        <div class="track__title featured">                          
-                          <span class="title">Me, Myself & I</span>
-                          <span class="feature">Bebe Rexha</span>                         
-                        </div>
-                        <div class="track__explicit">
-                          <span class="label">Explicit</span>
-                        </div>                        
-                        <div class="track__length">4:11</div>                        
-                        <div class="track__popularity">                         
-                          <i class="ion-arrow-graph-up-right"></i>                         
-                        </div>
-                      </div> 
-
-                    </div>
-                    
-                  </div>
-                  
-                </div>
-                
-              </div>
+              {$display_project_stems}
               
             </div>
             
           </div>
           <!-- / -->
 
-          <!-- Related Projects -->
+          <!-- Colab requests -->
           <div role="tabpanel" class="tab-pane" id="related-projects">            
             <div class="media-cards">  
+ 
+              {$project_related}
 
-              <div class="media-card">               
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/hoodie.jpg);">                  
-                  <i class="ion-ios-play"></i>                 
-                </div>                
-                <a class="media-card__footer">Marxemi John</a>                
-              </div>  
+            </div>   
 
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/mikestud_large.jpg);">                 
-                  <i class="ion-ios-play"></i>                 
-                </div>               
-                <a class="media-card__footer">Mike Stud</a>               
-              </div>
-              
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/drake_large.jpg);">                 
-                  <i class="ion-ios-play"></i>                 
-                </div>               
-                <a class="media-card__footer">Drake</a>               
-              </div>
-              
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/jcole_large.jpg);">                  
-                  <i class="ion-ios-play"></i>                  
-                </div>                
-                <a class="media-card__footer">J. Cole</a>               
-              </div>
-              
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/bigSean_large.jpg);">                  
-                  <i class="ion-ios-play"></i>                  
-                </div>                
-                <a class="media-card__footer">Big Sean</a>               
-              </div>
-              
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/wiz.jpg);">
-                  <i class="ion-ios-play"></i>                 
-                </div>               
-                <a class="media-card__footer">Wiz Khalifa</a>                
-              </div>   
+            {$no_related}  
 
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/yonas.jpg);">                  
-                  <i class="ion-ios-play"></i>                 
-                </div>                
-                <a class="media-card__footer">Yonas</a>                
-              </div>     
-
-              <div class="media-card">                
-                <div class="media-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/childish.jpg);">                  
-                  <i class="ion-ios-play"></i>                  
-                </div>                
-                <a class="media-card__footer">Childish Gambino</a>                
-              </div> 
-
-            </div>            
           </div>
+          
+          {$restricted_tabs_content}
 
-          <!-- Colab requests -->
-          <div role="tabpanel" class="tab-pane" id="colab-requests">            
-            <div class="colab-cards">  
-
-              <div class="colab-card">               
-                <div class="colab-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/hoodie.jpg);">                  
-                  <i class="ion-checkmark-circled"></i>                 
-                </div>                
-                <a class="colab-card__footer">Marxemi John</a>                
-              </div>  
-
-              <div class="colab-card">                
-                <div class="colab-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/mikestud_large.jpg);">                 
-                  <i class="ion-checkmark-circled"></i>                 
-                </div>               
-                <a class="colab-card__footer">Mike Stud</a>               
-              </div>  
-
-              <div class="colab-card">                
-                <div class="colab-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/yonas.jpg);">                  
-                  <i class="ion-checkmark-circled"></i>                  
-                </div>                
-                <a class="colab-card__footer">Yonas</a>                
-              </div>     
-
-              <div class="colab-card">                
-                <div class="colab-card__image" style="background-image: url(http://passcolabs.te/uploads/photos/childish.jpg);">                  
-                  <i class="ion-checkmark-circled"></i>                   
-                </div>                
-                <a class="colab-card__footer">Childish Gambino</a>                
-              </div> 
-
-            </div>            
-          </div>
-          <!-- / -->
-          <!-- About // Coming Soon-->
-          <!--<div role="tabpanel" class="tab-pane" id="artist-about">About</div>-->
-          <!-- / -->
         </div>       
       </div>     
     </div>   
   </div>
-  
-  <div class="content__right">    
-    <div class="social">      
-      <div class="friends">   
 
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>         
-          Sam Smith          
-        </a>
-        
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>         
-          Tarah Forsyth          
-        </a>
-        
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>          
-          Ricahrd Tomkins          
-        </a>
-        
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>         
-          Tony Russo          
-        </a>
-        
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>          
-          Alyssa Marist         
-        </a>
-        
-        <a href="#" class="friend">          
-          <i class="ion-android-person"></i>         
-          Ron Samson          
-        </a>
-        
-      </div>     
-      <button class="button-light">Find Friends</button>      
-    </div>    
-  </div>
-  
+  {$right_sidebar}
+ 
 </section>
 {$player}
+{$upload_modal}

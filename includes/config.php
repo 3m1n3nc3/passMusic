@@ -49,6 +49,7 @@ $action = array('homepage'			=> 'homepage',
 				'listen'			=> 'listen',
 				'follow'			=> 'follow',
 				'view_artists'		=> 'view_artists',
+				'distribution'		=> 'distribution',
 				'explore'			=> 'explore'
 				); 
 

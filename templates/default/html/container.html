@@ -4,13 +4,18 @@
     <meta charset="UTF-8">
     <title>{$site_title} </title>
     <link href='https://fonts.googleapis.com/css?family=Roboto:400,100,100italic,300,300italic,400italic,500,500italic,700,700italic,900italic,900' rel='stylesheet' type='text/css'>
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/AdminLTE.cssd" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/skin-black-light.min.cssd" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/bootstrap.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/font-awesome.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/ionicons.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/nouislider.min.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/styles.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/jquery-ui.min.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/jquery.tag-editor.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/soundcloud.mixins.css" rel="stylesheet" type="text/css">
     <link href="{$site_url}/{$template_path}/{$template_name}/css/bootstrap.mixins.css" rel="stylesheet" type="text/css">
+    <link href="{$site_url}/{$template_path}/{$template_name}/css/dropzone.css" rel="stylesheet" type="text/css">
     
     <style type="text/css">
       .artist__header {
@@ -24,11 +29,19 @@
     </style>
 
     <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery-ui.min.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.caret.min.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.jplayer.min.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/wavesurfer.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/dropzone.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/uploader.js"></script>
 
     <script type="text/javascript">
-      site_url = "{$site_url}"; nowPlaying = viewed_id = 0; player_volume = 60;
+      site_url = "{$site_url}"; 
+      nowPlaying = viewed_id = 0; 
+      player_volume = 60; 
+      upload_limit = 15;
+      template_url = "{$template_url}";
 
       $(document).ready(function() {
         $("#sound-player").jPlayer({
@@ -89,6 +102,7 @@
           keyEnabled: true
         });       
       });
+      
       function updateTrackInfo(id) {
         // If there's a track id
         if(id > 0) {
@@ -121,6 +135,7 @@
           $("#sound-player").jPlayer("option", "cssSelectorAncestor", '.current-track');
         }
       }
+
       function playSong(song, id, format, time) {
 
         // Remove the current-song class (if any)
@@ -200,14 +215,17 @@
     {$header}
     
     <!-- Page content has to go in here -->
+    {$global_playlister}
     {$content}
     
     <!-- player has to go in here -->
     <!-- {$ player} -->
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/jquery.tag-editor.min.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/clipboard.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/nouislider.min.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/scripts.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/functions.js"></script>
+    <script src="{$site_url}/{$template_path}/{$template_name}/js/hovercards.min.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/notify.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/popper.js"></script>
     <script src="{$site_url}/{$template_path}/{$template_name}/js/bootstrap.js"></script>

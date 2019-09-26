@@ -10,7 +10,7 @@ function mainContent() {
 	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($user) ? $user['uid'] : '');
     $artist = $framework->userData($artist_id, 1);
 
-    $t = $user['uid'] == $artist_id ? 'you have' : ucfirst($artist['fname']. ' '.$artist['lname']).' has';
+    $t = $user['uid'] == $artist_id ? 'you' : ucfirst($artist['fname']. ' '.$artist['lname']);
     $s = $user['uid'] == $artist_id ? '' : '\'s';
     if (isset($_GET['get']) && $_GET['get'] == 'followers') {
         // Fetch followers
@@ -33,7 +33,22 @@ function mainContent() {
         $follows_count = $databaseCL->fetchFollowers($artist_id, $type);
         $PTMPL['load_more_btn'] = count($follows_count) > $configuration['page_limits'] ? '<button onclick="loadMore($(this))" data-last-type="4" data-last-personal="'.$type.'" data-last-artist="'.$artist_id.'" data-last-track="'.$last_id.'" class="show-more button-light" id="load-more">Load More</button>' : '';
     } else {
-        $PTMPL['no_followers'] = notAvailable($t.' no followers');
+        $ts = $user['uid'] == $artist_id ? 'you have' : ucwords($artist['fname']. ' '.$artist['lname']).' has';
+        $nmsg = isset($_GET['get']) && $_GET['get'] == 'following' ? sprintf($LANG['no_following'], $ts) : sprintf($LANG['no_followers'], $ts);
+        if (isset($_GET['get']) && $_GET['get'] == 'following') {
+            if ($user['uid'] == $artist_id) {
+                $nmsg = $LANG['you_no_following'];
+            } else {
+                $nmsg = sprintf($LANG['no_following'], ucwords($artist['fname']. ' '.$artist['lname']));
+            }
+        } else {
+            if ($user['uid'] == $artist_id) {
+                $nmsg = $LANG['you_no_followers'];
+            } else {
+                $nmsg = sprintf($LANG['no_followers'], ucwords($artist['fname']. ' '.$artist['lname']));
+            } 
+        }
+        $PTMPL['no_followers'] = notAvailable($nmsg);
     }
  
     $PTMPL['secondary_navigation'] = secondaryNavigation($artist_id);

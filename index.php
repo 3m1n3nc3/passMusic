@@ -11,6 +11,7 @@ require_once("controller/{$page_name}.php");
 
 $PTMPL['site_title'] = 'Passcolabs'; 
 $PTMPL['site_url'] = $SETT['url'];
+$PTMPL['template_url'] = $PTMPL['template_url'];
 $PTMPL['favicon'] = 'favicon.ico';
 
 $captcha_url = '/includes/vendor/goCaptcha/goCaptcha.php?gocache='.strtotime('now');
@@ -23,16 +24,30 @@ $PTMPL['language'] = isset($_COOKIE['lang']) ? $_COOKIE['lang'] : '';
 // Show the list of playlists
 $PTMPL['show_playlists'] = showPlaylist($user['uid']);
 
+// Set global links
+$PTMPL['new_release_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
+$PTMPL['all_releases_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases');
+
 // Dynamically included pages
 $PTMPL['header'] = globalTemplate(1);
 $PTMPL['player'] = globalTemplate(2);
 $PTMPL['sidebar'] = globalTemplate(3);
 $PTMPL['right_sidebar'] = globalTemplate(4);
+$PTMPL['global_playlister'] = playlistManager(1);
+
+$PTMPL['super_header'] = superGlobalTemplate(1);
+$PTMPL['super_footer'] = superGlobalTemplate();
+// End Dynamically included pages
 
 // Render the page
 $PTMPL['content'] = mainContent();   
 
-$theme = new themer('container');
+
+if (getPage($page_name) == 'distribution') {
+	$theme = new themer('super_container'); 
+} else {
+	$theme = new themer('container'); 
+}
 echo $theme->make();
  
 ?>

@@ -1,0 +1,53 @@
+<script> 
+	Dropzone.autoDiscover = false;
+
+	$(function() {
+	    //Dropzone class 
+	    var myDropzone = new Dropzone(".dropzone", {
+			url: "{$release_artwork_url}",
+			paramName: "upload_image",
+			maxFilesize: 3,
+			maxFiles: 1,
+			acceptedFiles: "image/*",
+			autoProcessQueue: false, 
+		    success: (file, response) => {
+		    	var data = JSON.parse(file.xhr.response);
+		        console.log(response);
+		        if (data.status_code === 0) {
+		        	myDropzone.removeFile(file);
+		        }
+		        $('#notification').html(data.msg); 
+		    }
+		});
+		$('#_upload_button').click(function(){           
+			myDropzone.processQueue();
+		}); 
+	});
+</script>
+<main id="main">
+	<section id="contact" class="bg-light">
+		<div class="container">
+			<h2 class="text-secondary">Upload Artwork</h2>
+			<div class="row">
+				<div class="col-lg-12 content text-center p-5 rounded shadow-sm bg-white"> 
+   
+			 		<label class="bg-light text-info border border-rounded p-5 dropzone">
+			 			<i class="fa fa-arrow-up fa-lg"></i> 
+			 			<span class="h3">Select file to upload</span>
+			 			<br>
+			 		</label>
+
+			 		<br> 
+					<div id="notification"></div> 
+					<button type="button" class="btn btn-success" id="_upload_button"> 
+						<i class="fa fa-cloud-upload"></i> Upload 
+					</button>
+
+				</div>
+				<div class="col-lg-12 m-2">
+					<a href="{$release_home}" class="float-right btn btn-primary border shadow-sm">Continue</a> 
+				</div>
+			</div>
+		</div>
+	</section><!-- #about -->
+</main>

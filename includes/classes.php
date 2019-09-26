@@ -43,7 +43,9 @@ class framework {
 	    global $configuration;
 
 	    // Limit clause to enable pagination
-        if (isset($this->limit)) {
+        if (isset($this->limited)) {
+            $limit = sprintf(' LIMIT %s', $this->limited);
+        } elseif (isset($this->limit)) {
             $limit = sprintf(' ORDER BY date DESC LIMIT %s, %s', $this->start, $this->limit);
         } else {
             $limit = '';
@@ -58,7 +60,7 @@ class framework {
         } elseif ($type === 1) {
 	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE uid = '%s' OR `username` = '%s'", $user, $user); 
 	    }  elseif ($type === 3) {
-	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE%s", $limit);
+	    	$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE 1%s", $limit);
 	    } else {
 	    	// if the username is an email address
 	    	if (filter_var($user, FILTER_VALIDATE_EMAIL)) {
@@ -593,11 +595,20 @@ class framework {
 	    $return = strtolower(trim(preg_replace('~[^0-9a-z]+~i', $separator, html_entity_decode(preg_replace('~&([a-z]{1,2})(?:acute|cedil|circ|grave|lig|orn|ring|slash|th|tilde|uml);~i', '$1', htmlentities($string, ENT_QUOTES, 'UTF-8')), ENT_QUOTES, 'UTF-8')), $separator));
 	 
 	    // If the link is not safe add a random string
-	    $safelink = ($string == $return) ? $return.'-'.rand(100,900) : $return; 
+	    $safelink = ($string == $return) ? $return.$separator.rand(100,900) : $return; 
 	    
 	    return $safelink;
 	}
 
+	function generateUserName($string) {
+		$gen = $this->safeLinks($string, 1);
+		if ($gen == $this->userData($gen, 2)['username']) {
+			$username = $gen.rand(100,997);
+		} else {
+			$username = $gen;
+		}
+		return $username;
+	}
 	/**
 	/* generate clean urls, this is similar to safeLinks()
 	**/
@@ -638,18 +649,56 @@ class framework {
 	**/
     function generateToken($length = 10, $type = 0)
     {
-	    $str = '';
+	    $str = ''; 
 	    $characters = array_merge(range('A','Z'), range('a','z'), range(0,9));
+ 
 	    for($i=0; $i < $length; $i++) {
 	        $str .= $characters[array_rand($characters)];
 	    }
 	    if ($type == 1) {
 	        return password_hash($str.time(), PASSWORD_DEFAULT);
 	    } if ($type == 2) {
-	    	return rand(400000,900000); 
+	    	return rand(400000,900000);
+	    } elseif ($type == 3) {
+	    	$rand_letter = substr(str_shuffle("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 0, $length);
+	    	$rand_sm = substr(str_shuffle("DEFGHOPQRSTUVWXYZ"), 0, 3);
+	    	return 'PCAUD-'.$rand_letter.$this->generateToken(10, 2).'-'.$rand_sm;
+	    } elseif ($type == 5) {
+	    	$key_one = substr(10000000000000000, 0, $length);
+	    	$key_two = substr(90000000000000000, 0, $length);
+	    	return rand($key_one,$key_two);
 	    } else {
 	        return hash('md5', $str.time());
 	    }
+	}
+
+	/**
+	/* Generate a 13 digit random coupon code
+	**/
+	function token_generator($length = 10, $type = null) {
+		global $configuration, $user, $databaseCL;
+		// Type 1: Token for playlist id
+		
+		// Set the type of token to generate
+	  	if ($type == null) {
+		  	$t = 5;
+	  	}
+
+	  	// Generate a new key
+	  	$key = $this->generateToken($length, $t);
+
+	  	// Fetch already created tokens
+	  	if ($type == null) {
+		  	$check_token = $databaseCL->fetchPlaylist($key, null, $key)[0]['plid'];
+	  	}
+
+	  	// Generate a new key if it has already been used
+	  	if ($check_token == $key) {
+	  		$token = $this->generateToken($length, $t);
+	  	} else {
+	  		$token = $key;
+	  	}
+	  	return $token;
 	}
 
 	/** 
@@ -669,27 +718,6 @@ class framework {
 			$password .= $chars[$n];
 		}
 		return $password;
-	}
-
-	/**
-	/* Generate a 13 digit random coupon code
-	**/
-	function coupon_generator() {
-		global $configuration, $user;
-		
-		// Generate a random 13 digit numeric string
-	  	$key = rand(4000000000000,9000000000000);
-	  	// Fetch already created tokens
-	  	$this->token = $key;
-	  	$get_token = $this->manage_gift_cards(2)[0];
-	  	$token = $get_token['token'];
-	  	// Generate a new key if it has already been Generated
-	  	if ($token == $key) {
-	  		$coupon = rand(4000000000000,9000000000000);
-	  	} else {
-	  		$coupon = $key;
-	  	}
-	  	return $coupon;
 	}
 
 	/**
@@ -973,14 +1001,17 @@ class framework {
 	/**
 	/* Function to process all database calls
 	**/
-	function dbProcessor($sql=0, $type=0, $response='') {
+	function dbProcessor($sql = 0, $type = 0, $response='') {
+		global $DB;
 		// Type 0 = Insert, Update, Delete
 		// Type 1 = Select 
-		// Type 100 = Just return the response
+		// Type 2 = Just return the response
+		// Response 5 = Debug
+		// Response 1 = Debug
 
-		global $DB;
-		if ($type == 100) {
-			$response = $response;
+		$data = null; 
+		if ($type == 2) {
+			$data = $response;
 		} else {
 			try {
 				$stmt = $DB->prepare($sql);	 	
@@ -988,23 +1019,36 @@ class framework {
 			} catch (Exception $ex) {
 			   $error = messageNotice($ex->getMessage(), 3);
 			}
-			if ($type == 0) {
-				if ($stmt->rowCount() > 0) {  
-					return $response;
-				} elseif (isset($error)) {
-					return $error;
-				} else {
-					return 'No changes were made';
-				}		 
-			} elseif ($type == 1) {
-				$results = $stmt->fetchAll();
-			    if (count($results)>0) { 
-			    	return $results; 
-			    } elseif (isset($error)) {
-			    	return $error;
-			    }
+			if (isset($error)) {
+			    $data = $error;
+			} else {
+				if ($type == 0) {
+					if ($stmt->rowCount() > 0) {  
+						if ($response == 2) {
+							$data = 1;
+						} else {
+							$data = $response;
+						}
+					} else {
+						if ($response == 2) {
+							$data = 0;
+						} else {
+							$data = 'No changes were made';
+						}
+					}		 
+				} elseif ($type == 1) {
+					$results = $stmt->fetchAll();
+				    if (count($results)>0) { 
+				    	$data = $results; 
+				    }
+				}
 			}		
 		} 
+		if ($response == 5) {
+			$data .= messageNotice('Debug is on, response is set to : '.$data, 2);
+			$data .= messageNotice('Query String: '.$sql);
+		}
+		return $data;
 	}
 }
 
@@ -1111,16 +1155,16 @@ class databaseCL extends framework {
 		return $this->dbProcessor($sql, 1);
 	}
 
-	function fetchAlbum($artist_id, $type=null) {
+	function fetchAlbum($id, $type=null) {
 		// 2: Count all of this artists albums
 		// 1: Fetch all of this artists albums
 		// 0 or Null: Fetch one albums
 		if ($type == 1) {
-			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND `albums`.`by` = '%s' AND `users`.`uid` = `albums`.`by`", $this->db_prepare_input($artist_id));
+			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND `albums`.`by` = '%s' AND `users`.`uid` = `albums`.`by`", $this->db_prepare_input($id));
 		} elseif ($type == 2) {
-			$sql = sprintf("SELECT COUNT(id) AS counter FROM albums WHERE `by` = '%s'", $this->db_prepare_input($artist_id));
+			$sql = sprintf("SELECT COUNT(id) AS counter FROM albums WHERE `by` = '%s'", $this->db_prepare_input($id));
 		} else {
-			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND (`albums`.`id` = '%s' AND `users`.`uid` = `albums`.`by`) OR (`albums`.`safe_link` = '%s' AND `users`.`uid` = `albums`.`by`)", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id));
+			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND (`albums`.`id` = '%s' AND `users`.`uid` = `albums`.`by`) OR (`albums`.`safe_link` = '%s' AND `users`.`uid` = `albums`.`by`)", $this->db_prepare_input($id), $this->db_prepare_input($id));
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1138,11 +1182,10 @@ class databaseCL extends framework {
 		} elseif ($type == 2) {
 			$sql = sprintf("SELECT * FROM tracks,users WHERE tracks.id = '%s' AND users.uid = tracks.artist_id OR tracks.safe_link = '%s' AND users.uid = tracks.artist_id", $this->db_prepare_input($this->track), $this->db_prepare_input($this->track));
 		} elseif ($type == 3) {
+			$next = "";
 			if (isset($this->last_id)) { 
 				$next = " AND id > ".$this->last_id;
-			} else {
-				$next = "";
-			}
+			} 
 			if (isset($this->counter)) {
 				// Count the tracks
 				$sql = sprintf("SELECT COUNT(id) AS counter FROM tracks WHERE artist_id = '%s'%s", $this->db_prepare_input($artist_id), $next);
@@ -1179,7 +1222,18 @@ class databaseCL extends framework {
 			if(!$this->track_list) {
 				return;
 			}
-			$sql = sprintf("SELECT (SELECT count(`track`) FROM `views` WHERE `track` IN (%s)) as total, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE() = date(`time`)) as today, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week", $this->track_list, $this->track_list, $this->track_list, $this->track_list);
+			$sql = sprintf("SELECT (SELECT count(`track`) FROM `views` WHERE `track` IN (%s)) as total, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE() = date(`time`)) as today, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month", $this->track_list, $this->track_list, $this->track_list, $this->track_list, $this->track_list);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchViewers($type = null, $id = null) {
+		// $type == 1: Track monthly viewers
+		// $type == 0/NULL: Artist monthly viewers
+		if ($type == 1) {
+			$sql = sprintf("SELECT uid,username,fname,lname,photo,role,`time` FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE v.track = '%s' AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) ORDER BY `time` DESC", $id);
+		} else {
+			$sql = sprintf("SELECT uid,username,fname,lname,photo,role,`time` FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE `track` IN (%s) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) ORDER BY `time` DESC", $this->track_list);
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1194,7 +1248,7 @@ class databaseCL extends framework {
 		$limit = (isset($this->limit) && $this->limit === true) ? " LIMIT ".$configuration['page_limits'] : '';
 		if ($type == 3) {
 			$next = isset($this->last_id) ? " AND artist_id > ".$this->last_id : '';
-			$sql = sprintf("SELECT DISTINCT artist_id FROM tracks LEFT JOIN likes ON `tracks`.`id` = `likes`.`item_id` WHERE `likes`.`user_id` = '%s'%s ORDER BY artist_id%s", $user_id, $next, $limit);
+			$sql = sprintf("SELECT DISTINCT artist_id FROM tracks LEFT JOIN likes ON `tracks`.`id` = `likes`.`item_id` WHERE `tracks`.`uid` != '%s' AND `likes`.`user_id` = '%s'%s ORDER BY artist_id%s", $user_id, $user_id, $next, $limit);
 		} elseif ($type == 4) {
     		$sql = sprintf("SELECT *, (SELECT COUNT(`id`) FROM `tracks` WHERE `id` IN (%s)) AS likes FROM `tracks` WHERE `id` IN (%s)", $this->track_list, $this->track_list);
 		} elseif ($type == 5) {
@@ -1275,7 +1329,7 @@ class databaseCL extends framework {
 		if ($type == 1) {
 			$sql = sprintf("SELECT username,fname,lname,photo,cover,verified,uid,label FROM users WHERE `uid` != '%s' AND `uid` != '%s' AND (`username` LIKE '%s' OR `fname` LIKE '%s' OR `lname` LIKE '%s' OR `label` LIKE '%s') ORDER BY RAND()%s", $user['uid'], $id, '%'.$this->username.'%', '%'.$this->fname.'%', '%'.$this->lname.'%', '%'.$this->label.'%', $limit);
 		} elseif ($type == 2) {
-			$sql = sprintf("SELECT art,artist_id,title,safe_link FROM tracks WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
+			$sql = sprintf("SELECT id AS track_id,art,artist_id,title,safe_link FROM tracks WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `artist_id` LIKE '%s' OR `tracks`.`label` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `genre` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', '%'.$this->artist_id.'%', '%'.$this->label.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->genre.'%', '%'.$this->tags.'%', $limit);
 		} elseif ($type == 3) {
 			$sql = sprintf("SELECT * FROM playlist WHERE id != '%s' AND `public` = '1' AND (`title` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', $limit);
 		} else {
@@ -1299,7 +1353,7 @@ class databaseCL extends framework {
 			$sql = sprintf("SELECT id,audio,art,artist_id,title,safe_link,upload_time,genre,tags,explicit,views FROM tracks WHERE `public` = '1' AND (`artist_id` = '%s') ORDER BY views DESC LIMIT %s", $this->genre, $limit);
 		} else {
 			$sql = sprintf("SELECT id,audio,art,artist_id,title,safe_link,upload_time,genre,tags,explicit,views FROM tracks WHERE `public` = '1' AND (`genre` LIKE '%s'%s) ORDER BY views DESC LIMIT %s", '%'.$this->genre.'%', $tags, $limit);
-		} 
+		}
   		return $this->dbProcessor($sql, 1);
 	}
 
@@ -1312,6 +1366,19 @@ class databaseCL extends framework {
 			$sql = sprintf("SELECT * FROM genre WHERE `name` = '%s' OR `title` LIKE '%s' OR `name` LIKE '%s' ORDER BY id DESC");
 		} else {
 			$sql = sprintf("SELECT * FROM genre WHERE 1 ORDER BY id DESC");
+		} 
+  		return $this->dbProcessor($sql, 1);
+	}
+
+	// Fetch the default tags for the site
+	function fetchTags($string=null) {
+		// $string = isset: get a requested tag or search for it
+		// $string = null: return all available tags
+		// 
+		if ($string) {
+			$sql = sprintf("SELECT * FROM tags WHERE `name` = '%s' OR `title` LIKE '%s' OR `name` LIKE '%s' ORDER BY id ASC", $string, $string, $string);
+		} else {
+			$sql = "SELECT * FROM tags WHERE 1 ORDER BY id ASC";
 		} 
   		return $this->dbProcessor($sql, 1);
 	}
@@ -1334,36 +1401,48 @@ class databaseCL extends framework {
   		return $this->dbProcessor($sql, 1);
 	}
 
-	function fetchPlaylist($id=null, $type=null) {
+	function fetchPlaylist($id=null, $type=null, $plid = null) {
 		global $user, $configuration;
 		// $id can be playlist_id or artist_id
+		// 4: Fetch this users playlist or this users public playlist
+		// 3: Fetch filtered or search playlist
 		// 2: Fetch all playlist
-		// 2: Fetch filtered or search playlist
 		// 1: Fetch all of this artists playlist
-		// 0 or Null: Fetch one playlist
+		// 0 or Null: Fetch one playlist by id, plid, or title
 		// 
-		$limit = isset($this->limit) ? $this->limit : $configuration['page_limits']; //$configuration['top_limits'];
+		$extra = '';
+		$limit = isset($this->limit) ? ' LIMIT '.$this->limit : ' LIMIT '.$configuration['page_limits'];
+		if (isset($this->extra)) {
+			$extra = $this->extra == true ? ' `playlist`.`by` = \''.$user['uid'].'\' AND ' : $this->extra;
+		}
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM users,playlist WHERE `playlist`.`by` = '%s' AND `users`.`uid` = `playlist`.`by`", $this->db_prepare_input($id));
 		} elseif ($type == 2) {
 			$sql = "SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND `playlist`.`public` = 1";
 		} elseif ($type == 3) {
-			$sql = sprintf("SELECT * FROM playlist LEFT JOIN playlistentry ON `playlist`.`id` = `playlistentry`.`playlist` WHERE playlist.public = 1 AND playlist.title LIKE '%s' ORDER BY views DESC LIMIT %s", '%'.$this->title.'%', $limit);
+			$sql = sprintf("SELECT * FROM playlist WHERE `playlist`.`public` = '1' AND `playlist`.`title` LIKE '%s' ORDER BY views DESC%s", '%'.$this->title.'%', $limit);
 		} else {
-			$sql = sprintf("SELECT * FROM users,playlist WHERE 1 AND (`playlist`.`plid` = '%s' AND `users`.`uid` = `playlist`.`by`) OR (`playlist`.`id` = '%s' AND `users`.`uid` = `playlist`.`by`)", $this->db_prepare_input($id), $this->db_prepare_input($id));
+			if ($plid) {
+				$sql = sprintf("SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND `playlist`.`plid` = '%s'", $this->db_prepare_input($id));
+			} else {
+				$sql = sprintf("SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND %s(`playlist`.`plid` = '%s') OR (`playlist`.`id` = '%s') OR (`playlist`.`title` = '%s')", $extra, $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id));
+			}
 		}
 		return $this->dbProcessor($sql, 1);
 	}
 	
-	function playlistEntry($id, $t=null) {
+	function playlistEntry($id, $t=null, $track = null) {
 		$order_limit = $t == 1 ? 'ASC LIMIT 1' : 'ASC';
 
 		if (isset($this->type) && $this->type == 1 || (isset($this->count) && $this->count == 1)) {
 			// Count all relevant playlist records
 			$sql = sprintf("SELECT count(tracks.id) AS track_count FROM playlistentry,users,tracks WHERE (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`public` = 1) OR (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`uid` = '%s') ORDER BY `playlistentry`.`id` %s", $this->db_prepare_input($id), $this->db_prepare_input($id), $this->user_id, $order_limit);
+		} elseif ($track) {
+			// Select a particular playlist track
+			$sql = sprintf("SELECT * FROM playlistentry WHERE `playlist` = '%s' AND `track` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($track));
 		} else {
 			// Fetch all relevant playlist records
-			$sql = sprintf("SELECT * FROM playlistentry,users,tracks WHERE (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`public` = 1) OR (`playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND `tracks`.`uid` = '%s') ORDER BY `playlistentry`.`id` %s", $this->db_prepare_input($id), $this->db_prepare_input($id), $this->user_id, $order_limit);
+			$sql = sprintf("SELECT * FROM playlistentry,users,tracks WHERE `playlistentry`.`playlist` = '%s' AND `playlistentry`.`track` = `tracks`.`id` AND `tracks`.`uid` = `users`.`uid` AND (`tracks`.`public` = 1 OR `tracks`.`uid` = '%s') ORDER BY `playlistentry`.`id` %s", $this->db_prepare_input($id), $this->user_id, $order_limit);
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1383,8 +1462,131 @@ class databaseCL extends framework {
 		return $this->dbProcessor($sql, 1);
 	}
 
-	function fetchProject($id) {
-		$sql = sprintf("SELECT * FROM `projects` WHERE `projects` = '%s'", $this->db_prepare_input($id));
+	function fetchProject($id, $type = null) {
+		global $user, $configuration;	 
+		// $type == 1: Fetch a single project by just id
+		// $type == 2: Fetch all projects - id could be null or 0 or anything, doesn't matter
+		// $type == 0, null: Fetch a single project by id, safelink or public, creator
+		// 
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `projects` WHERE `id` = '%s'", $this->db_prepare_input($id));
+		} elseif ($type == 2) {
+			$next = isset($this->last_id) ? " AND id > ".$this->last_id : '';
+			$creator = isset($this->creator) ? sprintf(" AND `creator_id` = '%s'", $this->creator) : '';
+
+			if (isset($this->counter)) {
+				// Count the projects
+				$sql = sprintf("SELECT COUNT(id) AS counter FROM projects WHERE 1%s%s", $next, $creator);
+			} else {
+				$sql = sprintf("SELECT *, id AS pid, (SELECT count(id) FROM stems WHERE `project` = pid AND stems.status = '1') AS count_stems, (SELECT count(id) FROM instrumentals WHERE `project` = pid AND instrumentals.hidden = '0') AS count_instrumentals FROM projects WHERE 1%s%s LIMIT %s", $next, $creator, $configuration['page_limits']);
+			}
+		} else {
+			$sql = sprintf("SELECT * FROM `projects` WHERE `id` = '%s' OR `safe_link` = '%s' AND (status = '1' OR `creator_id` = '%s')", $this->db_prepare_input($id), $this->db_prepare_input($id), $user['uid']);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetch_projectCollaborators($id, $type = null) {
+		// 2: check if a collaborator is part of a project
+		// 1: get data of collaborators
+		// 0, Null: get list of collaborators
+		if ($type == 1) {
+			$sql = sprintf("SELECT *, c.id AS cid FROM `collaborators` AS c LEFT JOIN `users` AS u ON c.user = u.uid WHERE `user` = '%s'", $this->db_prepare_input($id));
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT user FROM `collaborators` WHERE `user` = '%s' AND `project` = '%s'", $this->db_prepare_input($this->user_id), $this->db_prepare_input($id));
+		} else {
+			$sql = sprintf("SELECT *, (SELECT COUNT(user) FROM `collaborators` WHERE `project` = '%s') AS counter FROM `collaborators` WHERE `project` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($id));
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchInstrumental($id, $type = null) {
+		global $user, $configuration;
+		// 2: Get a particular instrumental
+		// 1: Get all instrumentals by project
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `instrumentals` WHERE `id` = '%s'", $this->db_prepare_input($id));
+		} else {
+			$sql = sprintf("SELECT * FROM `instrumentals` WHERE `project` = '%s' AND (`hidden` = '0' OR `user` = '%s')", $this->db_prepare_input($id), $this->user_id);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchStems($id, $type = null) {
+		global $user, $configuration;
+		// 2: Get a particular stem
+		// 1: Get unique stem uploaders
+		// 0, Null: Get stem for unique users
+		if ($type == 1) {
+			$sql = sprintf("SELECT DISTINCT user,creator_id FROM stems LEFT JOIN projects ON `stems`.`project` = `projects`.`id` WHERE `stems`.`project` = '%s' AND `projects`.`id` = `stems`.`project` AND (`stems`.`status` = '1' OR `stems`.`user` = '%s' OR `projects`.`creator_id` = '%s')", $this->db_prepare_input($id), $user['uid'], $this->creator_id);
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT * FROM `stems` WHERE `id` = '%s'", $this->db_prepare_input($id));
+		}  elseif ($type == 3) {
+			$sql = sprintf("SELECT * FROM `stems` WHERE `id` = '%s'", $this->db_prepare_input($id));
+		} else {
+			$filter = $this->creator_id == $user['uid'] ? '' : sprintf(' AND (`status` = "1" OR `user` = "%s")', $user['uid']);
+
+			$sql = sprintf("SELECT * FROM `stems` AS s LEFT JOIN `users` AS u ON s.user = u.uid WHERE `user` = '%s' AND `project` = '%s'%s ORDER BY `time` DESC", $this->db_prepare_input($id), $this->project_id, $filter);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetch_colabRequests($id, $type = null) {
+		global $user, $configuration;	
+		// 1: Get all colab request
+		// 0, Null: Verify user state
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `collabrequests` WHERE `project` = '%s' AND `user` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($this->user_id));
+		} else {
+			$sql = sprintf("SELECT * FROM `collabrequests` WHERE `project` = '%s'", $this->db_prepare_input($id));
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchsimilarProjects($id) {
+		global $user, $configuration;
+		$sql = sprintf("SELECT * FROM projects WHERE `id` != '%s' AND `status` = '1' AND (MATCH (title) AGAINST ('%s' IN NATURAL LANGUAGE MODE) OR MATCH (tags) AGAINST ('%s' IN NATURAL LANGUAGE MODE) OR MATCH (genre) AGAINST ('%s' IN NATURAL LANGUAGE MODE))", $this->db_prepare_input($id), $this->db_prepare_input($this->project_title), $this->db_prepare_input($this->project_tags), $this->db_prepare_input($this->project_genre));
+		return $this->dbProcessor($sql, 1);
+
+	}
+
+	function fetchReleases($type = null, $id = null) {
+		global $user, $configuration;	
+		
+		$limit = isset($this->limit) ? " LIMIT ".$configuration['releases_limit'] : '';
+		if ($type) {
+			$sql = sprintf("SELECT * FROM `new_release` WHERE `release_id` = '%s' AND `by` = '%s'", $this->db_prepare_input($id), $user['uid']);
+		} else {
+			$next = isset($this->last_id) ? ' AND `id` < \''.$this->last_id.'\'' : '';
+			$status = isset($this->status) ? ' AND `status` = \''.$this->status.'\'' : '';
+			if (isset($this->counter)) {
+				// Count the projects
+				$sql = sprintf("SELECT COUNT(id) AS counter FROM new_release WHERE `by` = '%s'%s%s", $user['uid'], $status, $next);
+			} else {
+				$sql = sprintf("SELECT * FROM new_release WHERE `by` = '%s'%s%s%s", $user['uid'], $status, $next, $limit);
+			}
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchRelease_Artists($type = null, $id = null) {
+		global $user, $configuration;	
+		if ($type) {
+			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE `release_id` = '%s' AND `role` = 'primary'", $this->db_prepare_input($id));
+		} else {
+			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE `release_id` = '%s' AND `role` != 'primary'", $this->db_prepare_input($id));
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchRelease_Audio($type = null, $id = null) {
+		global $user, $configuration;	
+		if ($type) {
+			$sql = sprintf("SELECT * FROM `new_release_tracks` WHERE `release_id` = '%s'", $this->db_prepare_input($id));
+		} else {
+			$sql = sprintf("SELECT * FROM `new_release_tracks` WHERE `release_id` = '%s'", $this->db_prepare_input($id));
+		}
+		return $this->dbProcessor($sql, 1);
 	}
 }
 

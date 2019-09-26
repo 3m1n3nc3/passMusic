@@ -1,15 +1,21 @@
 <?php 
 require_once(__DIR__ .'/../includes/autoload.php');
 
-  $results = $more_btn = '';
-  $_POST['personal'] = $personal = $framework->db_prepare_input($_POST['personal']);
-  $personal == $user['uid'] ? $databaseCL->personal_id = $personal : '';
+  $results = $more_btn = $count = '';
 
-  $_POST['last_track'] = $last_track = $framework->db_prepare_input($_POST['last_track']);
-  $_POST['artist'] = $last_artist = $framework->db_prepare_input($_POST['artist']);
   $_POST['type'] = $last_type = $framework->db_prepare_input($_POST['type']);
 
-  $count = '';
+  if ($last_type == 6) {
+    $data = $_POST['data'];
+  } else {
+    $_POST['personal'] = $personal = $framework->db_prepare_input($_POST['personal']);
+    $personal == $user['uid'] ? $databaseCL->personal_id = $personal : '';
+
+    $_POST['last_track'] = $last_track = $framework->db_prepare_input($_POST['last_track']);
+    $_POST['artist'] = $last_artist = $framework->db_prepare_input($_POST['artist']);
+  }
+
+ 
   // Get More tracks
   if ($_POST['type'] == 0) {
     $databaseCL->last_id = $last_track;
@@ -128,12 +134,37 @@ require_once(__DIR__ .'/../includes/autoload.php');
         $_items .= '<div class="mb-3">'.artistCard($row['artist_id']).'</div>';
         $last_items = $row['artist_id'];
       }
-      $PTMPL['load_more_btn'] = count($cl) > $configuration['page_limits'] ? '<button onclick="loadMore($(this))" data-last-type="5" data-last-personal="" data-last-artist="'.$item_id.'" data-last-track="'.$last_items.'" class="show-more button-light" id="load-more">Load More</button>' : '';
+      $more_btn = count($cl) > $configuration['page_limits'] ? '<button onclick="loadMore($(this))" data-last-type="5" data-last-personal="" data-last-artist="'.$item_id.'" data-last-track="'.$last_items.'" class="show-more button-light" id="load-more">Load More</button>' : '';
     } 
 
     $results = $_items;
-  }
+  } else {
+    if ($data['type'] == 1) {
+      $lcid = '';
+      if (isset($data['last_cid'])) {
+        $databaseCL->creator = $data['last_cid'];
+        $lcid = $data['last_cid'];
+      }
+      $databaseCL->last_id = $data['last'];
+      $projects = $databaseCL->fetchProject(0, 2);
+      $show_projects = '';
+      if ($projects) {
+        foreach ($projects as $rows) {
+            $show_projects .= projectsCard($rows);
+        }
+        $show_projects .= '<span style="display: none;" class="load-more-container"></span>'; 
 
+        // Count all the associated records
+        $databaseCL->counter = true;
+        $count = $databaseCL->fetchProject(0, 2)[0]['counter'];
+        $more_btn = $count > $configuration['page_limits'] ? '
+        <button onclick="loadMore_improved($(this), {type: 1, last: '.$rows['id'].$lcid.'})" class="show-more button-light" id="load-more">Load More</button>' : '';
+      }
+      $results = $show_projects;
+    } elseif ($data['type'] == 2) { 
+  
+    }
+  }
 
   $data = array("result" => $results, "more" => $more_btn, "left" => $count);
   echo json_encode($data, JSON_UNESCAPED_SLASHES);

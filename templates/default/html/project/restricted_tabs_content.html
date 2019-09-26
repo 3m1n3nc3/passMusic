@@ -1,0 +1,52 @@
+
+          <!-- Colab requests -->
+          <div role="tabpanel" class="tab-pane" id="colab-requests">            
+            <div class="colab-cards">  
+
+              {$list_requests}  
+
+            </div>   
+            
+            {$no_request}  
+
+          </div> 
+
+          <!-- Colab options -->
+          <div role="tabpanel" class="tab-pane" id="colab-options">            
+            
+              <div class="panel panel-default">
+                <div class="panel-heading">
+                  <h3 class="box-title">Project Options</h3>
+                </div> 
+                <div class="panel-body">
+                  <div class="row m-2">
+                    <div class="col-md-6 p-3 m-2 bg-light">
+                      <span class=" pc-font-2"> Project Status</span>
+                      <div class="form-group pc-font-2">
+                        <div class="radio">
+                          <label>
+                            <input type="radio" name="project_status" value="1" onclick="options(1, {action: 'c_status', project: {$project_id}, status: 1})"{$project_status_1}> {$lang->active}
+                          </label>
+                        </div> 
+                        <div class="radio">
+                          <label>
+                            <input type="radio" name="project_status" value="0" onclick="options(1, {action: 'c_status', project: {$project_id}, status: 0})"{$project_status_x}> {$lang->closed}
+                          </label>
+                        </div> 
+                      </div>
+                      {$lang->project_status_warning}
+                    </div>
+                    <div class="col-md-5 p-3 m-2 bg-light">
+                      <span class=" pc-font-2"> Submit for publishing</span>
+                      <span id="publish_btn_{$project_id}">
+                        <button type="button" class="btn btn-block btn-{$publish_btn}" onclick="options(1, {action: 'publish', project: {$project_id}, status: {$project_publish}})">{$publish_btn_text}</button>
+                      </span>
+                      {$lang->share_project_warning}
+                    </div>
+                  </div>
+ 
+                </div> 
+              </div>  
+
+          </div> 
+          <!-- Colab options -->

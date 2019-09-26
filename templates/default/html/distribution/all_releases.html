@@ -1,0 +1,26 @@
+ <main id="main">
+	<section id="contact" class="bg-light">
+		<div class="container">
+			<h2 class="text-secondary">Your Releases</h2>
+			<div class="row">
+				<div class="col-lg-12 content p-5 rounded shadow-sm bg-white"> 
+					<form method="post" action="">
+						<div class="btn-group btn-group-lg btn-group-justified">
+							<input type="hidden" name="sort_releases">
+							<button name="sort" value="1" type="submit" class="btn btn-info{$s_1}">Incomplete</button>
+							<button name="sort" value="2" type="submit" class="btn btn-info{$s_2}">Pending Approval</button>
+							<button name="sort" value="3" type="submit" class="btn btn-info{$s_3}">Approved</button>
+							<button name="sort" value="0" type="submit" class="btn btn-info{$s_0}">Removed</button>
+						</div>	
+						<hr class="bg-info">					
+					</form>
+					
+					{$list_releases}
+					<div class="p-2">
+						<small class="text-danger font-weight-bold bg-warning p-3 border border-danger rounded d-flex justify-content-center">We will automatically delete incomplete releases after 30 days.</small>
+					</div>
+				</div> 
+			</div>
+		</div>
+	</section><!-- #about -->
+</main>

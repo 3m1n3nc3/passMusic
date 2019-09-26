@@ -2,5 +2,8 @@
 #> / is used to ignore pathnames relative to the .gitignore file
 #> # is used to add comments to a .gitignore file
 #
-# Ignore all mp3 files 
+# Ignore all files like these 
 *.mp3
+*.wav
+*.jpeg 
+*.jpg

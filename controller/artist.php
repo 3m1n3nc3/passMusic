@@ -1,7 +1,7 @@
 <?php
-
+ 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL; 
+	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL, $marxTime; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -21,6 +21,11 @@ function mainContent() {
 
 	$_albums = $databaseCL->fetchAlbum($artist['uid'], 1);
 	if ($_albums) {
+		$_albums = $_albums;
+	} else {
+		$_albums = $databaseCL->listLikedItems($artist['uid'], 1);
+	}
+	if ($_albums) {
 		$PTMPL['list_albums'] = artistAlbums($artist['uid']);
 	} else {
 		$PTMPL['list_albums'] = notAvailable('This '.$role.' has no albums yet', 'no-padding ');
@@ -33,19 +38,24 @@ function mainContent() {
 	$databaseCL->username = $artist['username'];
 	$databaseCL->fname = $artist['fname'];
 	$databaseCL->lname = $artist['lname'];
-	$databaseCL->label = 'newnify';
+	$databaseCL->label = $artist['label'];
 	$PTMPL['related'] = relatedItems(2, $artist['uid']);
  
     $track_list = $databaseCL->fetchTracks($artist['uid']);
+    if ($track_list) {
+    	$track_list = $track_list;
+    } else {
+    	$track_list = $databaseCL->listLikedItems($artist['uid'], 2);
+    }
     $list_tracks = '';
-    if (is_array($track_list) && COUNT($track_list)>0) {
+    if ($track_list) {
     	$n = 0;
     	foreach ($track_list as $rows) {
     		$n++;
     		$list_tracks .= listTracks($rows, $n, 1);
     	} 
     } else {
-        $list_tracks = notAvailable('This '.$role.' has no singles yet', 'no-padding ');
+        $list_tracks = notAvailable('This '.$role.' has no singles yet', 'no-padding '); 
     }
     $PTMPL['list_tracks'] = $list_tracks;
 
@@ -57,6 +67,13 @@ function mainContent() {
     $PTMPL['count_following'] = $follower_f ? count($follower_f) : 0;  
     $PTMPL['followers'] = showFollowers($artist['uid'], 1);
     $PTMPL['following'] = showFollowers($artist['uid'], 2);
+
+    // Artist stats
+    $track_list = $databaseCL->fetchTracks($artist['uid'], 5);
+    $databaseCL->track_list = implode(',', $track_list);
+    $fetch_stats = $databaseCL->fetchStats(null, $artist['uid'])[0];
+    $PTMPL['total_monthly_views'] = $marxTime->numberFormater($fetch_stats['last_month']);
+    $PTMPL['show_monthly_viewers'] = showViewers();
 
 	// Set the active landing page_title 
 	$theme = new themer('artists/artist');

@@ -28,6 +28,9 @@ function mainContent() {
     $PTMPL['followers'] = showFollowers($artist['uid'], 1);
     $PTMPL['following'] = showFollowers($artist['uid'], 2);
 
+    $sidebar = new themer('artists/small_right_sidebar');
+    $PTMPL['small_right_sidebar'] = $sidebar->make();
+
 	// Set the active landing page_title 
 	$theme = new themer('artists/view_artists');
 	return $theme->make();

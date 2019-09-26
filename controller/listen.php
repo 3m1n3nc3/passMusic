@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL; 
+	global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -48,11 +48,11 @@ function mainContent() {
 		} elseif ($_GET['to'] == 'albums') {
 			// Listen to albums
 			// 		 
-			$PTMPL['favorite_title'] = 'Favorite albums by '.$artist['username'];
+			$PTMPL['favorite_title'] = 'Favorite albums by '.$artist['fname'].' '.$artist['lname'];
 			$album_list = $databaseCL->listLikedItems($artist['uid'], 1);
 
 		    $list_albums = '';
-		    if (is_array($album_list) && COUNT($album_list) > 0) {
+		    if ($album_list) {
 			    $last_album = array_reverse($album_list)[0]; 
 		    	$n = 0;
 
@@ -137,6 +137,13 @@ function mainContent() {
 	// Show the track stat
     $databaseCL->limit = $configuration['page_limits'];
     $PTMPL['sidebar_statistics'] = sidebarStatistics($artist['uid'], null);
+
+    // Artist stats
+    $track_list = $databaseCL->fetchTracks($artist['uid'], 5);
+    $databaseCL->track_list = implode(',', $track_list);
+    $fetch_stats = $databaseCL->fetchStats(null, $artist['uid'])[0];
+    $PTMPL['total_monthly_views'] = $marxTime->numberFormater($fetch_stats['last_month']);
+    $PTMPL['show_monthly_viewers'] = showViewers();
 
 	// Set the active landing page_title 
 	$theme = new themer('music/listen');

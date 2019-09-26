@@ -9,6 +9,9 @@
 .hidden__section {
   display: none;
 }
+.pc-full-width {
+  width: 100%!important;
+}
 
 #real_tags .badge {
   margin-top: 2px;
@@ -17,11 +20,52 @@
 .h1 {
   font-size: 36px;
 }
+
+.pc-font-1 {
+  font-size: 10px!important;
+}
+.pc-font-2 {
+  font-size: 20px!important;
+}
+.pc-font-3 {
+  font-size: 30px!important;
+}
+.pc-font-4 {
+  font-size: 40px!important;
+}
+.pc-font-5 {
+  font-size: 50px!important;
+}
+.pc-shadow-1 {
+  text-shadow: 1px 2px 3px black;
+}
+.pc-font-sm {
+  font-size: 1rem;
+}
+.pc-font-md {
+  font-size: 2rem;
+}
+.pc-font-lg {
+  font-size: 3rem !important;
+}
+.pc-hover-1:hover {
+  text-shadow: 1px 2px 5px black;
+}
+
 .red {
   color: #fc615c !important;
 }
-.red:hover {
+.red.hover:hover {
   color: #fb302a !important;
+}
+.pc-bg-red {
+  background: #fb302a !important;
+  color: #fff !important;
+  border: 1px solid #f24646 !important;
+}
+.pc-bg-red.hover:hover {
+  background: #fc615c!important;
+  border: 1px solid #df90bc !important;
 }
 .yellow {
   color: #fdbe41 !important;
@@ -50,7 +94,9 @@
 .low-blood.hover:hover {
   color: #f4c8c8 !important;
 }
-
+.pointer {
+  cursor: pointer;
+}
 button {
   border-radius: 5px;
   border: none;
@@ -243,6 +289,14 @@ a.pc-ministats {
 .overview__related {
   border-left: 1px solid #515151; padding-left: 5px;
 }
+.overview__border {
+  border-left: 1px solid #515151; padding-left: 5px;
+}
+@media (max-width: 768px) {
+  .overview__border {
+    display: none !important;
+  }
+}
 .g-flex-row-centered-spread {
   -webkit-justify-content: space-between;
   -ms-flex-pack: justify;
@@ -311,6 +365,14 @@ a.pc-ministats {
 }
 .userSuggestionList__item {
   padding: 10px 0;
+}
+.userSuggestionList__extra {
+  padding: 10px !important;
+  background-color: #282828;
+  border-radius: 10px;
+}
+.userSuggestionList__extra:hover { 
+  background-color: #515151; 
 }
 /*Side bar statistics class ends here*/
 
@@ -538,7 +600,7 @@ a.pc-ministats {
 }
 /*Sidebar likes section ends*/
 
-/* Custom Navigation bar */
+/* Custom Navigation bar black*/
 .custom-navigation {
   margin-bottom: 10px;
   border-bottom: solid 1px #515151;
@@ -582,8 +644,38 @@ a.pc-ministats {
 .custom-navigation .dropdown-menu li a:hover {
   background-color: red !important;
 }
-/* Custom Navigation bar ends here */
+/* Custom Navigation bar black ends here */
 
+
+/* Custom Navigation bar for management */
+.manage-navbar .navbar {
+  margin-bottom: 0;
+  background-color: #f4511e;
+  z-index: 9999;
+  border: 0;
+  font-size: 12px !important;
+  line-height: 1.42857143 !important;
+  letter-spacing: 4px;
+  border-radius: 0;
+}
+
+.manage-navbar .navbar li a, .manage-navbar .navbar .navbar-brand {
+  color: #fff !important;
+}
+
+.manage-navbar .navbar-nav li a:hover, .manage-navbar .navbar-nav li.active a {
+  color: #f4511e !important;
+  background-color: #fff !important;
+}
+
+.manage-navbar .navbar-default .navbar-toggle, .manage-navbar .navbar-inverse .navbar-toggle {
+  border-color: transparent;
+  color: #fff !important;
+} 
+
+/* Custom Navigation bar for management ends here */
+
+ 
 /*Horizontal scrollable*/
 .scrollable-container {
   /*width: 600px !important;*/
@@ -645,4 +737,109 @@ a.pc-ministats {
 
 .intro-header-title {
   color: #979ca5;
+}
+
+/*Twitter Card*/
+
+.hoverable-card {
+  /*position: absolute;*/
+  z-index: 999;
+}
+
+.hoverable-card.hidden {
+  display: none;
+}
+
+.pc-card__div {
+  background: #fff none repeat scroll 0 0;
+  border: 1px solid #e1e8ed;
+  border-radius: 6px;
+  height: 170px;
+  max-width: 290px;
+  z-index: 999;
+}
+.pc-card__bg {
+    background-image: url("https://pbs.twimg.com/profile_banners/50988711/1384539792/600x200");
+    background-position: 0 50%;
+    background-size: 100% auto;
+    border-bottom: 1px solid #e1e8ed;
+    border-radius: 4px 4px 0 0;
+    height: 70px;
+    width: 100%;
+}
+.pc-card__block {
+    display: block !important;
+}
+.pc-card__button {
+    margin: -25px -15px 0;
+    text-align: right;
+    width: 100%;
+}
+.pc-card__avatarLink {
+    background-color: #fff;
+    border-radius: 49%;
+    display: inline-block !important;
+    float: left;
+    margin: -30px 5px 0 8px;
+    max-width: 100%;
+    padding: 1px;
+    vertical-align: bottom;
+}
+.pc-card__avatarImg {
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-sizing: border-box;
+    color: #fff;
+    height: 72px;
+    width: 72px;
+}
+.pc-card__divUser {
+    margin: 5px 0 0;
+}
+.pc-card__divName {
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 21px;
+}
+.pc-card__divName a {
+    color: inherit !important;
+}
+.pc-card__divStats {
+    margin-left: 11px;
+    padding: 5px 0;
+}
+.pc-card__Arrange {
+    box-sizing: border-box;
+    display: table;
+    margin: 0;
+    min-width: 100%;
+    padding: 0;
+    table-layout: auto;
+}
+ul.pc-card__Arrange {
+    list-style: outside none none;
+    margin: 0;
+    padding: 0;
+}
+.pc-card__ArrangeSizeFit {
+    display: table-cell;
+    padding: 0;
+    vertical-align: top;
+}
+.pc-card__ArrangeSizeFit a:hover {
+    text-decoration: none;
+}
+.pc-card__StatValue {
+    display: block;
+    font-size: 18px;
+    font-weight: 500;
+    transition: color 0.15s ease-in-out 0s;
+}
+.pc-card__StatLabel {
+    color: #8899a6;
+    font-size: 10px;
+    letter-spacing: 0.02em;
+    overflow: hidden;
+    text-transform: uppercase;
+    transition: color 0.15s ease-in-out 0s;
 }

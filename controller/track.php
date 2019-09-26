@@ -10,7 +10,6 @@ function mainContent() {
 	$databaseCL->track = isset($_GET['track']) ? $_GET['track'] : (isset($_GET['id']) ? $_GET['id'] : '');
 	$track = $databaseCL->fetchTracks(null, 2)[0];
 
-	$PTMPL['track_link'] = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
 	$PTMPL['track_author_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$track['username']);
 	$PTMPL['track_art'] = $PTMPL['cover_photo'] = getImage($track['art'], 1, 1); 
  
@@ -31,6 +30,7 @@ function mainContent() {
 	$PTMPL['format'] = strtolower(pathinfo($track['audio'], PATHINFO_EXTENSION));
  
 	$PTMPL['like_button'] = clickLike(2, $track['id'], $user['uid']);
+	$PTMPL['more_button'] = showMore_button(1, $track['id']);
 
 	$PTMPL['blur_filter'] = '
 		filter: blur(18px);
@@ -55,6 +55,9 @@ function mainContent() {
     // Show the secondary navigation bar
     $PTMPL['secondary_navigation'] = secondaryNavigation($track['artist_id']);
 
+    // Show the small stats bar
+    $sidebar = new themer('artists/small_right_sidebar');
+    $PTMPL['small_right_sidebar'] = $sidebar->make();
 	// Show likes for this track
 	if (isset($_GET['likes'])) {
 		$PTMPL['content_title'] = '<div class="section-title">Users who like '.$track['title'].'</div>';

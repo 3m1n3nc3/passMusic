@@ -1,0 +1,36 @@
+<div class="pc_rel__releases my-2 border">
+    <div class="pc_rel__release pc_rel__draft">
+        <div class="pc_rel__header">
+        	<span class="pc_rel__title"><span>{$release_title}</span> </span> 
+        	<span class="pc_rel__controls">
+        		<a href="" data-toggle="tooltip" data-title="Delete"><i class="fa fa-trash float-right m-3 text-white fa-3"></i></a>
+        	 	<span class="pc_rel__plan-text">
+        	 		<a href="{$site_url}/faq" class="text-white" target="_newtab">Need Help? <strong >Click here</strong></a>
+        	 	</span>
+        	</span>
+        </div>
+        <div class="pc_rel__content">
+            <div class="pc_rel__art-container">
+            	<img src="{$release_artwork}" class="pc_rel__art">
+            </div>
+            <div class="float-left">
+            	<div><strong>UPC:</strong> {$release_upc}</div>
+            	<div> 
+                    {$release_artist}
+                    {$release_audio_count}
+                    {$release_album_single}
+                    <span class="mr-4"><i class="ion-ios-calendar"></i> <strong>Created:</strong> {$create_date}</span>
+                </div> 
+            </div> 
+
+            {$footer_content} 
+
+        </div>
+    </div>
+</div>
+<script>
+    function toggleList(id) {
+        $('#track'+id+' i').toggleClass('fa-chevron-down fa-chevron-up');
+        $('#track_list'+id).toggleClass('d-none');
+    }
+</script>
