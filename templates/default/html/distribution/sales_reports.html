@@ -1,0 +1,141 @@
+<main id="main">
+  <section id="services" class="section-bg">
+    <div class="container">
+      <header class="section-header">
+        <h3>Reports and Statistics</h3>
+        <p>Get useful insight into how your releases and tracks are performing.</p>
+      </header>
+
+      <div class="row">
+        <div class="col-lg-3 col-xs-6">
+          <!-- small box -->
+          <div class="small-box bg-aqua">
+            <div class="inner">
+              <h3>{$total_releases}</h3>
+
+              <p>Total Releases</p>
+            </div>
+            <div class="icons">
+              <i class="ion-ios-disc"></i>
+            </div>
+            <span class="small-box-footer">&nbsp;</span>
+          </div>
+        </div>
+        <!-- ./col -->
+        <div class="col-lg-3 col-xs-6">
+          <!-- small box -->
+          <div class="small-box bg-green">
+            <div class="inner">
+              <h3>{$approved_releases}</h3>
+
+              <p>Approved Releases</p>
+            </div>
+            <div class="icons">
+              <i class="ion-ios-checkmark-circle"></i>
+            </div>
+            <a href="{$approved_link}" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+          </div>
+        </div>
+        <!-- ./col -->
+        <div class="col-lg-3 col-xs-6">
+          <!-- small box -->
+          <div class="small-box bg-yellow">
+            <div class="inner">
+              <h3>{$pending_releases}</h3>
+
+              <p>Pending Releases</p>
+            </div>
+            <div class="icons">
+              <i class="ion-ios-alert"></i>
+            </div>
+            <a href="{$pending_link}" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+          </div>
+        </div>
+        <!-- ./col -->
+        <div class="col-lg-3 col-xs-6">
+          <!-- small box -->
+          <div class="small-box bg-red">
+            <div class="inner">
+              <h3>{$incomplete_releases}</h3>
+
+              <p>Incomplete Releases</p>
+            </div>
+            <div class="icons">
+              <i class="ion-ios-help-circle"></i>
+            </div>
+            <a href="{$incomplete_link}" class="small-box-footer">More info <i class="fa fa-arrow-circle-right"></i></a>
+          </div>
+        </div>
+        <!-- ./col -->
+
+        <div class="col-md-6">          
+          <div class="box boxed box-primary">
+            <div class="box-header with-border">
+              <h3 class="box-title">Quarterly Views</h3> 
+            </div>
+            <div class="box-body chart-responsive">
+              <div id="quarterly" style="height: 250px;"></div>
+            </div> 
+          </div>
+        </div>
+
+        <div class="col-md-6">      
+          <div class="box boxed box-danger">
+            <div class="box-header with-border">
+              <h3 class="box-title">Most Popular tracks</h3> 
+            </div>
+            <div class="box-body chart-responsive">
+              <div id="most-viewed" style="height: 250px;"></div>
+            </div> 
+          </div>
+        </div>
+
+        <div class="col-md-12">
+          <div class="box boxed box-success">
+            <div class="box-header with-border">
+              <h3 class="box-title">Track View stats</h3> 
+            </div>
+            <div class="box-body chart-responsive">
+              <div id="track-barchart" style="height: 250px;"></div>
+            </div> 
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<script type="text/javascript">
+  Morris.Area({
+    // ID of the element in which to draw the chart.
+    element: 'quarterly',
+    // Chart data records -- each entry in this array corresponds to a point on
+    // the chart.
+    data: {$quarterly_data}, 
+    xkey: 'quarter', 
+    ykeys: ['views'], 
+    labels: ['Views'],
+    lineColors: ['#3c8dbc']
+  });
+
+  Morris.Donut({
+    element: 'most-viewed',
+    resize: true,
+    colors: ["#3c8dbc", "#f56954", "#00a65a"],
+    data: {$most_viewed_data},
+    formatter: function (y) {var s = y > 1 ? 's' : ''; return y + " View"+s },
+    hideHover: 'auto'
+    });
+
+  Morris.Bar({
+    element: 'track-barchart',
+    data: {$tracks_barchart},
+    xkey: 'track',
+    ykeys: ['views'],
+    labels: ['Views'],
+    barRatio: 0.4,
+    xLabelAngle: 5,
+    hideHover: 'auto'
+  });  
+</script>
