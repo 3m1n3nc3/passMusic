@@ -1683,3 +1683,17 @@ animation: seeking .5s linear infinite, seeking-in .5s linear;
   font-size: 20px;
   text-shadow: 3px 4px 9px black, 1px 1px 2px white;
 }
+
+/*Modify the bootstrap modal*/
+.modal-header {
+  border-bottom: 1px solid #424242!important;
+  background-color: #181818!important;
+  color: white!important;
+}
+.modal-body {
+  background-color: #282828!important;
+  color: #aaaaaa;
+}
+.modal .form-control { 
+  border: 1px solid #797979!important;
+} 

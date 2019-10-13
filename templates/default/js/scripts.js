@@ -22,28 +22,39 @@ function checkbox(boxname) {
         if(this.checked == true) {
             p = '1'; }
         else {
-            p = '0'; } 
+            p = '0'; }        
     });
     return p;
 }
 
 function deleteItem(options) {
-  $.ajax({
-    type: 'POST',
-    url: site_url+'/connection/delete.php',
-    data: {data: options},
-    dataType: 'JSON',
-    success: function(data) {
-      if (data.status == 1) {
-        if (options.type == 1) {
-          $('#track'+options.track).fadeOut('slow');
-          $.notify(data.msg, 'success');
+  var quest = options.conf_ ? options.conf_ : 'Are you sure you want to delete?';
+  var conf = confirm(quest);
+  if (conf == true) {
+    $.ajax({
+      type: 'POST',
+      url: site_url+'/connection/delete.php',
+      data: {data: options},
+      dataType: 'JSON',
+      success: function(data) {
+        if (data.status == 1) {
+          if (options.type == 1) {
+            $('#track'+options.track).fadeOut('slow');
+            $.notify(data.msg, 'success');
+          } else if (options.type == 2) {
+            $.notify(data.resp, 'success');
+            $('.tempnotice').html(data.msg);
+            $('#artist_'+options.id).fadeOut('slow');
+          }
+        } else {
+          $.notify(data.msg, 'error');
+          $('.tempnotice').html(data.msg);
         }
-      } else {
-        $.notify(data.msg, 'error');
       }
-    }
-  });
+    });
+  } else {
+    return false;
+  }
 }
 
 function profileCard() {

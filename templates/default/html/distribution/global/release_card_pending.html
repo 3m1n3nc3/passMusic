@@ -1,9 +1,9 @@
 <div class="pc_rel__releases my-2 border">
     <div class="pc_rel__release pc_rel__draft">
         <div class="pc_rel__header">
-        	<span class="pc_rel__title"><span>{$release_title}</span> </span> 
+        	<span class="pc_rel__title"><span>{$release_title}</span> {$approve_button}</span> 
         	<span class="pc_rel__controls">
-        		<a href="" data-toggle="tooltip" data-title="Delete"><i class="fa fa-trash float-right m-3 text-white fa-3"></i></a>
+        		{$delete_button}{$edit_button}{$remove_button}
         	 	<span class="pc_rel__plan-text">
         	 		<a href="{$site_url}/faq" class="text-white" target="_newtab">Need Help? <strong >Click here</strong></a>
         	 	</span>
@@ -23,7 +23,7 @@
                 </div> 
             </div> 
 
-            {$footer_content} 
+            {$footer_content}
 
         </div>
     </div>

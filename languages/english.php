@@ -36,6 +36,16 @@ $LANG['inactive'] = 'Inactive';
 $LANG['open'] = 'Open';
 $LANG['closed'] = 'Closed';
 $LANG['click2update'] = ' Click to update state';
+$LANG['monthly_listeners'] = 'Monthly Listeners';
+
+// Notices
+$LANG['information_saved'] = 'Your information has been saved';
+$LANG['information_no_update'] = 'You did not make any changes';
+$LANG['image_res_notice'] = 'Image resolution must be %s Pixels';
+
+// Form Inputs
+$LANG['no_fname'] = 'First Name can not be empty';
+$LANG['no_lname'] = 'Last Name can not be empty';
 
 // Project Titles, Buttons and Headings extended
 $LANG['main_track'] = 'Main Soundtrack/Instrumental';
@@ -68,8 +78,23 @@ $LANG['you_no_followers'] = 'You have no followers';
 $LANG['create_playlist'] = 'Create new Playlist';
 $LANG['add_to_playlist'] = 'Add to playlist';
 $LANG['public_playlist_notice'] = '<small class="text-warning"> Public Playlists are available to every user of this site.</small>';
+$LANG['new_featured_playlist_created'] = 'Your %s has been created. Playlists created from this tool are featured playlists and are made available in such manner that more users of our sharing site are able to find them, you can login to the sharing site to manage and add tracks to your playlists!';
 
 // Releases
 $LANG['release_almost_complete'] = 'Your release is almost there! It is %s%% complete.';
 $LANG['release_complete'] = 'Your release is %s%% complete, you can now publish';
+$LANG['release_already_submited'] = 'Your release has already been submitted for moderation, if you made changes we are also tracking those changes!';
+$LANG['release_removed'] = 'This release has been removed from sales, if you ever want this release back up, you would need to raise a support ticket';
+$LANG['release_submited'] = 'Your release has been submitted for moderation!';
+$LANG['no_releases'] = 'You have no %s releases';
+$LANG['no_releases_var'] = 'You have no releases %s';
+$LANG['missing_artist'] = 'Your release is missing a primary artist!';
+
+$LANG['enter_title'] = 'Please enter a title for this release';
+$LANG['enter_primary_artist'] = 'Please add a primary artist to the release';
+$LANG['enter_composition_copyright'] = 'Please enter your composition copyright';
+$LANG['enter_recording_copyright'] = 'Please enter your sound recording copyright';
+$LANG['enter_record_label'] = 'Please enter a record label for this release';
+$LANG['enter_release_date'] = 'Please set a release date for this release';
+// $LANG[''] = '';
 ?>

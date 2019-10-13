@@ -25,7 +25,7 @@ if ($data['action'] == 'pl_entry') {
   $release_audio = $databaseCL->fetchRelease_Audio(null, $data['rel_id']);
   if ($release_audio) {
     $del = null;
-    foreach ($release_audio as $audio) {echo $data['rel_id'];
+    foreach ($release_audio as $audio) { 
       $del = deleteFile($audio['audio'], null, 1);
     }
     if ($del) {
@@ -33,6 +33,17 @@ if ($data['action'] == 'pl_entry') {
       $do = $framework->dbProcessor($sql, 0, 1);
     }
   }
+} elseif ($data['action'] == 'artist') {
+  // Delete artist and remove all related items  
+    $status = $databaseCL->deleteReleaseArtist($data['id'], 1);
+    if ($status == 1) {
+      $status = 1;
+      $response = 'This user has been deleted successfully';
+      $msg = messageNotice($response, 1);
+    } else { 
+      $response = 'An Error occurred: Unable to delete user';
+      $msg = messageNotice($response, 3);
+    } 
 }
 
 $data = array('status' => $status, 'msg' => $msg, 'option' => $option, 'resp' => $response);

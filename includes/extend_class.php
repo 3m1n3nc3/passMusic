@@ -2,7 +2,7 @@
 
 use wapmorgan\Mp3Info\Mp3Info;
 
-function messageNotice($str, $type = null) {
+function messageNotice($str, $type = null, $size = '3', $iS = '2') {
     switch ($type) {
         case 1:
             $alert = 'success';
@@ -25,10 +25,10 @@ function messageNotice($str, $type = null) {
             break;
     }
     $string = '
-    <div class="p-3 mx-5 alert alert-' . $alert . '"> 
+    <div class="p-2 mx-1 alert alert-' . $alert . '"> 
         <div class="d-flex">
-            <i class="pr-4 fa fa-2x fa-'.$i.'"></i>
-            <div class="flex-grow-1"><h3 class="text-center font-weight-bolder" style="margin-bottom: 0px;">' . $str . '</h3></div>
+            <i class="pr-4 fa fa-'.$iS.'x fa-'.$i.'"></i>
+            <div class="flex-grow-1"><h'.$size.' class="text-center font-weight-bolder" style="margin-bottom: 0px;">' . $str . '</h'.$size.'></div>
         </div>
     </div>';
     return $string;
@@ -353,33 +353,46 @@ function simpleButtons($class, $title, $link, $x = null) {
 
     return $btn;
 }
- 
+
+/**
+ * [deleteFile description]
+ * @param  variable $name is the full qualified name including extension of the file to be deleted
+ * @param  variable $type describes what is to be deleted; 0 or null for audio, 1 for photo, 2 for other files
+ * @param  [variable $fb is used as fallback when an ajax xhr request type is not possible for a ajax request
+ * @return integer       1 if successful of 0 if failed
+ */
 function deleteFile($name, $type = null, $fb = null) {
-    global $framework;
+    global $SETT, $framework;
  
-    if ($type) {
+    if ($type == 1) {
         $path = 'photos';
-    } else { 
+    } elseif ($type == 2) {
+        $path = 'files';
+    } else {
         $path = 'audio';
     } 
+    $fallback = $SETT['working_dir'] . '/uploads/' . $path . '/' . $name; 
 
     if ($framework->trueAjax() || $fb) {
         $file =  '../uploads/' . $path . '/' . $name;
     } else {
         $file =  getcwd() . '/uploads/' . $path . '/' . $name;
-    } 
+    }  
 
     if ($name !== 'default.png') {
-        if (file_exists($file)) { 
-            unlink($file);
-            return 1;
+        if (file_exists($file) && is_file($file)) {  
+            clearstatcache();
+            return unlink($file); 
+        } elseif (file_exists($fallback) && is_file($fallback)) { 
+            clearstatcache();
+            return unlink($fallback);  
         } 
     }
-    return null;
+    return 0;
 }
 
-function notAvailable($string, $pad='', $type = null ) {
-    if ($type == null) {
+function notAvailable($string, $pad='', $type = null) {
+    if ($type == 1) {
         $return = 
         '<div class="tracker trackless song-container text-center">
             <div class="'.$pad.'pad-section">  
@@ -392,7 +405,7 @@ function notAvailable($string, $pad='', $type = null ) {
             $pad = 'display-1';
         }
         $return = 
-        '<div class="container text-center">
+        '<div class="text-center">
             <div class="p-4 m-4 border rounded border-info bg-light text-info">
                 <i class="'.$pad.' ion-ios-help-circle-outline"></i>
                 <p class="'.$pad.'">'.$string.'</p>
@@ -474,7 +487,8 @@ function superGlobalTemplate($type=null) {
         $theme = new themer('distribution/global/footer'); $section = '';
     }
     $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
-    $PTMPL['dashboard_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
+    $PTMPL['artists_services'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services');
+    $PTMPL['sales_report'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=sales-report');
     $PTMPL['user_url'] = $user_url = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
     $PTMPL['username_url'] = simpleButtons('logout', 'Account', $user_url, 1);
     $PTMPL['site_title_'] = ucfirst($configuration['site_name']);
@@ -545,7 +559,7 @@ function playlistManager($type = null, $track = null) {
     // Type 2: Create playlist form
     // Type 3: Add to playlist form
     if ($type == 1) {
-        $modal = modal('playlist', '<div id="modal-content"></div>', '<span id="modal-title">Playlist</span>', 2);
+        $modal = modal('playlist', '<div class="modal-container"></div>', '<span id="modal-title">Playlist</span>', 2);
         $content = $modal;
     } elseif ($type == 2) {
         $processor = $SETT['url'].'/connection/uploader.php?action=playlists';
@@ -1320,8 +1334,40 @@ function getPage($page = null) {
         $page = $page;
     }
     return $page;
+} 
+
+/**
+ * Create the links for the navigation navbar nav of the distribution portal
+**/
+function superNavigation($user_id) {
+    global $SETT, $user, $framework, $databaseCL;  
+    $new_release = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
+    $all_releases = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases');
+    $artist_services = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services');
+    $reports = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=reports');
+    $support = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=support');
+
+    $linkers = array(
+        'new_release' => array('New Release',  $new_release), 
+        'releases' => array('Discography',  $all_releases),
+        'artist-services' => array('Artist Services',  $artist_services),
+        'support' => array('Community and Support',  $support),
+    );
+    
+    $rows = '';
+    foreach ($linkers as $key => $value) {
+        if ($key == $pager) {
+            $active = ' class="active"';
+        } else {
+            $active = '';
+        }
+        $rows .= '<li'.$active.'><a href="'.$value.'">'.strtoupper($key).'</a></li>';
+    }
 }
 
+/**
+ * Create the links for the navigation navbar nav of the secondary user navigation
+**/
 function secondaryNavigation($user_id) {
     global $SETT, $user, $framework, $databaseCL; 
     $artist = $framework->userData($user_id, 1);
@@ -1445,10 +1491,10 @@ function sidebar_userSuggestions($artist_id) {
             $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$rows['uid']);
             $PTMPL['follow_btn'] = clickFollow($rows['uid'], $user['uid']);
 
-            $PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$rows['username']);
-            $PTMPL['profile_name'] = $rows['fname'] . ' ' . $rows['lname'];
-            $PTMPL['profile_photo'] = getImage($rows['photo'], 1);
-            $PTMPL['verified_badge'] = $rows['verified'] ? ' verifiedUserBadge' : '';
+            $PTMPL['prof_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$rows['username']);
+            $PTMPL['prof_name'] = $rows['fname'] . ' ' . $rows['lname'];
+            $PTMPL['prof_photo'] = getImage($rows['photo'], 1);
+            $PTMPL['verif_badge'] = $rows['verified'] ? ' verifiedUserBadge' : '';
             $PTMPL['sidebar_title'] = 'Who to follow';
             $PTMPL['refresher'] = '<i class="ion-ios-refresh-circle pc-type-h3"></i> Refresh';
 
@@ -1484,6 +1530,39 @@ function sidebar_trackSuggestions($artist_id, $titler = 'Likes') {
     return $suggestions;
 }
 
+function releaseType($id, $type = null) {
+    global $databaseCL;
+    $r_audio = $databaseCL->fetchRelease_Audio(null, $id);
+    $r_audio_count = $r_audio ? count($r_audio) : 0;
+
+    if ($r_audio_count > 0) {
+        if ($r_audio_count >= 13) {
+           $rt = 4;
+           $ic = '<span class="mr-4"><i class="ion-ios-filing"></i> Extended Album</span>';
+        } elseif ($r_audio_count > 5 && $r_audio_count < 13) {
+           $rt = 3;
+           $ic = '<span class="mr-4"><i class="ion-ios-albums"></i> Album</span>';
+        } elseif ($r_audio_count > 1 && $r_audio_count < 6) {
+           $rt = 2;
+           $ic = '<span class="mr-4"><i class="ion-ios-clock"></i> EP</span>';
+        } else {
+           $rt = 1;
+           $ic = '<span class="mr-4"><i class="ion-ios-disc"></i> Single</span>';
+        }
+        if ($type) {
+            return $ic;
+        } else {
+            return $rt;
+        }
+    }
+    return;
+}
+
+/**
+ * This functions displays the information for release details
+ * @param  variable $id is the unique id of the release (release_id)
+ * @return html     returns the HTML of the card details
+ */
 function releasesCard($id = null) {
     global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
     $theme = new themer('distribution/global/release_card_pending'); $release = '';
@@ -1493,27 +1572,41 @@ function releasesCard($id = null) {
     $r_audio = $databaseCL->fetchRelease_Audio(null, $id);
     $r_audio_count = $r_audio ? count($r_audio) : 0;
 
+    $PTMPL['approve_button'] = $user['role'] >= 4 && $get_release['status'] == 2 ? '<button class="btn btn-success mx-2">Approve</button>' : '';
+
     $PTMPL['release_audio_count'] = $r_audio_count > 0  ? '<span class="mr-4"><i class="ion-ios-musical-notes"></i> '.$r_audio_count.' Tracks</span>' : '';
     $PTMPL['release_title'] = $get_release['title'];
+
     $release_home_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$get_release['release_id']);
     $release_publ_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=publish&rel_id='.$get_release['release_id']);
+    $release_remove_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&modify=remove&rel_id='.$get_release['release_id']);
+
     $PTMPL['release_upc'] = $get_release['upc'];
     $PTMPL['release_artist'] = $r_artist ? '<span class="mr-4"><i class="ion-ios-microphone"></i> '.$r_artist['name'].'</span>' : '';
     $PTMPL['create_date'] = $marxTime->dateFormat($get_release['date'], 2);
     $PTMPL['release_artwork'] = getImage($get_release['art'], 1);
-    $PTMPL['release_album_single'] = $r_audio_count > 0 ? ($r_audio_count > 1  ? '<span class="mr-4"><i class="ion-ios-albums"></i> Album</span>' : '<span class="mr-4"><i class="ion-ios-disc"></i> Single</span>') : '';
+
+    $PTMPL['release_album_single'] = releaseType($id, 1);
 
     $step_1 = $get_release['title'] != '' ? $marxTime->percenter(10, 100) : 0;
     $step_2 = $get_release['c_line'] != '' && $get_release['p_line'] != '' && $get_release['label'] != '' && $get_release['release_date'] != '' ? $marxTime->percenter(25, 100) : 0;
     $step_3 = $r_audio_count > 0 ? $marxTime->percenter(25, 100) : 0;
     $step_4 = $get_release['art'] != '' ? $marxTime->percenter(25, 100) : 0;
     $step_5 = $r_artist != '' ? $marxTime->percenter(15, 100) : 0;
+
     $PTMPL['release_progress'] = $progress = $step_1 + $step_2 + $step_3 + $step_4 + $step_5;
-    $PTMPL['release_progress_text'] = $progress == 100 ? sprintf($LANG['release_complete'], $progress) : sprintf($LANG['release_almost_complete'], $progress);
+
+    $missing_artist = !$r_artist && $progress == 60 ? ' '.$LANG['missing_artist'] : '';
+
+    $PTMPL['release_progress_text'] = $progress == 100 ? sprintf($LANG['release_complete'], $progress) : sprintf($LANG['release_almost_complete'].$missing_artist, $progress);
     $PTMPL['release_button'] = $progress !== $progress ? '<a href="'.$release_publ_url.'" class="btn btn-success float-right mx-2">Publish Release</a>' : '<a href="'.$release_home_url.'" class="btn btn-primary float-right mx-2">Complete Release</a>'; 
 
+    $PTMPL['delete_button'] = $get_release['status'] == 1 ? '<a href="" title="Permanently Delete"><i class="fa fa-trash float-right m-3 text-white fa-3"></i></a>' : '';
+    $PTMPL['edit_button'] = $get_release['status'] == 3 ? '<a href="'.$release_home_url.'" title="Change meta data"><i class="fa fa-edit float-right m-3 text-white fa-3"></i></a>' : '';
+    $PTMPL['remove_button'] = $get_release['status'] == 3 ? '<a href="'.$release_remove_url.'" title="Remove From Sale"><i class="fa fa-times-circle float-right m-3 text-white fa-3"></i></a>' : '';
+
     $PTMPL['footer_content'] = $get_release['status'] == 1 ?
-    '<div class="pc_rel__footer">
+    '<div class="pc_rel__footer"> 
         <span class="pc_rel__notice-title">
             '.$PTMPL['release_progress_text'].'
             '.$PTMPL['release_button'].'
@@ -1577,6 +1670,49 @@ function releasesTracklist($id = null, $hidden = null) {
         </div>
     </div>';
     return $list;
+}
+
+function dataSet($type = null, $date = null) {
+    global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime, $page_name;
+    
+    if ($date = null) {
+        $date = date('Y-m-d', strtotime('today'));
+    }
+
+    $data = [];
+    if ($type == 1) {
+        $databaseCL->type = 2;
+        $databaseCL->limit = 4;
+        $fetch = $databaseCL->releaseStats($user['uid'], $date);
+
+        if ($fetch) {
+            foreach ($fetch as $q => $track) {
+                $data[] = '{ label: "'.$track['title'].'", value: "'.$track['views'].'" }';
+            }
+        }
+    } elseif ($type == 2) {
+        $databaseCL->type = 2; 
+        $fetch = $databaseCL->releaseStats($user['uid'], $date);
+
+        if ($fetch) {
+            foreach ($fetch as $q => $track) {
+                $data[] = '{track: "'.$track['title'].'", views: "'.$track['views'].'" }';
+            }
+        }
+    } else {
+        $databaseCL->type = 1;
+        $fetch = $databaseCL->releaseStats($user['uid'], $date);
+
+        if ($fetch) {
+            foreach ($fetch as $q => $quarter) {
+                $data[] = '{ quarter: "2019 Q'.$quarter['qt'].'", views: "'.$quarter['quarterly_views'].'" }';
+            }
+        }
+    }
+    $data_set = implode(', ', $data);
+
+    $databaseCL->type = $databaseCL->limit = null;
+    return '['.$data_set.']';
 }
 
 function showMore_button($type = 0, $item_id = null, $x='More') {
@@ -1837,16 +1973,17 @@ function smallUser_Card($id, $button = null, $extra = null) {
     $PTMPL['follower_count'] = $marxTime->numberFormater($follower_count, 1);
     $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$artist['uid']);
 
-    $PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$artist['username']);
-    $PTMPL['profile_name'] = $artist['fname'] . ' ' . $artist['lname'];
-    $PTMPL['profile_photo'] = getImage($artist['photo'], 1);
-    $PTMPL['verified_badge'] = $artist['verified'] ? ' verifiedUserBadge' : '';
+    $PTMPL['prof_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$artist['username']);
+    $PTMPL['prof_name'] = $artist['fname'] . ' ' . $artist['lname'];
+    $PTMPL['prof_photo'] = getImage($artist['photo'], 1);
+    $PTMPL['verif_badge'] = $artist['verified'] ? ' verifiedUserBadge' : '';
 
     if ($extra) {
         $PTMPL['extra_style_input'] = ' userSuggestionList__extra';
     } 
 
     $section = $template->make(); 
+
     return $section; 
 }
 

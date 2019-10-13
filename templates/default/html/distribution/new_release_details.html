@@ -1,3 +1,19 @@
+<script>
+    $(function(){
+		$("#set-tags").tagEditor({ 
+		    delimiter: ", ", /* space and comma */
+		    placeholder: "Enter some tags...",
+		    forceLowercase: true,
+		    maxTags: 15,
+		    initialTags: {$preset_tags},
+		    autocomplete: {
+		        delay: 0, // show suggestions immediately
+		        position: { collision: "flip" }, // automatic menu position up/down
+		        source: {$tag_list}
+		    }      
+		}); 
+	});
+</script>
 <main id="main">
 	<section id="contact" class="bg-light">
 		<div class="container">
@@ -9,13 +25,24 @@
 						<form class="contactForm" method="post" action="">
 
 							<small class="form-text text-muted">
-							If this release contains the same featuring Artist(s) for all tracks, please add the featuring Artist(s) to the album title in this format "(Feat. Artist Name)".
+								If this release contains the same featuring Artist(s) for all tracks, please add the featuring Artist(s) to the album title in this format "(Feat. Artist Name)".
 							</small>
 							<div class="input-group mb-3">
 								<div class="input-group-prepend">
 									<span class="input-group-text">Single/EP/Album Title<i class="text-danger">*</i></span>
 								</div>
 								<input type="text" name="title" class="form-control" value="{$release_title}">
+							</div>
+
+
+							<small class="form-text text-muted">
+								Tags are used to generate useful suggestions of tracks to users based on their preference, tracks with span tags are going to be deleted. <i class="text-danger">Maximum of 15 Tags</i>
+							</small>
+							<div class="input-group mb-3">
+								<div class="input-group-prepend">
+									<span class="input-group-text">Tags</span>
+								</div>
+								<input type="text" name="tags" class="form-control" value="{$release_tags}" id="set-tags">
 							</div>
 							
 							<div class="form-group">
@@ -25,7 +52,7 @@
 							
 							<div class="form-row" id="artist_division">
 								<small class="form-text text-muted">
-								The name of the artist attributed to this release, if there is more that one artist please add a new artist, there must always be a primary artist.
+									The name of the artist attributed to this release, if there is more that one artist please add a new artist, there must always be a primary artist. <div class="text-danger">(If you no longer need and artist you can remove them from the artist services section).</div>
 								</small> 
 								<div class="col-8">
 									<div class="input-group mb-3">
@@ -34,7 +61,7 @@
 										</div>
 										{$primary_username}
 										<input type="hidden" name="artist_role[]" value="primary">
-										<input type="text" name="artist[]" class="form-control" value="{$release_artist}">
+										<input type="text" name="artist[]" class="form-control" value="{$release_artist}" id="artist">
 									</div> 
 								</div>
 								<div class="col">
@@ -143,7 +170,16 @@
 		$('#add_artist_btn').on('click', function() {
 			i++;
 			$('#artist_division').append(
-				'<div class="col-8" id="artist_'+i+'"> <div class="input-group mb-3"> <div class="input-group-prepend"> <span class="input-group-text">Artist Name </span> </div> <input type="text" name="artist[]" class="form-control"> </div> </div> <div class="col"> <select name="artist_role[]" class="form-control"> {$roles_option} </select> </div> ');
+				'<div class="col-8" id="artist_'+i+'"> <div class="input-group mb-3"> <div class="input-group-prepend"> <span class="input-group-text">Artist Name </span> </div> <input type="text" name="artist[]" class="form-control" id="artist_auto'+i+'"> </div> </div> <div class="col"> <select name="artist_role[]" class="form-control"> {$roles_option} </select> </div>'
+			);
+
+		    $( "#artist_auto"+i ).autocomplete({
+		      source: {$predefined_artist}
+		    });
 		});
+
+	    $( "#artist" ).autocomplete({
+	      source: {$predefined_artist}
+	    });
 	})
 </script>

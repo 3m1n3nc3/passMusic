@@ -17,7 +17,7 @@ $PTMPL['template_name'] = $SETT['template_name'] = 'default';//$settings['templa
 $PTMPL['template_url'] = $SETT['template_url'] = $SETT['template_path'].'/'.$SETT['template_name'];
 $SETT['working_dir'] = $_SERVER["DOCUMENT_ROOT"];
 
-$_SESSION['username'] = 'marxemi';
+$_SESSION['username'] = 'davidson';
 // Check who is logged in right now
 if (isset($_SESSION['username'])) { 
 	$user = $framework->userData($_SESSION['username'], 2);

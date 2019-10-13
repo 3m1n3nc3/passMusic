@@ -1,16 +1,7 @@
 <?php 
 require_once(__DIR__ .'/../includes/autoload.php');
 
-$post_type = $_POST['type'];
-
-$tag_list = [];
-$tags = $databaseCL->fetchGenre();
-if ($tags) {
-  foreach ($tags as $value) {
-    $tag_list[] = '\''.$value['name'].'\'';
-  }
-}
-$tag_list = implode(', ', $tag_list);
+$post_type = $_POST['type']; 
 
 $tag_sel = $databaseCL->fetchTags();
 $tag_opt = '';
@@ -51,6 +42,7 @@ if ($post_type == 1 || $post_type == 2) {
       </select>';
   }
 
+  $tag_list = $framework->autoComplete(1);
   $content = '
   <script>
     $("#set-tags").tagEditor({ 
@@ -61,7 +53,7 @@ if ($post_type == 1 || $post_type == 2) {
         autocomplete: {
             delay: 0, // show suggestions immediately
             position: { collision: "flip" }, // automatic menu position up/down
-            source: ['.$tag_list.']
+            source: '.$tag_list.'
         }      
     });
 

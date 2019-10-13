@@ -142,8 +142,16 @@ function mainContent() {
     $track_list = $databaseCL->fetchTracks($artist['uid'], 5);
     $databaseCL->track_list = implode(',', $track_list);
     $fetch_stats = $databaseCL->fetchStats(null, $artist['uid'])[0];
-    $PTMPL['total_monthly_views'] = $marxTime->numberFormater($fetch_stats['last_month']);
-    $PTMPL['show_monthly_viewers'] = showViewers();
+    if ($fetch_stats['last_month']) {
+	    $PTMPL['total_monthly_views'] = '
+	    <div class="artist__listeners">
+	      <div class="artist__listeners__count">'.$marxTime->numberFormater($fetch_stats['last_month']).'</div>
+	      <div class="artist__listeners__label">'.$LANG['monthly_listeners'].'</div>
+	    </div>';
+    }
+    if ($track_list) {
+    	$PTMPL['show_monthly_viewers'] = showViewers();
+    }
 
 	// Set the active landing page_title 
 	$theme = new themer('music/listen');

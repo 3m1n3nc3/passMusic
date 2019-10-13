@@ -1055,18 +1055,18 @@ h6 {
 /* Contact Section
 --------------------------------*/
 
-#contact {
+#distribution, #contact {
   box-shadow: 0px 0px 12px 0px rgba(0, 0, 0, 0.1);
   padding: 60px 0;
   overflow: hidden;
   background: #fff; 
 }
 
-#contact .section-header {
+#distribution, #contact .section-header {
   padding-bottom: 30px;
 }
 
-#contact .contact-about h3 {
+#distribution .contact-about h3, #contact .contact-about h3 {
   font-size: 36px;
   margin: 0 0 10px 0;
   padding: 0;
@@ -1078,18 +1078,18 @@ h6 {
   color: #007bff;
 }
 
-#contact .contact-about p {
+#distribution .contact-about p, #contact .contact-about p {
   font-size: 14px;
   line-height: 24px;
   font-family: "Montserrat", sans-serif;
   color: #888;
 }
 
-#contact .social-links {
+#distribution, #contact .social-links {
   padding-bottom: 20px;
 }
 
-#contact .social-links a {
+#distribution .social-links, #contact .social-links a {
   font-size: 18px;
   display: inline-block;
   background: #fff;
@@ -1105,29 +1105,29 @@ h6 {
   border: 1px solid #007bff;
 }
 
-#contact .social-links a:hover {
+#distribution .social-links a:hover , #contact .social-links a:hover {
   background: #007bff;
   color: #fff;
 }
 
-#contact .info {
+#distribution .info, #contact .info {
   color: #283d50;
 }
 
-#contact .info i {
+#distribution .info i, #contact .info i {
   font-size: 32px;
   color: #007bff;
   float: left;
   line-height: 1;
 }
 
-#contact .info p {
+#distribution .info p, #contact .info p {
   padding: 0 0 10px 36px;
   line-height: 28px;
   font-size: 14px;
 }
 
-#contact .form #sendmessage {
+#distribution .form #sendmessage , #contact .form #sendmessage {
   color: #007bff;
   border: 1px solid #007bff;
   display: none;
@@ -1137,7 +1137,7 @@ h6 {
   margin-bottom: 15px;
 }
 
-#contact .form #errormessage {
+#distribution .form #errormessage , #contact .form #errormessage {
   color: red;
   display: none;
   border: 1px solid red;
@@ -1147,13 +1147,13 @@ h6 {
   margin-bottom: 15px;
 }
 
-#contact .form #sendmessage.show,
-#contact .form #errormessage.show,
-#contact .form .show {
+#distribution .form #sendmessage.show, #contact .form #sendmessage.show,
+#distribution .form #errormessage.show, #contact .form #errormessage.show,
+#distribution .form .show, #contact .form .show {
   display: block;
 }
 
-#contact .form .validation {
+#distribution .form .validation , #contact .form .validation {
   color: red;
   display: none;
   margin: 0 0 20px;
@@ -1161,14 +1161,14 @@ h6 {
   font-size: 13px;
 }
 
-#contact .form input,
-#contact .form textarea {
+#distribution .form input, #contact .form input,
+#distribution .form textarea, #contact .form textarea {
   border-radius: 0;
   box-shadow: none;
   font-size: 14px;
 }
 
-#contact .form button[type="submit"] {
+#distribution .form button[type="submit"], #contact .form button[type="submit"] {
   background: #007bff;
   border: 0;
   border-radius: 20px;
@@ -1177,7 +1177,7 @@ h6 {
   transition: 0.3s;
 }
 
-#contact .form button[type="submit"]:hover {
+#distribution .form button[type="submit"]:hover, #contact .form button[type="submit"]:hover {
   background: #0067d5;
   cursor: pointer;
 }

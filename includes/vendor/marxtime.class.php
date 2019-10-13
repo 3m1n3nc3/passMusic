@@ -159,20 +159,24 @@ class marxTime
         }
         $filtered_string = str_replace($find, $replace, $string);
 
-        if (stripos($string, $explode)) {
-            $filtered_string = explode($explode, $filtered_string);
-            
-            if (isset($this->part)) {
-                $new_string = $filtered_string[$this->part];
-            } else {
-                if (count($filtered_string) > 1) {
-                    $new_string = $filtered_string[0].' '.$filtered_string[1];
-                } else {
-                    $new_string = $filtered_string[0];
-                }
-            }
+        if (isset($this->get_array)) {
+            return explode($explode, trim($filtered_string));
         } else {
-            $new_string = $filtered_string;
+            if (stripos($string, $explode)) {
+                $filtered_string = explode($explode, $filtered_string);
+                
+                if (isset($this->part)) {
+                    $new_string = $filtered_string[$this->part];
+                } else {
+                    if (count($filtered_string) > 1) {
+                        $new_string = $filtered_string[0].' '.$filtered_string[1];
+                    } else {
+                        $new_string = $filtered_string[0];
+                    }
+                }
+            } else {
+                $new_string = $filtered_string;
+            }
         }
 
         return $new_string;
@@ -201,6 +205,11 @@ class marxTime
         return $echo;
     }
 
+    function timeSub($date, $today = 'today') {
+        $do = isset($this->do) ? $this->do : '-';
+        $date = date('Y-m-d', strtotime($today.$do.$date));
+        return $date;
+    }
     // Combine two different date and time string to make a datetime stamp
     function timemerger($date, $time)
     {

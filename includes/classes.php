@@ -201,15 +201,15 @@ class framework {
 		global $SETT, $LANG, $configuration, $user, $framework;
 		if($token == 'resend') { 
 			// Check if a token has been sent before, and is not expired
-			$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE username = '%s' AND status = '0'", $framework->db_prepare_input($username));
-			$data = $framework->dbProcessor($sql, 1)[0];
+			$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE username = '%s' AND status = '0'", $this->db_prepare_input($username));
+			$data = $this->dbProcessor($sql, 1)[0];
  
 			if($user['token'] && date("Y-m-d", strtotime($data['date'])) < date("Y-m-d")) {
 				$date = date("Y-m-d H:i:s");
-				$token = $framework->generateToken(null, 2);
+				$token = $this->generateToken(null, 2);
 				$sql = sprintf("UPDATE " . TABLE_USERS . " SET `token` = '%s', `date` = '%s'"
-				." WHERE `username` = '%s'", $token, $date, $framework->db_prepare_input($username));
-				$return = $framework->dbProcessor($sql, 0, 1);
+				." WHERE `username` = '%s'", $token, $date, $this->db_prepare_input($username));
+				$return = $this->dbProcessor($sql, 0, 1);
 				if($configuration['activation'] == 'email') {
 					$link = cleanUrls($SETT['url'].'/index.php?a=account&unverified=true&activation='.$token.'&username='.$username);
 					$msg = sprintf($LANG['welcome_msg_otp'], $configuration['site_name'], $token);	
@@ -228,12 +228,12 @@ class framework {
 			}
 		} else {
 			$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE username = '%s' AND token = '%s' AND status = '0'", 
-				$framework->db_prepare_input($username), $framework->db_prepare_input($token)); 
-			$return = $framework->dbProcessor($sql, 0, 1);
+				$this->db_prepare_input($username), $this->db_prepare_input($token)); 
+			$return = $this->dbProcessor($sql, 0, 1);
 			if ($return == 1) {
 				$sql = sprintf("UPDATE " . TABLE_USERS . " SET `status` = '1', `token` = ''"
-				." WHERE `username` = '%s'", $framework->db_prepare_input($username));
-				$return = $framework->dbProcessor($sql, 0, 1);
+				." WHERE `username` = '%s'", $this->db_prepare_input($username));
+				$return = $this->dbProcessor($sql, 0, 1);
 				return $return == 1 ? messageNotice('Congratulations, your account was activated successfully', 1) : '';
 			} else {
 				return messageNotice('Invalid OTP', 3);
@@ -389,12 +389,12 @@ class framework {
     }
 
     // Show the user roles
-	function userRoles($role = null, $user = null) {
-		global $framework;
-		if ($user) {
-			$user = $framework->userData($user, 1);
+	function userRoles($role = 0, $set_user = null) {
+		global $framework, $user;
+		if ($set_user) {
+			$user = $this->userData($set_user, 1);
 			$role = $user['role'];
-		}
+		} 
 		
 		if ($role == 1) {
 			$role = 'User';
@@ -600,15 +600,34 @@ class framework {
 	    return $safelink;
 	}
 
-	function generateUserName($string) {
-		$gen = $this->safeLinks($string, 1);
-		if ($gen == $this->userData($gen, 2)['username']) {
-			$username = $gen.rand(100,997);
+	/**
+	 * This function will change the provided to lower case, replace spaces with an underscore
+	 * and check for match to the newly generated string in user database
+	 * @param  variable $string is the string to convert to a username
+	 * @param  variable $type if == 1 will return the username 
+	 * match else if it is null or 0 will add a random number to the username
+	 * @return string         will return the newly generated username
+	 */
+	function generateUserName($string, $type = null) {
+		$new_string = $this->safeLinks($string, 1);
+		$username = $this->userData($string, 2)['username'];
+
+		if ($type == 1) {
+			if ($new_string == $username) {
+				$set_username = $username;
+			} else {
+				$set_username = $new_string;
+			}
 		} else {
-			$username = $gen;
+			if ($new_string == $this->userData($new_string, 2)['username']) {
+				$set_username = $new_string.rand(100,997);
+			} else {
+				$set_username = $new_string;
+			}
 		}
-		return $username;
+		return $set_username;
 	}
+
 	/**
 	/* generate clean urls, this is similar to safeLinks()
 	**/
@@ -822,6 +841,40 @@ class framework {
 	    }
 
 	    exit;
+	}
+
+	function autoComplete($_type = null, $preset = null) {
+		global $SETT, $configuration, $databaseCL, $marxTime;
+
+		if ($_type == 1) {
+			$tag_array = [];
+			$tags = $databaseCL->fetchGenre();
+			if ($tags) {
+			  foreach ($tags as $value) {
+			    $tag_array[] = '"'.$value['name'].'"';
+			  }
+			} 
+		} elseif ($_type == 2) {
+		    $marxTime->explode = ',';
+		    $marxTime->get_array = true;
+		    $tags = $marxTime->reconstructString($preset); 
+			$tag_array = []; 	
+			if ($tags) {
+			  foreach ($tags as $key => $value) {
+				$tag_array[] = '"'.ucfirst($value).'"';
+			  }
+			}
+		} else {
+			$tag_array = [];
+			$tags = $this->userData(null, 0); 	
+			if ($tags) {
+			  foreach ($tags as $value) {
+				$tag_array[] = '"'.ucfirst($value['username']).'"';
+			  }
+			}
+		}
+		$tag_list = implode(', ', $tag_array);
+		return '['.$tag_list.']';
 	}
 
 	/**
@@ -1142,6 +1195,296 @@ class doRecovery extends framework {
  */
 class databaseCL extends framework {
 	
+	/**
+	 * This function is very powerful as it will delete the user and all his associated records from the program
+	 * @param  variable $id is the identifier of the user to delete
+	 * @param  variable $fb is used as fallback when an ajax xhr request type is not possible for a ajax request
+	 * @return Boolean     returns true if a user was deleted else it returns false
+	 */
+	function deleteUser($id, $fb = null) {
+		$id = $this->db_prepare_input($id);
+
+		// Try to delete the user from the db
+		$destroy = $this->dbProcessor("DELETE FROM `users` WHERE `uid` = '{$id}'", 0, 1);
+
+		// If the user was deleted successfully
+		if ($destroy == 1) {
+
+			// Delete the profile and cover photos
+			$trs = $this->dbProcessor("SELECT cover,photo FROM users WHERE `uid` = '{$id}'", 1);
+			if ($trs) {
+				foreach($trs as $rows) {
+					deleteFile($rows['cover'], 1, $fb);
+					deleteFile($rows['photo'], 1, $fb);
+				}
+			}
+
+			// Delete project stem files
+			$trs1 = $this->dbProcessor("SELECT file FROM stems WHERE `user` = '{$id}'", 1);
+			if ($trs1) {
+				foreach($trs1 as $rows) {
+					deleteFile($rows['file'], null, $fb); 
+				}
+			}
+
+			// Delete Project
+			$trs2 = $this->dbProcessor("SELECT cover,instrumental,datafile FROM projects WHERE `creator_id` = '{$id}'", 1);
+			if ($trs2) {
+				foreach($trs2 as $rows) {
+					deleteFile($rows['cover'], 1, $fb);
+					deleteFile($rows['instrumental'], null, $fb); 
+					deleteFile($rows['datafile'], 2, $fb);
+				}
+			}
+
+			// Delete project instrumentals
+			$trs3 = $this->dbProcessor("SELECT file FROM instrumentals WHERE `user` = '{$id}'", 1);
+			if ($trs3) {
+				foreach($trs3 as $rows) {
+					deleteFile($rows['file'], null, $fb); 
+				}
+			}
+
+			// Delete tracks
+			$trs4 = $this->dbProcessor("SELECT art,audio FROM tracks WHERE `uid` = '{$id}'", 1);
+			if ($trs4) {
+				foreach($trs4 as $rows) {
+					deleteFile($rows['art'], 1, $fb);
+					deleteFile($rows['audio'], null, $fb);
+				}	
+			}		
+
+			// Delete associated records
+		    $this->dbProcessor("DELETE FROM albumentry WHERE album IN (SELECT id FROM albums WHERE `by` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM albumentry WHERE track IN (SELECT id FROM tracks WHERE `artist_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM collaborators WHERE project IN (SELECT id FROM projects WHERE `creator_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM collabrequests WHERE project IN (SELECT id FROM projects WHERE `creator_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM instrumentals WHERE project IN (SELECT id FROM projects WHERE `creator_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '2' AND item_id IN (SELECT id FROM tracks WHERE `artist_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '1' AND item_id IN (SELECT id FROM albums WHERE `by` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM playlistfollows WHERE playlist IN (SELECT id FROM playlist WHERE `by` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM playlistentry WHERE track IN (SELECT id FROM tracks WHERE `artist_id` = '{$id}')", 0); 
+		    $this->dbProcessor("DELETE FROM stems WHERE project IN (SELECT id FROM projects WHERE `creator_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM playlistentry WHERE playlist IN (SELECT id FROM playlist WHERE `by` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM views WHERE track IN (SELECT id FROM tracks WHERE `uid` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM playlistfollows WHERE `subscriber` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM projects WHERE `creator_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM stems WHERE `user` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM collaborators WHERE `user` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM collabrequests WHERE `user` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM instrumentals WHERE `user` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM likes WHERE `user_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM playlist WHERE `by` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM relationship WHERE `leader_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM relationship WHERE `follower_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM views WHERE `by` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM tracks WHERE `uid` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM albums WHERE `by` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM users WHERE `uid` = '{$id}'", 0);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This function is another powerful function that will delete the user in the new release scope and all his associated 
+	 * records from the program
+	 * @param  variable $id is the identifier of the user to delete
+	 * @param  variable $fb is used as fallback when an ajax xhr request type is not possible for a ajax request
+	 * @return Boolean     returns true if a user was deleted else it returns false
+	 */
+	function deleteReleaseArtist($id, $fb = null) {
+		$id = $this->db_prepare_input($id);
+
+		// if the user id was passed, start deleting
+		$destroy = $id ? 1 : 0;
+
+		// If the user was deleted successfully
+		if ($destroy == 1) { 
+			// Delete the user if created
+			$userdata = $this->userData($id, 1);
+			if ($userdata) {
+				$this->deleteUser($userdata['uid'], $fb);
+			}
+
+			// Delete release profile photos
+			$trs = $this->dbProcessor("SELECT photo FROM new_release_artists WHERE `username` = '{$id}'", 1);
+			if ($trs) { 
+				deleteFile($trs[0]['photo'], 1, $fb);  
+			}
+
+			// Delete release track files
+			$trs1 = $this->dbProcessor("SELECT audio FROM new_release_tracks WHERE `release_id` IN (SELECT release_id FROM new_release_artists WHERE `username` = '{$id}')", 1); 
+			if ($trs1) {
+				foreach($trs1 as $rows) { 
+					deleteFile($rows['audio'], null, $fb); 
+				} 	
+			}
+
+			// Delete release files
+			$trs2 = $this->dbProcessor("SELECT art FROM new_release WHERE `release_id` IN (SELECT release_id FROM new_release_artists WHERE `username` = '{$id}')", 1); 
+			if ($trs2) {
+				foreach($trs2 as $rows) { 
+					deleteFile($rows['art'], 1, $fb); 
+				} 
+			}		
+
+			// Delete associated records 
+		    $this->dbProcessor("DELETE FROM new_release_tracks WHERE `release_id` IN (SELECT release_id FROM new_release_artists WHERE `username` = '{$id}')", 0); 
+		    $this->dbProcessor("DELETE FROM new_release WHERE `release_id` IN (SELECT release_id FROM new_release_artists WHERE `username` = '{$id}')", 0); 
+		    $this->dbProcessor("DELETE FROM `new_release_artists` WHERE `username` = '{$id}'", 0, 1);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * Either delete or approve a release
+	 * @param  variable $id is the identifier of the release to act upon
+	 * @param  variable $type is used to determine if this is an approve release or delete release request 
+	 * (1: approve, 2:delete without removing fies, 3: delete without updating or removing fies, 0/null: delete)
+	 * @return Boolean     returns true if an action was successful
+	 */
+	function salesAction($id, $type = null) {
+		global $SETT, $LANG, $configuration, $user;
+
+		$id = $this->db_prepare_input($id);
+		$status = $type == 1 ? 3 : 0;
+
+		$date = date('Y-m-d', strtotime('today'));
+		if ($type == 3) {
+			$update = 1;
+		} else {
+			$set_date = $type == 1 ? '\''.$date.'\'' : NULL;
+			$sql = sprintf("UPDATE new_release SET `status` = '%s', `approved_date` = %s WHERE `release_id` = '%s'", $status, $set_date, $id);
+			$update = $this->dbProcessor($sql, 0, 5);
+		}
+
+		if (!$type && $update == 1) {
+
+			// Delete tracks
+			$trs4 = $this->dbProcessor("SELECT art,audio FROM tracks WHERE `release_id` = '{$id}'", 1);
+			if ($trs4) {
+				foreach($trs4 as $rows) {
+					deleteFile($rows['art'], 1);
+					deleteFile($rows['audio'], null);
+				}	
+			}
+			// Delete Albums
+			$trs4 = $this->dbProcessor("SELECT art,id FROM albums WHERE `release_id` = '{$id}'", 1);
+			if ($trs4) {
+				foreach($trs4 as $rows) {
+					deleteFile($rows['art'], 1); 
+				}	
+			}	
+		    
+		    // Delete all related records of this track
+		    $this->salesAction($id, 3);
+
+			return true;
+		} elseif ($type == 2 && $update == 1) {
+		    // Delete all related records of this track 
+		    $this->dbProcessor("DELETE FROM playlistentry WHERE track IN (SELECT id FROM tracks WHERE `release_id` = '{$id}')", 0); 
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '2' AND item_id IN (SELECT id FROM tracks WHERE `release_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '1' AND item_id IN (SELECT id FROM albums WHERE `release_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM views WHERE track IN (SELECT id FROM tracks WHERE `release_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM albumentry WHERE album IN (SELECT id FROM albums WHERE `release_id` = '{$id}')", 0);
+		    $this->dbProcessor("DELETE FROM tracks WHERE `release_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM albums WHERE `release_id` = '{$id}'", 0);
+			return true;
+		} elseif ($type == 1 && $update == 1) {
+			$release_data = $this->fetchReleases(1, $id);
+			$release_tracks = $this->fetchRelease_Audio(1, $id);
+
+			$release_artist = $this->fetchRelease_Artists(1, $id)[0];
+			$userdata = $this->userData($release_artist['username'], 1); 
+			if (!$userdata) {	
+				$named = explode(' ', $release_artist['name']);							
+				if (count($named)>1) {
+					$fname = $named[0];
+					$lname = $named[1];
+				} else {
+					$fname = $named[0];
+					$lname = '';
+				}
+
+				// Create the new artist
+				$sql = sprintf(
+					"INSERT INTO users (`username`, `password`, `intro`, `fname`, `lname`, `photo`, `label`, `role`) 
+					VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', 2)", $release_artist['username'], md5(rand(10000,90000)),
+					$release_artist['intro'], $fname, $lname, $release_artist['photo'], $release_data['label']
+				);
+				$this->dbProcessor($sql, 0, 1);
+				$userdata = $this->userData($release_artist['username'], 1); 
+			}
+
+			// Add the tracks to the database
+			$ver_tracks = $this->dbProcessor("SELECT release_id, id FROM tracks WHERE `release_id` = '{$id}'", 1);
+			$r_data = $release_data[0];
+			if (!$release_tracks) {
+				foreach ($release_tracks as $rt => $r_tracks) {  
+					$safelink = $this->safeLinks($r_tracks['title']);
+					$sql = sprintf(
+						"INSERT INTO tracks (`uid`, `aggregator_id`, `artist_id`, `title`, `description`, `label`, `genre`, 
+							`s_genre`, `pline`, `cline`, `release`, `release_date`, `art`, `audio`, `release_id`, 
+							`safe_link`, `tags`, `public`) 
+						VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', 
+							'%s', '%s', '%s')", $r_data['by'], $r_data['by'], $userdata['uid'], $r_tracks['title'], 
+							$r_data['description'], $r_data['label'], $r_data['p_genre'], $r_data['s_genre'], 
+							$r_data['p_line'], $r_data['c_line'], $date, $date, $r_data['art'], $r_tracks['audio'], 
+							$r_data['release_id'], $safelink, $r_data['tags'], 1
+					);
+					$this->dbProcessor($sql, 0, 1);
+				 }
+			}
+
+			// If the tracks are more than 1, add the tracks to an album
+			$track_count = count($release_tracks);
+			if ($track_count > 1) {
+				$safelink = $this->safeLinks($r_data['title']);
+				$ver_album = $this->dbProcessor("SELECT id FROM albums WHERE `release_id` = '{$id}' AND `safe_link` = '{$safelink}'", 1); 
+				if (!$ver_album) {
+					$v_a = $this->fetchAlbum($safelink);
+					if ($v_a) {
+						$safelink = $this->safeLinks($r_data['title'].' '.rand(1000,9000));
+					}
+					$sql = sprintf(
+						"INSERT INTO albums (`by`, `title`, `description`, `label`, `pline`, `cline`, `release_date`, 
+							`art`, `release_id`, `safe_link`, `tags`, `public`) 
+						VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
+							$r_data['by'], $r_data['title'], $r_data['description'], $r_data['label'], $r_data['p_line'], 
+							$r_data['c_line'], $date, $r_data['art'], $r_data['release_id'], $safelink, $r_data['tags'], 1
+					);
+
+					// If you have created the album, link the track files
+					$create = $this->dbProcessor($sql, 0, 1);
+					if ($create == 1) {
+						$fetch_tracks = $this->dbProcessor("SELECT id FROM tracks WHERE `release_id` = '{$id}'", 1); 
+						$fetch_album = $this->dbProcessor("SELECT id FROM albums WHERE `release_id` = '{$id}'", 1)[0]; 
+						if ($fetch_tracks) {
+							foreach ($fetch_tracks as $ft => $tracks) {   
+								$sql = sprintf("INSERT INTO albumentry (`album`, `track`) VALUES ('%s', '%s')", 
+									$fetch_album['id'], $tracks['id']);
+								$this->dbProcessor($sql, 0, 1);
+							}
+						}	
+					}
+				}			
+			}
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	/**
+	 * This function would fetch tracks from the album entry table enabling users to view those tracks as an album
+	 * @param  [variable] $id [id of the album to fetch tracks from]
+	 * @param  [variable] $t  [if this is specified as 1 it will limit the results to just one else it will return all records]
+	 * @return [array]     [this is an array containing the album records]
+	 */
 	function albumEntry($id, $t=null) {
 		$order_limit = $t == 1 ? 'ASC LIMIT 1' : 'ASC';
 
@@ -1164,7 +1507,7 @@ class databaseCL extends framework {
 		} elseif ($type == 2) {
 			$sql = sprintf("SELECT COUNT(id) AS counter FROM albums WHERE `by` = '%s'", $this->db_prepare_input($id));
 		} else {
-			$sql = sprintf("SELECT * FROM users,albums WHERE 1 AND (`albums`.`id` = '%s' AND `users`.`uid` = `albums`.`by`) OR (`albums`.`safe_link` = '%s' AND `users`.`uid` = `albums`.`by`)", $this->db_prepare_input($id), $this->db_prepare_input($id));
+			$sql = sprintf("SELECT * FROM users,albums WHERE `users`.`uid` = `albums`.`by` AND (`albums`.`id` = '%s') OR (`albums`.`safe_link` = '%s')", $this->db_prepare_input($id), $this->db_prepare_input($id));
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1178,7 +1521,7 @@ class databaseCL extends framework {
 		// 1: Get the most popular track
 		// 0: Get all tracks not in an album
 		if ($type == 1) {
-			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND views = (SELECT MAX(views) FROM tracks WHERE artist_id = '%s')", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id));
+			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id = (SELECT MAX(`track`) FROM `views` WHERE tracks.id = views.track)", $this->db_prepare_input($artist_id));
 		} elseif ($type == 2) {
 			$sql = sprintf("SELECT * FROM tracks,users WHERE tracks.id = '%s' AND users.uid = tracks.artist_id OR tracks.safe_link = '%s' AND users.uid = tracks.artist_id", $this->db_prepare_input($this->track), $this->db_prepare_input($this->track));
 		} elseif ($type == 3) {
@@ -1196,7 +1539,7 @@ class databaseCL extends framework {
 				$sql = sprintf("SELECT *, (SELECT COUNT(`id`) FROM tracks WHERE artist_id = '%s') AS counter FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.public = '1'%s ORDER BY id LIMIT %s", $this->db_prepare_input($artist_id), $this->db_prepare_input($artist_id), $next, $configuration['page_limits']);
 			}
 		} elseif ($type == 4) {
-			$sql = sprintf("SELECT SUM(views) AS counter FROM tracks WHERE `artist_id` = '%s'", $this->db_prepare_input($artist_id));
+			$sql = sprintf("SELECT count(`track`) AS counter FROM views WHERE `track` IN (SELECT id FROM tracks WHERE `artist_id` = '%s')", $this->db_prepare_input($artist_id));
 		} elseif ($type == 5) {
 			$sql = sprintf("SELECT `id` FROM `tracks` WHERE `artist_id` = '%s'", $this->db_prepare_input($artist_id));
 			$list = $this->dbProcessor($sql, 1);
@@ -1223,6 +1566,45 @@ class databaseCL extends framework {
 				return;
 			}
 			$sql = sprintf("SELECT (SELECT count(`track`) FROM `views` WHERE `track` IN (%s)) as total, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE() = date(`time`)) as today, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND CURDATE()-1 = date(`time`)) as yesterday, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) as last_week, (SELECT count(`track`) FROM `views` WHERE `track` IN (%s) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) as last_month", $this->track_list, $this->track_list, $this->track_list, $this->track_list, $this->track_list);
+		}
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function releaseStats($id, $dt = null) {
+		global $user;
+
+		$id = $this->db_prepare_input($id);
+		$date = $dt ? '\''.$dt.'\'' : 'CURDATE()'; 
+
+		if (isset($this->type)) {
+			if ($this->type == 1) {
+				$sql = sprintf("
+					SELECT count(`track`) AS quarterly_views, QUARTER(`time`) AS qt 
+					FROM `views` 
+					WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s'))
+					GROUP BY qt", $id);
+			} elseif ($this->type == 2) {
+				$limit = isset($this->limit) ? ' LIMIT '.$this->limit : '';
+				$sql = sprintf("
+					SELECT track, count(`track`) AS views, (SELECT title FROM tracks WHERE `id` = track) AS title  
+					FROM `views`
+					WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s'))
+					GROUP BY track ORDER BY views DESC%s", $id, $limit);
+			}
+		} else {
+			$sql = sprintf("SELECT 
+				(SELECT count(`id`) FROM new_release WHERE `status` = '0' AND `by` = '%s') AS removed, 
+				(SELECT count(`id`) FROM new_release WHERE `status` = '1' AND `by` = '%s') AS incomplete, 
+				(SELECT count(`id`) FROM new_release WHERE `status` = '2' AND `by` = '%s') AS pending, 
+				(SELECT count(`id`) FROM new_release WHERE `status` = '3' AND `by` = '%s') AS approved,
+				(SELECT count(`id`) FROM new_release WHERE `by` = '%s') AS total,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s'))) AS total_views,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s')) AND CURDATE() = date(`time`)) AS today_views,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s')) AND CURDATE()-1 = date(`time`)) AS yesterday_views,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s')) AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY )) AS lastweek_views,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s')) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) AS thismonth_views,
+				(SELECT count(`track`) FROM `views` WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s')) AND `time` >= DATE_SUB({$date}, INTERVAL 1 QUARTER)) AS quarterly"
+				, $id, $id, $id, $id, $id, $id, $id, $id, $id, $id, $id);
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1551,11 +1933,13 @@ class databaseCL extends framework {
 	}
 
 	function fetchReleases($type = null, $id = null) {
-		global $user, $configuration;	
+		global $user, $configuration, $user_role;	
 		
 		$limit = isset($this->limit) ? " LIMIT ".$configuration['releases_limit'] : '';
-		if ($type) {
-			$sql = sprintf("SELECT * FROM `new_release` WHERE `release_id` = '%s' AND `by` = '%s'", $this->db_prepare_input($id), $user['uid']);
+		$restrict = $user_role < 4 ? ' AND `by` = \''.$user['uid'].'\'' : '';
+
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `new_release` WHERE `release_id` = '%s'%s", $this->db_prepare_input($id), $restrict);
 		} else {
 			$next = isset($this->last_id) ? ' AND `id` < \''.$this->last_id.'\'' : '';
 			$status = isset($this->status) ? ' AND `status` = \''.$this->status.'\'' : '';
@@ -1571,8 +1955,12 @@ class databaseCL extends framework {
 
 	function fetchRelease_Artists($type = null, $id = null) {
 		global $user, $configuration;	
-		if ($type) {
-			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE `release_id` = '%s' AND `role` = 'primary'", $this->db_prepare_input($id));
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE `release_id` = '%s' AND `role` = 'primary'", $this->db_prepare_input($id)); 
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT DISTINCT username FROM `new_release_artists` WHERE `by` = '%s'", $this->db_prepare_input($id)); 
+		} elseif ($type == 3) {
+			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE 1 AND `id` = '%s' OR `username` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($id)); 
 		} else {
 			$sql = sprintf("SELECT * FROM `new_release_artists` WHERE `release_id` = '%s' AND `role` != 'primary'", $this->db_prepare_input($id));
 		}
