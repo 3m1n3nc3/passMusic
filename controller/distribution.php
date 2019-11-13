@@ -1,7 +1,7 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime; 
+	global $PTMPL, $LANG, $SETT, $configuration, $user, $admin, $framework, $databaseCL, $marxTime; 
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -66,7 +66,7 @@ function mainContent() {
 	$PTMPL['manage_artist_url'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services&rel=manage');
  
 	// Set the active landing page_title 
-	if (isset($get_release) && $get_release['by'] == $user['uid']) {
+	if (isset($get_release) && ($get_release['by'] == $user['uid'] || $admin)) {
 		$release_id = $get_release['release_id'];
 		$release_artist = $databaseCL->fetchRelease_Artists(1, $release_id)[0]; 
 		$release_audio = $databaseCL->fetchRelease_Audio(null, $release_id);
@@ -295,178 +295,238 @@ function mainContent() {
 		}
 	} else {
 		if (isset($_GET['action'])) {
-			if ($_GET['action'] == 'new_release') {
-				// Create a new release or a featured playlist
-				// 
-				if (isset($_POST['create_release']) || isset($_POST['create_playlist'])) {
-					$post_what = isset($_POST['create_release']) ? 'release' : 'playlist';
-					$title = $databaseCL->db_prepare_input($_POST['title']);
-					$pl = $databaseCL->fetchPlaylist($title)[0];
-					if ($title == '') {
-						$msg = 'Please enter a title for this release';
-					} elseif ($post_what == 'playlist' && $pl) {
-						$msg = 'You already have a '.$post_what.' named "'.$title.'"';
-						$t = 3;
-					} else {
-						$release_id = $framework->token_generator(13);
-						if ($post_what == 'release') {
-							$sql = sprintf("INSERT INTO new_release (`release_id`, `title`, `upc`, `by`) VALUES ('%s', '%s', '%s', '%s')", $release_id, $title, $databaseCL->db_prepare_input($_POST['upc']), $user['uid']);
-						} elseif ($post_what == 'playlist') {
-							$sql = sprintf("INSERT INTO playlist (`by`, `title`, `public`, `plid`, `featured`) 
-								VALUES ('%s', '%s', '%s', '%s', '%s')", $user['uid'], $title, 0, $release_id, 1);
-							$msg = sprintf($LANG['new_featured_playlist_created'], $post_what);
-							$t = 1; 
-						}
-						$set = $databaseCL->dbProcessor($sql, 0, 1);
-						if ($post_what == 'release') {
-							$msg = 'Your '.$post_what.' has been created';
-							$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$release_id), 1);
-						}
-					}
-					if (isset($set)) {
-						$msg = $set == 1 ? $msg : $set;
-					}
-					$PTMPL['notification'] = bigNotice($msg, $t); 
-				}
-				$theme = new themer('distribution/new_release'); 
-			} elseif ($_GET['action'] == 'releases') {
-				// Show a list of all your releases and manage them effectively
-				// 
-				$theme = new themer('distribution/all_releases');
-			} elseif ($_GET['action'] == 'artist-services') {
-				// Services related to artist and label management
-				// 
-				if ($rel == 'manage') {
-					$rel_artists = $databaseCL->fetchRelease_Artists(2, $user['uid']);
-					if (isset($_GET['artist'])) {
-						$get_artist = $databaseCL->fetchRelease_Artists(3, $_GET['artist'])[0]; 
-						// Show the form to update an artist
-						// 
-						if ($get_artist) {
-							$userdata = $framework->userData($get_artist['username'], 1);
-							if ($userdata) {
-								$PTMPL['photo'] = $photo = getImage($userdata['photo'], 1);
-								$PTMPL['fname'] = $fname = $userdata['fname'];
-								$PTMPL['lname'] = $lname = $userdata['lname'];
-								$PTMPL['description'] = $description = $userdata['intro'];
-								$PTMPL['this_user'] = $name = $fname.' '.$lname;
-								$PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
-							} else {
-								$PTMPL['photo'] = $photo = getImage($get_artist['photo'], 1);
-								$PTMPL['description'] = $description = $get_artist['intro'];
-								$PTMPL['this_user'] = $PTMPL['fname'] = $name = $get_artist['name'];
-								$named = explode(' ', $get_artist['name']);
-								if (count($named)>1) {
-									$PTMPL['fname'] = $fname = $named[0];
-									$PTMPL['lname'] = $lname = $named[1];
-								}
-							}
-
-							if (isset($_POST['update_profile'])) {
-								$PTMPL['fname'] = $fname = $framework->db_prepare_input($_POST['fname']);
-								$PTMPL['lname'] = $lname = $framework->db_prepare_input($_POST['lname']);
-								$PTMPL['description'] = $description = $framework->db_prepare_input($_POST['description']);
-								if ($fname == '') {
-									$errors[] .= $LANG['no_fname'];
-								}
-								if ($lname == '') {
-									$errors[] .= $LANG['no_lname'];
-								}
-
-								if (empty($errors)) { 
-									$name = $fname.' '.$lname;
-									$sql = sprintf("UPDATE new_release_artists SET `name` = '%s', `intro` = '%s' WHERE `username` = '%s'", $name, $description, $get_artist['username']);
-									$update = $databaseCL->dbProcessor($sql, 0, 2);
-
-									if ($userdata) {
-										$sql = sprintf("UPDATE users SET `fname` = '%s', `lname` = '%s', `intro` = '%s' WHERE `username` = '%s'", $fname, $lname, $description, $get_artist['username']);
-										$update = $databaseCL->dbProcessor($sql, 0, 2);
-									}
-	 
-									if ($update === 1 || $update === 0 ) {
-										$PTMPL['notification'] = messageNotice($LANG['information_saved'], 1, 'bg-white shadow');
-									} else {
-										$PTMPL['notification'] = $update;
-									}
-								} else {
-									$PTMPL['notification'] = messageNotice($errors[0], 3, 'bg-white shadow');;
-								}
-							}
-							$a_id = $get_artist['username'];
-							if (!allowAccess($get_artist['by'])) {
-								$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=true&response=403'), 1);
-							}
-							$rau_string = '&artist='.$get_artist['username'];
-							$PTMPL['profile_photo_url'] = $SETT['url'].'/connection/uploader.php?release=profile&rel=artwork'.$rau_string;
-							$theme = new themer('distribution/artist_update'); 
-						} else {
-							$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=403'), 1);
-						}
-					} else {
-						// Show the list of all available artists
-						// 
-						if ($rel_artists) { 
-							$list_artists = '';
-							foreach ($rel_artists as $ra => $artist) {
-								$userdata = $framework->userData($artist['username'], 1);
-								$artist_data = $databaseCL->fetchRelease_Artists(3, $artist['username'])[0];
-								if ($userdata) {
-    								$profile_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
-									$profile = '<a href="'.$profile_link.'" class="btn btn-primary">See Profile</a>';
-									$photo = getImage($userdata['photo'], 1);
-									$name = $userdata['fname'].' '.$userdata['lname'];
-									$username = $artist['username'];
-								} else {
-									$profile = '';
-									$photo = getImage($artist_data['photo'], 1);
-									$name = $artist_data['name'];
-									$username = $artist_data['username'];
-								}
-								$conf = 'Are you sure you want to delete this artist? This is irreversible and will remove every record of this user from '.$PTMPL['site_title'].', like they were never here!';
-    							$update = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services&rel=manage&artist='.$artist_data['id']);
-								$list_artists .=  
-								'<div class="col-lg-3 col-md-4 col-sm-6 col-sm-2 mb-3" id="artist_'.$username.'">
-									<div class="card">
-										<a 
-											onclick="deleteItem({type: 2, conf_: \''.$conf.'\', action: \'artist\', id: \''.$username.'\'})">
-											<i class="fa fa-2x fa-trash m-2 text-danger pc-hover-1 pointer" style="position: absolute; right: 0;"></i>
-										</a>
-										<img class="card-img-top" src="'.$photo.'" alt="'.$name.'" width="200px" height="200px;">
-										<div class="card-body text-center" style="padding: 5px;">
-											<h4 class="card-title">'.$name.'</h4>
-											<a href="'.$update.'" class="btn btn-primary">Update Profile</a>
-											'.$profile.'
-										</div>
-									</div>
-								</div>';
-							}
-							$PTMPL['list_artists'] = $list_artists;
-						} else {		
-							$PTMPL['list_artists'] =  '<div class="col-12">'.notAvailable('You have no Artists on roll!', 'display-4').'</div>';
-						}
-						$theme = new themer('distribution/artist_lists'); 
-					}
-				} else {
-					$theme = new themer('distribution/artist_services');
-				}
-			} elseif ($_GET['action'] == 'sales-report') {
-				$stat = $databaseCL->releaseStats($user['uid'])[0];
-				$PTMPL['quarterly_data'] = dataSet();
-				$PTMPL['most_viewed_data'] = dataSet(1);
-				$PTMPL['tracks_barchart'] = dataSet(2);
-
-				$PTMPL['total_releases'] = $stat['total'];
-				$PTMPL['approved_releases'] = $stat['approved'];
-				$PTMPL['pending_releases'] = $stat['pending'];
-				$PTMPL['incomplete_releases'] = $stat['incomplete'];
-				$PTMPL['total_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=1');
-				$PTMPL['approved_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=3');
-				$PTMPL['pending_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=2');
-				$PTMPL['incomplete_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=1');
-
-				$theme = new themer('distribution/sales_reports');
+			//  
+			if ($user) {
+				$author = $user['uid'];
+			} elseif ($admin) {
+				$author = $admin['admin_user'];
 			} else {
-				// Show the default landing page for the distribution section
+				$author = null;
+			}
+			if ($author) {
+				if ($_GET['action'] == 'new_release') {
+					// Create a new release or a featured playlist
+
+					if (isset($_POST['create_release']) || isset($_POST['create_playlist'])) {
+						$post_what = isset($_POST['create_release']) ? 'release' : 'playlist';
+						$title = $databaseCL->db_prepare_input($_POST['title']);
+						$pl = $databaseCL->fetchPlaylist($title)[0];
+						if ($title == '') {
+							$msg = 'Please enter a title for this release';
+						} elseif ($post_what == 'playlist' && $pl) {
+							$msg = 'You already have a '.$post_what.' named "'.$title.'"';
+							$t = 3;
+						} else {
+							$release_id = $framework->token_generator(13);
+							if ($post_what == 'release') {
+								$sql = sprintf("INSERT INTO new_release (`release_id`, `title`, `upc`, `by`) VALUES ('%s', '%s', '%s', '%s')", $release_id, $title, $databaseCL->db_prepare_input($_POST['upc']), $author);
+							} elseif ($post_what == 'playlist') {
+								$sql = sprintf("INSERT INTO playlist (`by`, `title`, `public`, `plid`, `featured`) 
+									VALUES ('%s', '%s', '%s', '%s', '%s')", $author, $title, 0, $release_id, 1);
+								$msg = sprintf($LANG['new_featured_playlist_created'], $post_what);
+								$t = 1; 
+							}
+							$set = $databaseCL->dbProcessor($sql, 0, 1);
+							if ($post_what == 'release') {
+								$msg = 'Your '.$post_what.' has been created';
+								$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$release_id), 1);
+							}
+						}
+						if (isset($set)) {
+							$msg = $set == 1 ? $msg : $set;
+						}
+						$PTMPL['notification'] = bigNotice($msg, $t); 
+					}
+					$theme = new themer('distribution/new_release'); 
+				} elseif ($_GET['action'] == 'releases') {
+					// Show a list of all your releases and manage them effectively
+					// 
+					$theme = new themer('distribution/all_releases');
+				} elseif ($_GET['action'] == 'artist-services') {
+					// Services related to artist and label management
+					// 
+					if ($rel == 'manage') {
+						$rel_artists = $databaseCL->fetchRelease_Artists(2, $user['uid']);
+						if (isset($_GET['artist'])) {
+							$get_artist = $databaseCL->fetchRelease_Artists(3, $_GET['artist'])[0]; 
+							// Show the form to update an artist
+							// 
+							if ($get_artist) {
+								$userdata = $framework->userData($get_artist['username'], 1);
+								if ($userdata) {
+									$PTMPL['photo'] = $photo = getImage($userdata['photo'], 1);
+									$PTMPL['fname'] = $fname = $userdata['fname'];
+									$PTMPL['lname'] = $lname = $userdata['lname'];
+									$PTMPL['description'] = $description = $userdata['intro'];
+									$PTMPL['this_user'] = $name = $fname.' '.$lname;
+									$PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
+								} else {
+									$PTMPL['photo'] = $photo = getImage($get_artist['photo'], 1);
+									$PTMPL['description'] = $description = $get_artist['intro'];
+									$PTMPL['this_user'] = $PTMPL['fname'] = $name = $get_artist['name'];
+									$named = explode(' ', $get_artist['name']);
+									if (count($named)>1) {
+										$PTMPL['fname'] = $fname = $named[0];
+										$PTMPL['lname'] = $lname = $named[1];
+									}
+								}
+
+								if (isset($_POST['update_profile'])) {
+									$PTMPL['fname'] = $fname = $framework->db_prepare_input($_POST['fname']);
+									$PTMPL['lname'] = $lname = $framework->db_prepare_input($_POST['lname']);
+									$PTMPL['description'] = $description = $framework->db_prepare_input($_POST['description']);
+									if ($fname == '') {
+										$errors[] .= $LANG['no_fname'];
+									}
+									if ($lname == '') {
+										$errors[] .= $LANG['no_lname'];
+									}
+
+									if (empty($errors)) { 
+										$name = $fname.' '.$lname;
+										$sql = sprintf("UPDATE new_release_artists SET `name` = '%s', `intro` = '%s' WHERE `username` = '%s'", $name, $description, $get_artist['username']);
+										$update = $databaseCL->dbProcessor($sql, 0, 2);
+
+										if ($userdata) {
+											$sql = sprintf("UPDATE users SET `fname` = '%s', `lname` = '%s', `intro` = '%s' WHERE `username` = '%s'", $fname, $lname, $description, $get_artist['username']);
+											$update = $databaseCL->dbProcessor($sql, 0, 2);
+										}
+		 
+										if ($update === 1 || $update === 0 ) {
+											$PTMPL['notification'] = messageNotice($LANG['information_saved'], 1, 'bg-white shadow');
+										} else {
+											$PTMPL['notification'] = $update;
+										}
+									} else {
+										$PTMPL['notification'] = messageNotice($errors[0], 3, 'bg-white shadow');;
+									}
+								}
+								$a_id = $get_artist['username'];
+								if (!allowAccess($get_artist['by'])) {
+									$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=true&response=403'), 1);
+								}
+								$rau_string = '&artist='.$get_artist['username'];
+								$PTMPL['profile_photo_url'] = $SETT['url'].'/connection/uploader.php?release=profile&rel=artwork'.$rau_string;
+								$theme = new themer('distribution/artist_update'); 
+							} else {
+								$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=403'), 1);
+							}
+						} else {
+							// Show the list of all available artists
+							// 
+							if ($rel_artists) { 
+								$list_artists = '';
+								foreach ($rel_artists as $ra => $artist) {
+									$userdata = $framework->userData($artist['username'], 1);
+									$artist_data = $databaseCL->fetchRelease_Artists(3, $artist['username'])[0];
+									if ($userdata) {
+	    								$profile_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
+										$profile = '<a href="'.$profile_link.'" class="btn btn-primary">See Profile</a>';
+										$photo = getImage($userdata['photo'], 1);
+										$name = $userdata['fname'].' '.$userdata['lname'];
+										$username = $artist['username'];
+									} else {
+										$profile = '';
+										$photo = getImage($artist_data['photo'], 1);
+										$name = $artist_data['name'];
+										$username = $artist_data['username'];
+									}
+									$conf = 'Are you sure you want to delete this artist? This is irreversible and will remove every record of this user from '.$PTMPL['site_title'].', like they were never here!';
+	    							$update = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services&rel=manage&artist='.$artist_data['id']);
+									$list_artists .=  
+									'<div class="col-lg-3 col-md-4 col-sm-6 col-sm-2 mb-3" id="artist_'.$username.'">
+										<div class="card">
+											<a 
+												onclick="deleteItem({type: 2, conf_: \''.$conf.'\', action: \'artist\', id: \''.$username.'\'})">
+												<i class="fa fa-2x fa-trash m-2 text-danger pc-hover-1 pointer" style="position: absolute; right: 0;"></i>
+											</a>
+											<img class="card-img-top" src="'.$photo.'" alt="'.$name.'" width="200px" height="200px;">
+											<div class="card-body text-center" style="padding: 5px;">
+												<h4 class="card-title">'.$name.'</h4>
+												<a href="'.$update.'" class="btn btn-primary">Update Profile</a>
+												'.$profile.'
+											</div>
+										</div>
+									</div>';
+								}
+								$PTMPL['list_artists'] = $list_artists;
+							} else {		
+								$PTMPL['list_artists'] =  '<div class="col-12">'.notAvailable('You have no Artists on roll!', 'display-4').'</div>';
+							}
+							$theme = new themer('distribution/artist_lists'); 
+						}
+					} else {
+						$theme = new themer('distribution/artist_services');
+					}
+				} elseif ($_GET['action'] == 'sales-report') {
+					$stat = $databaseCL->releaseStats($user['uid'])[0];
+					$dataset = '';
+					$quarterly_data = dataSet();
+					$most_viewed_data = dataSet(1);
+					$tracks_barchart = dataSet(2);
+
+					if ($quarterly_data != '[]') { 
+						$dataset .= '
+						Morris.Area({ 
+						    element: "quarterly", 
+						    data: '.$quarterly_data.', 
+						    xkey: "quarter", 
+						    ykeys: ["views"], 
+						    labels: ["Views"],
+						    lineColors: ["#3c8dbc"]
+						});';
+					} else {
+
+					}
+
+					if ($most_viewed_data != '[]') { 
+						$dataset .= '
+						Morris.Donut({
+						    element: "most-viewed",
+						    resize: true,
+						    colors: ["#3c8dbc", "#f56954", "#00a65a"],
+						    data: '.$most_viewed_data.',
+						    formatter: function (y) {var s = y > 1 ? "s" : ""; return y + " View"+s },
+						    hideHover: "auto"
+						});';
+					} else {
+						
+					}
+
+					if ($tracks_barchart != '[]') { 
+						$dataset .= '
+						Morris.Bar({
+						    element: "track-barchart",
+						    data: '.$tracks_barchart.',
+						    xkey: "track",
+						    ykeys: ["views"],
+						    labels: ["Views"],
+						    barRatio: 0.4,
+						    xLabelAngle: 5,
+						    hideHover: "auto"
+						});';
+					} else {
+						
+					}
+					$PTMPL['dataset'] = $dataset;
+
+					$PTMPL['total_releases'] = $stat['total'];
+					$PTMPL['approved_releases'] = $stat['approved'];
+					$PTMPL['pending_releases'] = $stat['pending'];
+					$PTMPL['incomplete_releases'] = $stat['incomplete'];
+					$PTMPL['total_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=1');
+					$PTMPL['approved_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=3');
+					$PTMPL['pending_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=2');
+					$PTMPL['incomplete_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=1');
+
+					$theme = new themer('distribution/sales_reports');
+				} else {
+					// Show the 404 page
+					// 
+					$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=404'), 1);
+				}
+			} else {
+				// Show the 403 page
 				// 
 				$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=403'), 1);
 			}

@@ -10,14 +10,14 @@ use Gumlet\ImageResize;
 
 $framework = new framework;
 $recovery = new doRecovery;
-$databaseCL = new databaseCL; 
+$databaseCL = new databaseCL;  
 
 //Fetch settings from database
 function configuration() {
 	global $framework;
 	$sql = "SELECT * FROM ".TABLE_CONFIG; 
     return $framework->dbProcessor($sql, 1)[0];
-} 
+}
 
 /**
  * This class holds all major functions of this framework
@@ -161,41 +161,115 @@ class framework {
         global $user, $LANG;
         $firstname = $this->db_prepare_input($this->firstname);
         $lastname = $this->db_prepare_input($this->lastname);
-        $phone = $this->db_prepare_input($this->phone);
-        $xql = '';
-        if (isset($this->social)) {
-            $facebook = $this->facebook;
-            $twitter = $this->twitter;
-            $instagram = $this->instagram;
-            $xql = sprintf(", `facebook` = '%s', `twitter` = '%s', `instagram` = '%s'", $facebook, $twitter, $instagram);
-        }
-        $country = $this->db_prepare_input($this->country);
-        $state = $this->db_prepare_input($this->state) == 'undefined' ? '' : $this->db_prepare_input($this->state);
-        $city = $this->db_prepare_input($this->city) == 'undefined' ? '' : $this->db_prepare_input($this->city);
-        $about = $this->db_prepare_input($this->about);
+        $email = $this->db_prepare_input($this->email);
+        $username = $this->db_prepare_input($this->username);
+        $label = $this->db_prepare_input($this->label);
+        $intro = $this->db_prepare_input($this->intro);
+        $newsletter = $this->db_prepare_input($this->newsletter);
 
-        if ($firstname == '' || $lastname == '' || $phone == '' || $country == '' ||
-            $state == '' || $city == '' || $about == '') {
-            $response = errorMessage($LANG['_all_required']);
+        $facebook = $this->facebook;
+        $twitter = $this->twitter;
+        $instagram = $this->instagram;
+        $social = sprintf(", `facebook` = '%s', `twitter` = '%s', `instagram` = '%s'", $facebook, $twitter, $instagram);
+
+        $country = $this->db_prepare_input($this->country);
+        $state = isset($this->state) ? $this->db_prepare_input($this->state) : '';
+        $city = isset($this->city) ? $this->db_prepare_input($this->city) : '';
+
+        $var_email = $this->checkEmail($email, 1);
+		$var_user = $this->userData($username, 2); 
+        if ($firstname == '' || $lastname == '' || $email == '' || $intro == '') {
+            $msg = messageNotice($LANG['_all_required']);
+        } elseif ($var_email && $var_email['email'] !== $user['email']) {
+        	$msg = messageNotice($LANG['email_used']);
+        } elseif ($var_user && $var_user['username'] !== $user['username']) {
+        	$msg = messageNotice($LANG['username_used']);
         } else {
-            $sql = sprintf("UPDATE " . TABLE_USERS . " SET `f_name` = '%s', `l_name` = '%s', " .
-                "`phone` = '%s', `country` = '%s', `state` = '%s', `city` = '%s', `about` = '%s'%s WHERE " .
-                "`uid` = '%s'", $firstname, $lastname, $phone, $country, $state, $city, $about, $xql, $user['id']);
-            return $this->dbProcessor($sql, 0);
-            $header = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
+            $sql = sprintf("UPDATE " . TABLE_USERS . " SET `username` = '%s', `fname` = '%s', `lname` = '%s', " .
+                "`email` = '%s', `country` = '%s', `state` = '%s', `city` = '%s', `intro` = '%s', `newsletter` = '%s'%s WHERE " .
+                "`uid` = '%s'", $username, $firstname, $lastname, $email, $country, $state, $city, $intro, $newsletter, $social, $user['uid']);
+            $query = $this->dbProcessor($sql, 0, 1);
+            if ($query == 1) {
+            	$msg = messageNotice($LANG['profile_updated'], 1);
+            } else {
+            	$msg = messageNotice($query);
+            }
+            // $header = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
         }
+        return $msg;
     }
 
-    function sign_out($reset = null) {
+	// Fetch and authenticate Administrator
+	function administrator($type = null, $username = null) {
+		global $LANG, $framework;
+		if ($type == 1) {
+			if (isset($_COOKIE['admin']) && isset($_COOKIE['admintoken'])) {
+	            $this->username = $_COOKIE['admin'];
+	            $auth = $this->administrator();
+
+	            if ($auth['username']) {
+	                $logged = true;
+	            } else {
+	                $logged = false;
+	            }
+	        } elseif (isset($this->username)) { 
+				$username = $this->username;
+	            $auth = $this->administrator();
+	            if ($auth['username']) {
+	                if ($this->remember == 1) {
+	                    setcookie("admin", $auth['username'], time() + 30 * 24 * 60 * 60, COOKIE_PATH);
+	                    setcookie("admintoken", $auth['auth_token'], time() + 30 * 24 * 60 * 60, COOKIE_PATH);
+
+	                    $_SESSION['admin'] = $auth['username'];
+
+	                    $logged = true;
+	                    session_regenerate_id();
+	                } else {
+	                    $_SESSION['admin'] = $auth['username'];
+	                    $_SESSION['adminpassword'] = $auth['password'];
+	                    $logged = true;
+	                } 
+	            } else {
+	                $logged = false;
+	            }
+			}
+ 
+	        if (isset($logged) && $logged == true) {
+	            return $auth;
+	        } elseif (isset($logged) && $logged == false) {
+	            $this->sign_out(null, 1);
+	            return $LANG['data_unmatch'];
+	        }
+
+	        return false;
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT * FROM admin WHERE `username` = '%s'", $username); 
+		    return $framework->dbProcessor($sql, 1)[0];
+		} else {
+			$sql = sprintf("SELECT * FROM admin WHERE `username` = '%s' AND `password` = '%s'", $this->username, $this->password); 
+		    return $framework->dbProcessor($sql, 1)[0];
+		}
+	} 
+
+    function sign_out($reset = null, $type = null) {
+		if ($type) {
+			$set = 'admin';
+			$extra = $add = $set;
+		} else {
+			$set = 'username';
+			$extra = 'user';
+			$add = '';
+		}
+
         if ($reset == true) {
             $this->resetToken();
         }
-        setcookie("usertoken", '', time() - 3600, COOKIE_PATH);
-        setcookie("username", '', time() - 3600, COOKIE_PATH);
-        unset($_SESSION['username']);
-        unset($_SESSION['password']);
+        setcookie($extra."token", '', time() - 3600, COOKIE_PATH);
+        setcookie($set, '', time() - 3600, COOKIE_PATH);
+        unset($_SESSION[$set]);
+        unset($_SESSION[$add.'password']);
         return 1;
-    }
+    } 
 
 	function account_activation($token, $username) {
 		global $SETT, $LANG, $configuration, $user, $framework;
@@ -396,18 +470,44 @@ class framework {
 			$role = $user['role'];
 		} 
 		
-		if ($role == 1) {
-			$role = 'User';
-		} elseif ($role == 2) {
-			$role = 'Artist';
-		} elseif ($role == 3) {
-			$role = 'Music Aggregator';
-		} elseif ($role == 4) {
-			$role = 'Administrator';
-		} elseif ($role == 5) {
-			$role = 'Super Administrator';
+		if ($role) {
+			if ($role == 1) {
+				$role = 'User';
+			} elseif ($role == 2) {
+				$role = 'Artist';
+			} elseif ($role == 3) {
+				$role = 'Music Aggregator';
+			} elseif ($role == 4) {
+				$role = 'Administrator';
+			} elseif ($role == 5) {
+				$role = 'Super Administrator';
+			}
+			return $role;
+		} else {
+			return $user['role'];
 		}
-		return $role;
+
+	}
+
+    // Show the user roles
+	function releaseStatus($rel = null) {
+		global $databaseCL;
+		if ($rel ) {
+			$release = $databaseCL->fetchReleases(1, $rel)[0];
+			$status = $release['status']; 
+		
+			if ($status == 1) {
+				$status = 'Action Needed';
+			} elseif ($status == 2) {
+				$status = 'In Review';
+			} elseif ($status == 3) {
+				$status = 'Approved';
+			} else {
+				$status = 'Removed';
+			}
+			return array($status, $release['status']);
+		}
+		return false;
 	}
 
 	/*
@@ -826,6 +926,45 @@ class framework {
 	} 
 
 	/* 
+	* Try to create the title of the url from link
+	* This assumes that there is a predefined :title:title on the link
+	*/
+	function urlTitle($str, $type = null) { 
+	    $tit = str_ireplace('www.', '', $str);
+	    $tit = str_ireplace('http', '', $tit);
+	    $tit = str_ireplace('https', '', $tit);
+	    $tit = str_ireplace('://', '', $tit);  
+	    $tit = str_ireplace(':type:1', '', $tit);
+	    $tit = str_ireplace(':type:2', '', $tit);
+	    $tit = substr($tit, strripos($tit, ':title:'));
+	    $tit = ucfirst(str_ireplace(':title:', '', $tit));
+	    if ($type == 1) {
+		    $titr = str_ireplace(':type:1', '', $str);
+		    $titr = str_ireplace(':type:2', '', $titr);
+	    	return str_ireplace(':title:'.$tit, '', $titr);
+	    } elseif ($type == 2) {
+	    	$str = substr($str, strripos($str, ':type:'));
+	    	return str_ireplace(':type:', '', $str);
+	    } else {
+
+	    }
+	    return $tit;	
+	}
+
+
+	function urlRequery($query) {
+	    global $SETT;
+		$set = '';
+		if (isset($_GET['view'])) {
+			$set .= '&view='.$_GET['view'];
+		} 
+		if (isset($_GET['set'])) {
+			$set .= '&set='.$_GET['set'];
+		}
+		return cleanUrls($SETT['url'] . '/index.php?page=' . $_GET['page'].$set.$query);
+	}
+
+	/* 
 	* redirect page
 	*/
 	function redirect($location = '', $type = 0) {
@@ -907,6 +1046,180 @@ class framework {
 			}
 		} else {
 			return false;
+		}	
+	}
+
+	function mdbColors($key, $type = null) { 
+		$colors = array(
+			0 	=>	'light-text',
+			1 	=> 	'pink-text',
+			2 	=> 	'cyan-text',
+			3 	=> 	'blue-text',
+			4 	=> 	'yellow-text',
+			5 	=> 	'green-text',
+			6 	=> 	'red-text',
+			7 	=> 	'fb-ic',
+			9 	=> 	'tw-ic',
+			8 	=> 	'ins-ic',
+			10 	=>	'gplus-ic',
+			12 	=> 	'text-danger',
+			13 	=> 	'text-warning',
+			14 	=> 	'text-info',
+			15 	=> 	'text-primary',
+			16 	=> 	'text-success',
+			17 	=> 	'text-default'
+		);
+		$buttons = array(
+			'btn-light',
+			'btn-pink',
+			'btn-cyan',
+			'btn-yellow',
+			'btn-dark-green',
+			'btn-link',
+			'btn-unique',
+			'btn-elegant',
+			'btn-purple',
+			'btn-indigo',
+			'btn-amber',
+			'btn-brown',
+			'btn-blue-grey',
+			'btn-light-green',
+			'btn-light-blue',
+			'btn-deep-purple',
+			'btn-deep-orange',
+			'btn-mdb-color',
+			'btn-primary',
+			'btn-secondary',
+			'btn-warning',
+			'btn-success',
+			'btn-danger',
+			'btn-info',
+			'btn-dark',
+			'btn-default'
+		);
+
+		if ($type == 1) {
+			if (!array_key_exists($key, $buttons)) { 
+				$new_key = rand(18, 25);
+				return $this->mdbColors($new_key, $type);
+			}
+			if (isset($buttons[$key])) {
+				$color = $buttons[$key];
+			} else {
+				$color = $buttons[0];
+			}
+			return $buttons[$key];
+		} else {
+			if (!array_key_exists($key, $colors)) { 
+				$new_key = rand(12, 17);
+				return $this->mdbColors($new_key, $type);
+			}
+			if (isset($colors[$key])) {
+				$color = $colors[$key];
+			} else {
+				$color = $colors[0];
+			}
+		}
+		
+		return $color;
+	}
+
+	/**
+	/* this function controls file uploads	
+	/* Type 1: Upload images to templates folder
+	/* Type 2: Upload images to upload folder (Square)
+	/* Type 3: Upload images to upload folder (Long)
+	 **/	
+	function imageUploader($file = null, $type = null, $eck = null) {
+		global $PTMPL, $LANG, $SETT, $user, $framework, $configuration, $databaseCL, $marxTime; 
+		// File arguments
+		$errors = array();
+		$uploade_type = ''; 
+
+		// Generate the image properties  
+		if (isset($file['name'])) { 
+			$_FILE = $file;
+			$allowed = array('jpeg','jpg','png');
+			$size = $configuration['img_upload_limit']; 
+			$error = $file['name'] == '' ? "Please select a file to upload." : null;
+
+		    if (isset($this->resolution)) {
+		    	$resolution = explode(',', $this->resolution);
+		    	if (count($resolution) > 1) {
+			    	$w = $resolution[0];
+			    	$h = $resolution[1];
+		    	} else {
+			    	$w = $h = $resolution[0]; 
+		    	}
+		    } else {
+			    if ($type == 1) { // Uploads to template folder
+			    	$w = 620; $h = 310;
+			    } if ($type == 2) { // Upload Artworks
+			    	$w = 3000; $h = 3000;
+			    } else { // Upload covers
+					$w = 1200; $h = 800; 
+			    }		    	
+		    }
+    		$size_format = $marxTime->swissConverter($size);
+
+			$file_name = $_FILE['name'];
+			$file_size = $_FILE['size'];
+			$file_tmp = $_FILE['tmp_name'];
+			$file_type= $_FILE['type'];  
+			$file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+			  
+		    $new_image = mt_rand().'_'.mt_rand().'_n.'.$file_ext; 
+
+		    // Check if file is allowed for upload type
+			if(in_array($file_ext,$allowed)=== false){
+			    $errors[] = 'File type not allowed, use a JPEG, JPG or PNG file.';
+			}
+			if($file_size > $size){
+	    		$errors[].= 'Upload should not be more than '.$size_format;
+			}
+
+			/*
+			// Check for errors in the file upload before uploading, 
+			// To avoid multiple waste of storage
+			 */
+			if ($eck) {
+				if (empty($errors)==true) { 
+					return 0;
+				} else {
+					return $errors[0];
+				}
+			} else {
+			    $cd = $SETT['working_dir'];
+			    if ($type == 1) { // Uploads to template folder
+			    	$dir = $cd.'/'.$SETT['template_url'].'/img/';
+			    } else {
+			    	$dir = $cd.'/uploads/photos/';
+			    }
+				// Crop and compress the image
+				if (empty($errors)==true) {
+					// Check for file permissions
+					if(is_writable($dir)) {
+						// Create a new ImageResize object
+		                $image = new ImageResize($file_tmp);
+			        	// Manipulate the image
+			        	if ($type == 1 || $type == 2) {
+			        		$image->resizeToBestFit($w, $h);
+			        		$image->crop($w, $h);
+			        	} else {
+			        		$image->crop($w, $h);
+			        	}
+			        	$image->save($dir.$new_image);    
+						return array($new_image, 1);
+					} else  {
+						// chmod($dir.'/default.jpg', 0755);
+						return 'You do not have enough permissions to write this file';
+					}
+				} else {
+					return $errors[0];
+				}
+			}	
+		} else {
+			return 'Please select a file to upload';
 		}	
 	}
 
@@ -1051,6 +1364,28 @@ class framework {
 	    return json_decode($response, true);	
 	}
 
+	function auto_template($string, $type = null) {
+    	global $SETT, $PTMPL, $user, $framework, $collage, $marxTime, $TEXP;  
+
+    	if ($type == 1) {
+				$msg = preg_replace_callback('/{\$texp->(.+?)}/i', function($matches) {
+				global $TEXP, $framework;
+				$texp_user = $framework->userData($matches[1], 1);
+				$_user = smallUser_Card($texp_user['uid'], null, 1);
+				return (
+					isset($texp_user)?$_user:""
+				);
+			}, $string);
+		} else {
+			$msg = preg_replace_callback('/{\$texp->(.+?)}/i', function($matches) {
+				global $TEXP; 
+				return (isset($TEXP[$matches[1]])?$TEXP[$matches[1]]:"");
+			}, $string);
+		}
+
+	    return $msg; 
+	}
+
 	/**
 	/* Function to process all database calls
 	**/
@@ -1102,6 +1437,107 @@ class framework {
 			$data .= messageNotice('Query String: '.$sql);
 		}
 		return $data;
+	}
+
+	public function pagination($type = null) {
+		global $SETT, $LANG, $configuration, $databaseCL;
+
+		$page = $SETT['url'].$_SERVER['REQUEST_URI'];
+		if (isset($_GET['pagination'])) {
+			$page = str_replace('&pagination='.$_GET['pagination'], '', $page);
+		}
+
+		// Pagination Navigation settings
+		if ($type == 1) {
+			$perpage = $configuration['per_featured'];
+		} else {
+			$perpage = $configuration['per_page'];
+		}
+		if(isset($_GET['pagination']) && $_GET['pagination'] !== ''){
+		    $curpage = $_GET['pagination'];
+		} else{
+		    $curpage = 1;
+		}
+
+		$start = ($curpage * $perpage) - $perpage;
+		if ($this->all_rows) {
+			$all_rows = $this->all_rows;
+		} else {
+			$all_rows = [];
+		}
+		$count = count($all_rows);
+		if ($_GET['page'] == 'homepage' && !isset($_GET['archive'])) {
+			$count = $count - 1;
+		}
+		$this->limiter = $databaseCL->limiter = $perpage; 
+		$this->start = $databaseCL->start = $start;	
+
+		// Pagination Logic
+		$endpage = ceil($count/$perpage);
+		$startpage = 1;
+		$nextpage = $curpage + 1;
+		$previouspage = $curpage - 1;
+ 
+		$navigation = '';
+		if ($endpage > 1) {
+			if ($curpage != $startpage) {
+				$pager = cleanUrls($page.'&pagination='.$startpage);
+				$navigation .= '
+					<li class="page-item">
+						<a class="page-link" aria-label="Previous" href="'.$pager.'">
+							<span aria-hidden="true">&laquo;</span>
+							<span class="sr-only">Previous</span>
+						</a>
+					</li>
+			    ';
+			}
+
+			if ($curpage >= 2) {
+				$pager = cleanUrls($page.'&pagination='.$previouspage);
+			    $navigation .= '
+					<li class="page-item">
+						<a class="page-link" href="'.$pager.'">Prev</a>
+					</li>
+			    ';
+			}
+
+			$pager = cleanUrls($page.'&pagination='.$curpage);
+		    $navigation .= '
+				<li class="page-item active">
+					<a class="page-link" href="'.$pager.'">'.$curpage.'</a>
+				</li>
+		    '; 
+
+			if($curpage != $endpage){
+				$pager = cleanUrls($page.'&pagination='.$nextpage);
+			    $navigation .= '
+					<li class="page-item">
+						<a class="page-link" href="'.$pager.'">Next</a>
+					</li>
+			    ';  
+ 
+				$pager = cleanUrls($page.'&pagination='.$endpage);
+			    $navigation .= '                
+					<li class="page-item">
+						<a class="page-link" aria-label="Next" href="'.$pager.'">
+							<span aria-hidden="true">&raquo;</span>
+							<span class="sr-only">Next</span>
+						</a>
+					</li> 
+			    ';   
+			}
+
+		  	$navigation = '
+				<nav class="mb-5 pb-2">
+					<ul class="pagination pg-darkgrey flex-center">
+						'.$navigation.'
+					</ul>
+				</nav>
+				';
+		} else {
+		  	$navigation = '';
+		}
+		return $navigation;	 
 	}
 }
 
@@ -1344,25 +1780,30 @@ class databaseCL extends framework {
 	 * Either delete or approve a release
 	 * @param  variable $id is the identifier of the release to act upon
 	 * @param  variable $type is used to determine if this is an approve release or delete release request 
-	 * (1: approve, 2:delete without removing fies, 3: delete without updating or removing fies, 0/null: delete)
+	 * Type (
+	 * 	1: approve,
+	 * 	2: delete without removing fies, (Remove from sale) 
+	 * 	0/null: delete)
 	 * @return Boolean     returns true if an action was successful
 	 */
 	function salesAction($id, $type = null) {
-		global $SETT, $LANG, $configuration, $user;
+		global $SETT, $LANG, $configuration, $user, $marxTime;
 
 		$id = $this->db_prepare_input($id);
-		$status = $type == 1 ? 3 : 0;
-
+		// If type == 1: Approve (Set status to 3)
+		// If type == 2: Remove from sale (Set status to 0)
+		$status = $type == 1 ? 3 : 0; 
 		$date = date('Y-m-d', strtotime('today'));
-		if ($type == 3) {
+		if ($type == NUll || $type == 0) {
+			// This completes Type: 0 (Delete Files) Without actually making any changes
 			$update = 1;
 		} else {
-			$set_date = $type == 1 ? '\''.$date.'\'' : NULL;
+			$set_date = $type == 1 ? '\''.$date.'\'' : 'NULL';
 			$sql = sprintf("UPDATE new_release SET `status` = '%s', `approved_date` = %s WHERE `release_id` = '%s'", $status, $set_date, $id);
-			$update = $this->dbProcessor($sql, 0, 5);
+			$update = $this->dbProcessor($sql, 0, 1);
 		}
 
-		if (!$type && $update == 1) {
+		if ($update == 1 && ($type == NUll || $type == 0)) { 
 
 			// Delete tracks
 			$trs4 = $this->dbProcessor("SELECT art,audio FROM tracks WHERE `release_id` = '{$id}'", 1);
@@ -1376,16 +1817,19 @@ class databaseCL extends framework {
 			$trs4 = $this->dbProcessor("SELECT art,id FROM albums WHERE `release_id` = '{$id}'", 1);
 			if ($trs4) {
 				foreach($trs4 as $rows) {
-					deleteFile($rows['art'], 1); 
-				}	
+					deleteFile($rows['art'], 1);
+				}
 			}	
-		    
-		    // Delete all related records of this track
-		    $this->salesAction($id, 3);
+
+			// Delete associated records 
+		    $this->dbProcessor("DELETE FROM new_release_tracks WHERE `release_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM `new_release_artists` WHERE `release_id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM new_release WHERE `release_id` = '{$id}'", 0);
 
 			return true;
 		} elseif ($type == 2 && $update == 1) {
 		    // Delete all related records of this track 
+		    // Remove from sale
 		    $this->dbProcessor("DELETE FROM playlistentry WHERE track IN (SELECT id FROM tracks WHERE `release_id` = '{$id}')", 0); 
 		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '2' AND item_id IN (SELECT id FROM tracks WHERE `release_id` = '{$id}')", 0);
 		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '1' AND item_id IN (SELECT id FROM albums WHERE `release_id` = '{$id}')", 0);
@@ -1395,6 +1839,7 @@ class databaseCL extends framework {
 		    $this->dbProcessor("DELETE FROM albums WHERE `release_id` = '{$id}'", 0);
 			return true;
 		} elseif ($type == 1 && $update == 1) {
+			// Approve the release
 			$release_data = $this->fetchReleases(1, $id);
 			$release_tracks = $this->fetchRelease_Audio(1, $id);
 
@@ -1409,21 +1854,28 @@ class databaseCL extends framework {
 					$fname = $named[0];
 					$lname = '';
 				}
-
+				if ($release_artist['photo']) {
+					$artwork = $release_artist['photo'];
+				} else {
+					$artwork = $release_data[0]['art'];
+				}
 				// Create the new artist
 				$sql = sprintf(
 					"INSERT INTO users (`username`, `password`, `intro`, `fname`, `lname`, `photo`, `label`, `role`) 
 					VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', 2)", $release_artist['username'], md5(rand(10000,90000)),
-					$release_artist['intro'], $fname, $lname, $release_artist['photo'], $release_data['label']
+					$release_artist['intro'], $fname, $lname, $artwork, $release_data[0]['label']
 				);
-				$this->dbProcessor($sql, 0, 1);
+				$cu = $this->dbProcessor($sql, 0, 1);
+				if ($cu != 1) {
+					echo bigNotice($cu, null, 'mt-5');
+				}
 				$userdata = $this->userData($release_artist['username'], 1); 
 			}
 
 			// Add the tracks to the database
 			$ver_tracks = $this->dbProcessor("SELECT release_id, id FROM tracks WHERE `release_id` = '{$id}'", 1);
 			$r_data = $release_data[0];
-			if (!$release_tracks) {
+			if (!$ver_tracks) {
 				foreach ($release_tracks as $rt => $r_tracks) {  
 					$safelink = $this->safeLinks($r_tracks['title']);
 					$sql = sprintf(
@@ -1436,8 +1888,11 @@ class databaseCL extends framework {
 							$r_data['p_line'], $r_data['c_line'], $date, $date, $r_data['art'], $r_tracks['audio'], 
 							$r_data['release_id'], $safelink, $r_data['tags'], 1
 					);
-					$this->dbProcessor($sql, 0, 1);
-				 }
+					$cu = $this->dbProcessor($sql, 0, 1);
+					if ($cu != 1) {
+						echo bigNotice($cu, null, 'mt-5');
+					}
+				}
 			}
 
 			// If the tracks are more than 1, add the tracks to an album
@@ -1454,12 +1909,12 @@ class databaseCL extends framework {
 						"INSERT INTO albums (`by`, `title`, `description`, `label`, `pline`, `cline`, `release_date`, 
 							`art`, `release_id`, `safe_link`, `tags`, `public`) 
 						VALUES ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
-							$r_data['by'], $r_data['title'], $r_data['description'], $r_data['label'], $r_data['p_line'], 
+							$userdata['uid'], $r_data['title'], $r_data['description'], $r_data['label'], $r_data['p_line'], 
 							$r_data['c_line'], $date, $r_data['art'], $r_data['release_id'], $safelink, $r_data['tags'], 1
 					);
 
 					// If you have created the album, link the track files
-					$create = $this->dbProcessor($sql, 0, 1);
+					$create = $this->dbProcessor($sql, 0, 1); 
 					if ($create == 1) {
 						$fetch_tracks = $this->dbProcessor("SELECT id FROM tracks WHERE `release_id` = '{$id}'", 1); 
 						$fetch_album = $this->dbProcessor("SELECT id FROM albums WHERE `release_id` = '{$id}'", 1)[0]; 
@@ -1470,6 +1925,8 @@ class databaseCL extends framework {
 								$this->dbProcessor($sql, 0, 1);
 							}
 						}	
+					} else {
+						echo bigNotice($create, null, 'mt-5');
 					}
 				}			
 			}
@@ -1570,6 +2027,11 @@ class databaseCL extends framework {
 		return $this->dbProcessor($sql, 1);
 	}
 
+	function addViews($id, $type = null) {
+		global $user;
+		return $this->dbProcessor(sprintf("INSERT INTO views (`track`, `by`) VALUES ('%s', '%s')", $id, $user['uid']), 0, 1);
+	}
+
 	function releaseStats($id, $dt = null) {
 		global $user;
 
@@ -1577,7 +2039,7 @@ class databaseCL extends framework {
 		$date = $dt ? '\''.$dt.'\'' : 'CURDATE()'; 
 
 		if (isset($this->type)) {
-			if ($this->type == 1) {
+			if ($this->type == 1) {	
 				$sql = sprintf("
 					SELECT count(`track`) AS quarterly_views, QUARTER(`time`) AS qt 
 					FROM `views` 
@@ -1590,6 +2052,11 @@ class databaseCL extends framework {
 					FROM `views`
 					WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` IN (SELECT `release_id` FROM new_release WHERE `by` = '%s'))
 					GROUP BY track ORDER BY views DESC%s", $id, $limit);
+			} elseif ($this->type == 3) { 
+				$sql = sprintf("
+					SELECT track, count(`track`) AS views, (SELECT title FROM tracks WHERE `id` = track) AS title  
+					FROM `views`
+					WHERE `track` IN (SELECT `id` FROM tracks WHERE `release_id` = '%s') GROUP BY track", $id);
 			}
 		} else {
 			$sql = sprintf("SELECT 
@@ -1613,9 +2080,9 @@ class databaseCL extends framework {
 		// $type == 1: Track monthly viewers
 		// $type == 0/NULL: Artist monthly viewers
 		if ($type == 1) {
-			$sql = sprintf("SELECT uid,username,fname,lname,photo,role,`time` FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE v.track = '%s' AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) ORDER BY `time` DESC", $id);
+			$sql = sprintf("SELECT uid,username,fname,lname,photo,role FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE v.track = '%s' AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) GROUP BY u.uid ORDER BY `uid` DESC", $id);
 		} else {
-			$sql = sprintf("SELECT uid,username,fname,lname,photo,role,`time` FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE `track` IN (%s) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) ORDER BY `time` DESC", $this->track_list);
+			$sql = sprintf("SELECT uid,username,fname,lname,photo,role FROM `views` AS v LEFT JOIN `users` AS u ON v.by = u.uid WHERE `track` IN (%s) AND `time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) GROUP BY u.uid ORDER BY `uid` DESC", $this->track_list);
 		}
 		return $this->dbProcessor($sql, 1);
 	}
@@ -1932,22 +2399,54 @@ class databaseCL extends framework {
 
 	}
 
-	function fetchReleases($type = null, $id = null) {
-		global $user, $configuration, $user_role;	
+	function fetchNotifications($id = null) {
+		global $user, $configuration, $user_role, $admin;	
 		
-		$limit = isset($this->limit) ? " LIMIT ".$configuration['releases_limit'] : '';
-		$restrict = $user_role < 4 ? ' AND `by` = \''.$user['uid'].'\'' : '';
+		if (isset($this->limiter)) {
+			$limit = sprintf(' ORDER BY `date` DESC LIMIT %s, %s', $this->start, $this->limiter);
+		} else {
+			$limit = ' ORDER BY `date` DESC';
+		}
+
+		$status = isset($this->status) ? $this->status : 0;
+		$uid = $id ? $id : $user['uid'];
+
+		$sql = sprintf("SELECT * FROM notification WHERE `uid` = '%s' AND `status` = '%s' %s", $uid, $status, $limit);
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchReleases($type = null, $id = null) {
+		global $user, $configuration, $user_role, $admin;	
+		
+		if (isset($this->limiter)) {
+			$limit = sprintf(' ORDER BY `date` DESC LIMIT %s, %s', $this->start, $this->limiter);
+		} else {
+			$limit = isset($this->limit) ? " LIMIT ".$configuration['releases_limit'] : '';
+		}
+		$restrict = $user_role < 4 && !$admin ? ' AND `by` = \''.$user['uid'].'\'' : '';
 
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM `new_release` WHERE `release_id` = '%s'%s", $this->db_prepare_input($id), $restrict);
 		} else {
+			$search = '';
+			if (isset($this->search_query)){
+				$searchValue = $this->search_query;
+	     		$search = " AND 
+			    title like '%".$searchValue."%' OR  
+			    release_id like '%".$searchValue."%' OR  
+			    p_line like '%".$searchValue."%' OR  
+			    p_genre like '%".$searchValue."%' OR  
+			    label like '%".$searchValue."%'";		
+			} 
+ 
+			$filter_query = isset($this->filter_query) ? ' AND `status` = \''.$this->filter_query.'\'' : '';
 			$next = isset($this->last_id) ? ' AND `id` < \''.$this->last_id.'\'' : '';
 			$status = isset($this->status) ? ' AND `status` = \''.$this->status.'\'' : '';
 			if (isset($this->counter)) {
 				// Count the projects
 				$sql = sprintf("SELECT COUNT(id) AS counter FROM new_release WHERE `by` = '%s'%s%s", $user['uid'], $status, $next);
 			} else {
-				$sql = sprintf("SELECT * FROM new_release WHERE `by` = '%s'%s%s%s", $user['uid'], $status, $next, $limit);
+				$sql = sprintf("SELECT * FROM new_release WHERE 1 %s%s%s%s%s%s", $restrict, $status, $search, $filter_query, $next, $limit);
 			}
 		}
 		return $this->dbProcessor($sql, 1);
@@ -1975,6 +2474,214 @@ class databaseCL extends framework {
 			$sql = sprintf("SELECT * FROM `new_release_tracks` WHERE `release_id` = '%s'", $this->db_prepare_input($id));
 		}
 		return $this->dbProcessor($sql, 1);
+	}
+
+	function fetchStatic($id = null, $type = null) {
+		$search = '';
+		if (isset($this->search_query)){
+			$searchValue = $this->search_query;
+     		$search = " AND 
+		    title like '%".$searchValue."%'";		
+		} 
+
+		$filter_query = isset($this->filter_query) ? ' AND `parent` = \''.$this->filter_query.'\'' : '';
+
+		$linked = isset($this->linked) ? ' AND `linked` = \''.$this->linked.'\'' : '';
+		$priority = isset($this->priority) ? ' AND `priority` = \''.$this->priority.'\'' : '';
+		$parent = isset($this->parent) ? ' AND `parent` = \''.$this->parent.'\'' : '';
+		$limit = isset($this->limiter) ? sprintf(' LIMIT %s, %s', $this->start, $this->limiter) : '';
+
+		$dasc = $limit ? 'DESC' : 'ASC';
+		$order = isset($this->reverse) ? ' ORDER BY `date` '.$dasc : ' ORDER BY `date` '.$dasc;
+
+		if ($type == 1) {
+			$sql = sprintf("SELECT * FROM static_pages WHERE 1%s%s%s%s%s%s%s", $priority, $parent, $search, $filter_query, $linked, $order, $limit);
+		} else {
+			$sql = sprintf("SELECT * FROM static_pages WHERE `id` = '%s' OR `safelink` = '%s'", $this->db_prepare_input($id), $this->db_prepare_input($id));
+		} 
+		return $this->dbProcessor($sql, 1);
+	}
+
+	function createStaticContent() {
+		global $PTMPL, $LANG, $SETT, $user, $framework, $marxTime; 
+
+		$static_ids = isset($_GET['static_id']) ? $framework->db_prepare_input($_GET['static_id']) : null;
+		$get_statics = $this->fetchStatic($static_ids)[0];
+
+		$parent = $framework->db_prepare_input($this->parent); 
+		$priority = $framework->db_prepare_input($this->priority); 
+		$icon = $framework->db_prepare_input($this->icon); 
+		$title = $framework->db_prepare_input($this->title); 
+		$main_content = $this->main_content; 
+		$footer = $this->footer;
+		$header = $this->header;
+		$framework->resolution = '750,600';
+		$image = $framework->imageUploader($this->image);
+		$buttons = $this->banner_buttons;
+
+		$safelink = $framework->safeLinks($title);
+
+		if (is_array($image)) { 
+			if ($static_ids) {
+				deleteFile($get_statics['banner'], 1);
+			}
+			$banner = $image[0];
+		} else {
+			if (isset($get_statics['banner'])) {
+				$banner = $get_statics['banner'];
+			} else {
+				$banner = NULL;
+			}
+		}
+
+		if ($static_ids) {
+			$sql = sprintf("UPDATE static_pages SET `parent` = '%s', `banner` = '%s', `button_links` = '%s', `title` = '%s', 
+				`content` = '%s', `priority` = '%s', `icon` = '%s', `footer` = '%s', `header` = '%s' WHERE `id` = '%s'", 
+				$parent, $banner, $buttons, $title, $main_content, $priority, $icon, $footer, $header, $static_ids);
+
+			$post = $this->dbProcessor($sql, 0, 1);
+			$post = $post == 1 ? $post : messageNotice($post, 2);
+		} else {
+			if (empty($this->image['name']) || $banner) { 
+				$sql = sprintf("INSERT INTO static_pages (`parent`, `banner`, `button_links`, `title`, `content`, `priority`, 
+					`icon`, `footer`, `header`, `safelink`) VALUES  ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", 
+					$parent, $banner, $buttons, $title, $main_content, $priority, $icon, $footer, $header, $safelink);
+
+				$post = $this->dbProcessor($sql, 0, 1);
+				$post = $post == 1 ? $post : messageNotice($post, 2);
+			} else {
+				$post = messageNotice($image, 3);
+			}
+		}
+		if ($post == 1) {
+			$msg = messageNotice('Your content has been saved', 1);
+		} else {
+			$msg = $post;
+		}	
+		return $msg;	
+	}
+
+	/**
+	 * Delete content
+	 * @param  variable $id   is the id of the item to be deleted
+	 * @param  variable $type is the type of item to delete
+	 * @return integer       0 for a failure 1 for success
+	 */
+	function deleteContent($id, $type = null) {
+		global $PTMPL, $LANG, $SETT, $user, $framework, $collage; 
+		
+		if ($type == 1) {
+			$content = $this->fetchStatic($id)[0]; 
+			deleteFile($content['banner'], 1);
+			$delete = $this->dbProcessor("DELETE FROM static_pages WHERE `id` = '$id'", 0, 2);
+		} else {
+ 
+		}
+		return $delete;
+	}
+
+	function manageRealeases() {
+		global $SETT;
+
+		if (isset($_GET['q'])) {
+			$this->search_query = $_GET['q'];
+		} 
+		if (isset($_POST['filter'])) {
+			$this->filter_query = $_POST['f'];		
+		}
+
+		$this->manage = true;
+	    $this->all_rows = $this->fetchReleases();
+	    $PTMPL['pagination'] = $this->pagination();
+		$list_releases = $this->fetchReleases();
+		
+		$table_row = ''; $i=0;
+		if ($list_releases) {
+			foreach ($list_releases as $releases) {
+				$i++;
+				$page = $SETT['url'].$_SERVER['REQUEST_URI'];
+
+				$edit_link = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=details&rel_id='.$releases['release_id']); 
+				$creator = $this->userData($releases['by'], 1);
+				$set_status = $this->releaseStatus($releases['release_id']); 
+				$upc = $releases['upc'] ? $releases['upc'] : 'N/L';
+				$copyright = $releases['c_line_year'].' '.$releases['c_line'];
+				$recording = $releases['p_line_year'].' '.$releases['p_line'];
+				$this->type = 3;
+				$views = $this->releaseStats($releases['release_id'])[0]; 
+
+				if (isset($_GET['action'])) {
+					if ($set_status[1] == 3) {
+						$set_state_link = cleanUrls(str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page).'&action=remove&rel_id='.$releases['release_id']);
+					} else {
+						$set_state_link = cleanUrls(str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page).'&action=approve&rel_id='.$releases['release_id']);
+					}
+					$state_class = $set_status[1] == 3 ? 'fa-times-circle text-warning' : 'fa-check-circle text-success';
+					$pager = str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page);
+				} else {
+					if ($set_status[1] !== 3) {
+						$set_state_link = cleanUrls($page.'&action=approve&rel_id='.$releases['release_id']);
+						$state_class = 'fa-check-circle text-success';
+					} else {
+						$set_state_link = cleanUrls($page.'&action=remove&rel_id='.$releases['release_id']);
+						$state_class = 'fa-times-circle text-warning';
+					}
+					$pager = $page;
+				}
+				if (isset($_GET['delete'])) {
+					$delete_link = cleanUrls(str_replace('&action=delete&rel_id='.$_GET['delete'], '', $pager).'&action=delete&rel_id='.$releases['release_id']);
+				} else {
+					$delete_link = cleanUrls($pager.'&action=delete&rel_id='.$releases['release_id']);
+				} 
+				$table_row .= '
+				<tr>
+					<th scope="row">'.$i.'</th>
+					<td><a href="'.$edit_link.'" title="View Content">'.$releases['title'].'</a></td>
+					<td>'.ucfirst($creator['username']).'</td>
+					<td>'.$set_status[0].'</td>
+					<td>'.$upc.'</td>
+					<td>'.$copyright.'</td>
+					<td>'.$recording.'</td>
+					<td>'.$views['views'].'</td>
+					<td class="d-flex justify-content-around">
+						<a href="'.$set_state_link.'" title="Approve"><i class="fa fa-2x '.$state_class.' hoverable mr-1"></i></a>
+						<a href="'.$edit_link.'" title="Edit Content"><i class="fa fa-2x fa-edit text-info hoverable mr-1"></i></a>
+						<a href="'.$delete_link.'" title="Delete Content"><i class="fa fa-2x fa-trash text-danger hoverable"></i></a> 
+					</td>
+				</tr>';
+			}
+		} else {
+			$table_row .= '
+			<tr><td colspan="9">'.notAvailable('You have not created any posts', '', 1).'</td></tr>';
+		}		
+			return $table_row;
+	}
+
+	function categoryOptions($get_post = null) {
+		global $SETT, $framework;
+
+		// Set category select options for new posts
+		$option = '';
+		$category = $this->dbProcessor("SELECT id, title, value FROM categories", 1);
+		foreach ($category as $row) { 
+			$sel = (isset($_POST['category']) && $_POST['category'] == $row['value']) || ($get_post['category'] == $row['value']) ? ' selected="selected"' : ''; 
+			$option .= '<option value="'.$row['value'].'"'.$sel.'>'.$row['title'].'</option>';
+		}
+		return $option;
+	}
+
+	/**
+	 * Fetch data from the categories table
+	 * @param  integer $type determines the type of category to repeat: 1 = Exclude Events, 2 = All Categories
+	 * @return array       containing all available categories
+	 */
+	function fetchCategories($type = null, $id = null) {
+		if ($id) {
+			return $this->dbProcessor(sprintf("SELECT id, title, value, info FROM categories WHERE `value` = '%s'", $id), 1); 
+		} else {
+			$event = $type == 1 ? ' WHERE (`value` != \'event\' AND `value` != \'exhibition\')' : '';
+			return $this->dbProcessor(sprintf("SELECT id, title, value, info FROM categories%s", $event), 1); 
+		}
 	}
 }
 

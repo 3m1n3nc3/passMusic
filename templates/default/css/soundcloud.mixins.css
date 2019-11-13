@@ -367,6 +367,7 @@ a.pc-ministats {
   padding: 10px 0;
 }
 .userSuggestionList__extra {
+  margin-right: 4px !important;
   padding: 10px !important;
   background-color: #282828;
   border-radius: 10px;

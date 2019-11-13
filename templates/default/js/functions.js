@@ -498,3 +498,31 @@ $(document).on('mousedown', '.jp-volume-bar-value', function() {
 $(document).on('mouseup', function() {
 	$(window).unbind("mousemove");
 });
+
+// Validate a username
+function validateInput(e,type) {
+	charStr = String.fromCharCode(e.keyCode); console.log(charStr);
+  	if(/[a-zA-Z0-9-_]/.test(charStr) || e.keyCode == 13 || e.keyCode == 16 || e.keyCode == 8) {
+      	if (type == 1) {
+      		var content = 'username';
+      	} else {
+      		var content = 'email';
+      	}
+	    // Store the username into var
+	    var data = $('input#'+content).val(); console.log(type+' '+data+' '+content);
+	    if(data) { 
+	      	// Show the progress animation
+	      	$('#'+content+'_check').html(spinner(1, 4, 1, 1));
+	       
+	      	$.ajax({
+	        	type: "POST",
+	        	url: site_url+"/connection/validation.php",
+	        	data: 'data='+encodeURIComponent(data)+'&type='+type,
+	        	cache: false,
+	        	success: function(html) {
+	        		$('#'+content+'_check').html(html);
+	        	}
+	      	});
+	    }
+	}
+}; 

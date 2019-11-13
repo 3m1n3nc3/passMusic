@@ -101,41 +101,11 @@
           </div>
         </div>
       </div>
-
+      
     </div>
   </section>
 </main>
 
 <script type="text/javascript">
-  Morris.Area({
-    // ID of the element in which to draw the chart.
-    element: 'quarterly',
-    // Chart data records -- each entry in this array corresponds to a point on
-    // the chart.
-    data: {$quarterly_data}, 
-    xkey: 'quarter', 
-    ykeys: ['views'], 
-    labels: ['Views'],
-    lineColors: ['#3c8dbc']
-  });
-
-  Morris.Donut({
-    element: 'most-viewed',
-    resize: true,
-    colors: ["#3c8dbc", "#f56954", "#00a65a"],
-    data: {$most_viewed_data},
-    formatter: function (y) {var s = y > 1 ? 's' : ''; return y + " View"+s },
-    hideHover: 'auto'
-    });
-
-  Morris.Bar({
-    element: 'track-barchart',
-    data: {$tracks_barchart},
-    xkey: 'track',
-    ykeys: ['views'],
-    labels: ['Views'],
-    barRatio: 0.4,
-    xLabelAngle: 5,
-    hideHover: 'auto'
-  });  
+  {$dataset}
 </script>

@@ -265,3 +265,42 @@ clipboard.on('error', function(e) {
         })
     }
 }(jQuery);
+
+$('.select-country').on('change', function () {
+    try {
+        let target = $('#' + $(this).attr('data-target'));
+        fetch_state(this, target);
+    } catch (e) {
+        console.log(e.message);
+    }
+});
+
+function fetch_state(sender, receiver) {
+    var sender_id = sender.options[sender.selectedIndex].id;
+
+    $.ajax({
+        type: 'POST',
+        url: site_url + '/connection/location.php',
+        data: {country_id: sender_id, type: 2},
+        success: function (html) {
+            $(receiver).html(html);
+            $(receiver).on('change', function () {
+                let target = $('#' + $(this).attr('data-target'));
+                fetch_city(receiver, target);
+            });
+        }
+    });
+}
+
+function fetch_city(sender, receiver) {
+    var sender_id = sender[0].options[sender[0].selectedIndex].id;
+
+    $.ajax({
+        type: 'POST',
+        url: site_url + '/connection/location.php',
+        data: {state_id: sender_id, type: 1},
+        success: function (html) {
+            $(receiver).html(html);
+        }
+    })
+}

@@ -1,0 +1,32 @@
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <div class="row">         
+                                    <div class="col mx-auto"> 
+                                        <div id="preview-crop-cover"></div>
+                                        <div id="upload-cover" style="display: none;"></div> 
+                                    </div> 
+                                </div> 
+
+                                <div class="container-fluid" id="action-buttons-2">
+                                    <div class="row">  
+                                        <div class="col-md-12">
+                                            <label for="cover-image" class="btn btn-block btn-info">
+                                                {$lang->select_photo} <i class="fa fa-photo"></i>
+                                            </label>
+                                            <input type="file" id="cover-image" style="display: none;">
+
+                                            <button class="btn btn-block btn-success btn-upload-image my-1" style="display: none;" onclick="upload_action(0)">
+                                                {$lang->upload_photo}
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="row">         
+                                    <div class="col mx-auto"> 
+                                         <div id="cover-photo-message"></div>
+                                    </div> 
+                                </div> 
+                            </div>          
+                        </div>

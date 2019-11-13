@@ -15,7 +15,40 @@ $LANG['homepage'] = 'Homepage';
 
 $LANG['name'] = 'Passcolabs';
 
-$LANG['intro'] = 'PassTemp Templating Engine allows you to adeqquately separate your design syntax from your code, allow for better flexibility';
+$LANG['intro'] = 'PassTemp Templating Engine allows you to adequately separate your design syntax from your code, allow for better flexibility';
+
+// Forms
+$LANG['invalid_username'] = 'This user has not been registered'; 
+$LANG['invalid_password'] = 'Invalid Password'; 
+$LANG['invalid_email'] = 'Invalid Email'; 
+$LANG['not_found_email'] = 'This Email has not been registered'; 
+$LANG['email_used'] = 'This Email is already in use, please try another'; 
+$LANG['username_used'] = 'This Username is already in use, please try another';
+$LANG['password_short'] = 'Password too short'; 
+$LANG['no_firstname'] = 'Firstname can not be empty';   
+$LANG['login_success'] = 'Login successful, Please wait...';
+$LANG['_user_required'] = 'Username and Password are required';
+$LANG['_firstname_required'] = 'Firstname is required';
+$LANG['_lastname_required'] = 'Lastname is required';
+$LANG['_email_required'] = 'Email is required';
+$LANG['email_invalid'] = 'Email entered is invalid';
+$LANG['_reg_success'] = 'Registration successful, Please wait...';
+$LANG['_city_required'] = 'City is required';
+$LANG['_state_required'] = 'State is required';
+$LANG['_all_required'] = 'All fields are required';
+$LANG['data_unmatch'] = 'The information you provided does not match our records';
+$LANG['password_mismatch'] = 'Password and Confirm Password do not match';
+$LANG['password_short'] = 'The provided password is too short, it should be at least 7 characters';
+$LANG['profile_updated'] = 'Your profile has successfully been updated';
+
+
+//Notifications
+$LANG['like'] = 'Like';
+$LANG['track'] = 'Track';
+$LANG['album'] = 'Album';
+$LANG['liked_notice'] = '<b>%s</b> liked your %s: <b>%s</b>';
+$LANG['comment_notice'] = '<b>%s</b> commented your %s: <b>%s</b>';
+$LANG['follow_notice'] = '<b>%s</b> is now following you';
 
 // Player controls
 $LANG['prev_track'] = 'Previous Track';
@@ -27,6 +60,9 @@ $LANG['mute'] = 'Mute Off';
 $LANG['unmute'] = 'Unmute';
 $LANG['next_track'] = 'Next Track';
 $LANG['volume'] = 'Volume';
+
+
+$LANG['administrator'] = 'Administrator';
 
 // Headings
 $LANG['approved'] = 'Approved';
@@ -61,12 +97,32 @@ $LANG['share_project_warning'] = '<small class="text-warning pc-font-1">This wil
 $LANG['project_status_warning'] = '<small class="text-warning pc-font-1">This will allow or prevent new colab requests and also hide from projects listing page</small>';
 $LANG['missing_main_track'] = 'The Main Soundtrack/Instrumental has not been uploaded';
 $LANG['upload_main_track'] = 'Upload Main Soundtrack/Instrumental';
+
+$LANG['upload_profile_photo'] = 'Upload profile photo';
+$LANG['upload_cover_photo'] = 'Upload cover photo';
+$LANG['select_photo'] = 'Choose photo';
+$LANG['upload_photo'] = 'Upload photo';
+
+
 $LANG['no_stem_added'] = 'No stem files have been added to the project';
 $LANG['no_colab_request'] = 'No new colab request';
 $LANG['approve_tip'] = 'Approving this request will allow this user to add files to the project (Stems and Instrumentals)';
 $LANG['remove_tip'] = 'Removing this collaborator will also remove all their uploaded files (Stems and Instrumentals)';
 $LANG['leave_tip'] = 'If you leave, all your files (Stems and Instrumentals) uploaded to this project will be removed, except instrumentals you have set as public, they will be hidden from the project';
 $LANG['nor_artist_project'] = 'This artist has no active projects';
+
+$LANG['append_profile_notice'] = 'You can fetch and append a users profile by adding {$texp->username} to the main content (\'username\' should be the username of the profile you wish to append).';
+$LANG['information_saved'] = 'Your information has been saved';
+$LANG['information_no_update'] = 'You did not make any changes';
+$LANG['image_res_notice'] = 'Image resolution must be %s Pixels';
+$LANG['no_static_notice'] = 'If you are the site admin please go to the static content section of site adminer to add this content!';
+
+$LANG['use_image_btn'] = 'Use the image button on the editor to add more images to this publication.';
+$LANG['add_event_date_time'] = 'If this post is an Event or Exhibition do well to add a date and time';
+$LANG['banner_buttons_notice'] = 'Provide only the urls for the buttons, and specify the title by appending :title:Title to the end of the link. To specify whether the button will be filled or bordered append a :type:1 or :type:2, to specify multiple buttons separate them with a comma(,) for example: <b>https://www.facebook.com/guru:title:Guru:type:2,www.example.com/guru:title:Guru:type:1</b>';
+$LANG['static_content_notice'] = ' For content that appear at the top most of the about page, set the priority to 3, for the second row set the priority to 2, and for the others set priority to 1. Priority set at 0 won\'t be used. Be careful when creating or modifying content for the about and contact pages, certain features are unused and you may be required to remove excesses. Icons are only applicable to about page content with a priority of 2.';
+$LANG['excess_about_priority'] = 'You have more than one child content for \'about\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
+$LANG['excess_contact_priority'] = 'You have more than one child content for \'contact\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
 
 // Followers
 $LANG['no_followers'] = '%s no followers';

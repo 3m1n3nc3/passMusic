@@ -720,10 +720,10 @@ ul ul, ul ol, ol ol, ol ul {
   z-index: 1;
   position: absolute;
 }
-.artist.is-verified .profile__img {
+.artist.is-verified .profile__img, .profile.is-verified .profile__img  {
   position: relative;
 }
-.artist.is-verified .profile__img:after, .verifiedBadge:after {
+.artist.is-verified .profile__img:after, .profile.is-verified .profile__img:after, .verifiedBadge:after {
   font-family: "Ionicons";
   content: "";
   position: absolute;
@@ -1697,3 +1697,9 @@ animation: seeking .5s linear infinite, seeking-in .5s linear;
 .modal .form-control { 
   border: 1px solid #797979!important;
 } 
+
+.panel {
+  padding: 5px;
+  background-color: #3c3c40;
+  border: none;
+}

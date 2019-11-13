@@ -1,0 +1,43 @@
+
+    <!-- Main Layout -->
+    <main>
+      <div class="container-fluid acc_container">
+        <div class="row">
+ 
+		    <div class="profile{$verified}">
+		      <div class="artist__header" id="cover-photo">
+	            <div class="cover_img_cbtn text-center">
+	            	<a href="#" title="Change cover photo" data-toggle="modal" data-target="#uploadCoverModal" class="btn"><i class="fa fa-3x fa-edit"></i></a>
+	            </div>
+		        <div class="artist__info">
+		          <div class="profile__img">
+		            <img src="{$profile_photo}" alt="{$fullname}" />
+		            <div class="profile_img_cbtn text-center">
+		            	<a href="#" title="Change profile photo" data-toggle="modal" data-target="#uploadPhotoModal" class="btn"><i class="fa fa-3x fa-edit"></i></a>
+		            </div>
+		          </div>
+		          <div class="artist__info__meta">
+		            <div class="artist__info__type">{$user_role}</div>
+		            <div class="artist__info__name">{$fullname}</div> 
+		          </div>
+		        </div> 
+		      </div>     
+		    </div>   	
+
+			{$secondary_navigation}
+
+          	<div class="col-md-3 col-12 acc_sidebar mt-1">
+            
+                {$side_links}
+
+          	</div>
+
+	        <div class="col-md-8 col-12 acc_content mt-1">
+	        	
+	        	{$content}
+
+	        </div>
+
+        </div>
+      </div>
+    </main> 

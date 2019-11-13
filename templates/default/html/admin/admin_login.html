@@ -1,0 +1,43 @@
+            <div class="card mx-5"> 
+              <h5 class="card-header black white-text text-center py-4">
+                <strong><p class="h4 text-center"><i class="fa fa-user{$u_secret}"></i> {$page_title}</p></strong>
+              </h5>
+      
+              <div class="card-body px-lg-5 bg-dark">
+                {$notification}
+                <form style="color: #757575;" method="post" action="" class="needs-validation" novalidate>
+                  
+                  <div class="mb-4 mx-0">
+                    <label for="username">Username</label>   
+                    <input type="text" id="username" class="form-control" placeholder="Username" name="username" value="{$username}" required>   
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid username.
+                    </div>
+                  </div>  
+
+                  <div class="mb-4 mx-0">
+                    <label for="content_title">Password</label>   
+                    <input type="password" id="password" class="form-control" placeholder="Password" name="password" value="{$password}" required>   
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid password.
+                    </div>
+                  </div>    
+
+                  <div class="custom-control custom-checkbox mb-4 pr-5">
+                      <input type="checkbox" class="custom-control-input" id="checkbox_remember" name="remember"{$remember}>
+                      <label class="custom-control-label" for="checkbox_remember">Remain Logged in</label>
+                  </div> 
+
+                  <div class="custom-control custom-checkbox mb-4 pr-5">
+                      <input type="checkbox" class="custom-control-input" id="checkbox_user" name="user_login"{$user_login}>
+                      <label class="custom-control-label" for="checkbox_user">Login as user</label>
+                  </div> 
+
+                  <div class="d-flex">
+                    <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a>
+                    <button class="btn btn-info my-4 btn-block" type="submit" name="login"><i class="fa fa-user"></i> Login</button>
+                  </div>
+                </form>
+
+              </div> 
+            </div>  

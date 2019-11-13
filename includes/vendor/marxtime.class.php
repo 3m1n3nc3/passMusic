@@ -10,7 +10,7 @@ class marxTime
     function timeAgo($time, $x=0)
     {
         // Use strtotime() function to convert your time stamps before sending to the plugin
-
+        $time = strtotime($time);
         $time_difference = time() - $time;
 
         if($time_difference < 1 && $x==0) { return 'less than 1 second ago'; }
@@ -57,13 +57,12 @@ class marxTime
                 } else {
                     return 'About ' . $t . ' ' . $ret . ( $t > 1 ? 's' : '' ) . ' ago';
                 }
-                
             }
         }
     }
 
     // Hugh number formatter  
-    function numberFormater($n, $full = 0, $precision = 1 ) {
+    function numberFormater($n, $full = 0, $precision = 1) {
         if ($full == 1) {
             $n_format = number_format($n);
             $suffix = '';
@@ -183,8 +182,7 @@ class marxTime
     }
 
     // Time to go function
-    function dateDifference($date_1 , $date_2 , $differenceFormat = '%a' )
-    {
+    function dateDifference($date_1 , $date_2 , $differenceFormat = '%a' ) {
         $datetime1 = date_create($date_1);
         $datetime2 = date_create($date_2);
         
@@ -195,8 +193,7 @@ class marxTime
     }
 
     // Event Time remaining
-    function time2go($event_date, $event_time)
-    {
+    function time2go($event_date, $event_time) {
         $today = date("Y-m-d h:i:s");
         $event_dt = $event_date;
         $event_tm = $event_time;
@@ -211,16 +208,23 @@ class marxTime
         return $date;
     }
     // Combine two different date and time string to make a datetime stamp
-    function timemerger($date, $time)
-    {
-        $event_dt = $date;
-        $event_tm = $time;
-        $event = date('Y-m-d h:i:s', strtotime("$event_dt $event_tm"));  
-        return $event;  
+    function timemerger($date, $time, $type = null) {
+        if ($type) {
+            $date = new DateTime($date);
+            $time = new DateTime($time);
+
+            //merge objects to new object:
+            $merge = new DateTime($date->format('Y-m-d') .' ' .$time->format('H:i:s'));
+            return $merge->format('Y-m-d H:i:s');       
+        } else {
+            $event_dt = $date;
+            $event_tm = $time;
+            $event = date('Y-m-d h:i:s', strtotime("$event_dt $event_tm"));  
+            return $event;
+        }
     }
 
-    function get_percentage($event_date, $event_time)
-    {
+    function get_percentage($event_date, $event_time) {
         $today = date("Y-m-d h:i:s");
         $event_dt = $event_date;
         $event_tm = $event_time;
@@ -231,14 +235,18 @@ class marxTime
         return ($diff_swap / $swap_diff) * 100.0;
     }
 
-    function date_progress($start, $end, $today = null) 
-    {
+    function date_progress($start, $end, $today = null) {
         $date = $date ?: time();
         return (($date - $start) / ($end - $start)) * 100;
     }
 
-    function dateFormat($date, $type = 0) 
-    {
+    /**
+     * Format a date with the PHP date function
+     * @param  [type]  $date [description]
+     * @param  integer $type defines the type of format to give the provided date
+     * @return [type]        [description]
+     */
+    function dateFormat($date, $type = 0) {
         $d=strtotime($date);
 
         if ($type == 0) {
@@ -247,6 +255,10 @@ class marxTime
             $time = date("d/m/Y, h:i A", $d);
         } elseif ($type == 2) {
             $time = date("d/m/Y", $d);
+        } elseif ($type == 3) {
+            $time = date("F d, Y", $d);
+        } elseif ($type == 4) {
+            $time = date("F d, Y - h:i A", $d);
         }
         return $time;
     }
@@ -255,6 +267,57 @@ class marxTime
         $n = ($number * 100) / $total;
         return $this->numberFormater($n, 1);
     }
+    
+    function evenOdd($number){ 
+        if($number % 2 == 0){ 
+            return 1;
+        } else{ 
+            return 0;
+        } 
+    }
+
+    function yearMonthlyArray($fetch = null, $date = null) {
+        if ($date) {
+            $date = date('d-Y', strtotime($date));
+        } else {
+            $date = date('d-Y', strtotime('today'));
+            $date = explode('-', $date);
+        }
+
+        $archiver = array(
+            '1'   => array_merge(array('january'), $date), 
+            '2'   => array_merge(array('february'), $date), 
+            '3'   => array_merge(array('march'), $date), 
+            '4'   => array_merge(array('april'), $date),
+            '5'   => array_merge(array('may'), $date),
+            '6'   => array_merge(array('june'), $date),
+            '7'   => array_merge(array('july'), $date),
+            '8'   => array_merge(array('august'), $date),
+            '9'   => array_merge(array('september'), $date),
+            '10'  => array_merge(array('october'), $date),
+            '11'  => array_merge(array('november'), $date),
+            '12'  => array_merge(array('december'), $date)
+        );
+        if ($fetch) {
+           $set = $archiver[$fetch];
+        } else {
+            $set = $archiver;
+        }
+        return $set;
+    }
+
+    /**
+     * Converts a 2 dimensional array to an associative array 
+     * @param  array  $array this is the array to convert
+     * @return array        the associative array to return
+     */
+    function dekeyArray($array = []) {
+        $arr = [];
+        foreach ($array as $k => $v) {
+            $arr[] .= $v['name'];
+        }    
+        return $arr;    
+    }
 }
-$marxTime = new marxTime;
+$marxTime = $mxtm = new marxTime;
 ?>

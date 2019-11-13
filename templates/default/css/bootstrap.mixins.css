@@ -6440,3 +6440,94 @@ fieldset:disabled a.btn {
   margin-top: 0.5rem;
 }
 
+.acc_sidebar {
+  margin-bottom: 20px;
+  padding: 15px;
+  background: #282828;
+  color: #aaaaaa;
+  overflow-y: scroll;  
+} 
+
+.acc_content {
+  color: #aaaaaa;
+}
+
+.acc_content .border {
+  border: 1px solid #515151 !important;
+}
+
+.profile_img .user_avatar {
+  width: auto;
+  height: 200px;
+}
+
+.profile_img_cbtn {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  left: 42px;
+  bottom: 75px;
+  color: #ffffff;
+  background: rgba(29, 29, 29, 0.58);
+}
+
+.profile_img_cbtn:hover {
+  background: rgba(29, 29, 29, 0.50);
+}
+
+.profile_img_cbtn a {
+  color: #ffffff;
+}
+
+.profile_img_cbtn a:hover {
+  color: #ddd;
+}
+
+.profile_img_cbtn a:active , .profile_img_cbtn a:visited {
+  color: #fbd92e;
+}
+
+.cover_img_cbtn {
+  position: absolute;
+  width: 65px;
+  height: 65px;
+  border-radius: 50%;
+  right: 45px;
+  top: 5px;
+  z-index: 1000;
+  color: #ffffff;
+  background: rgba(29, 29, 29, 0.58);
+}
+
+.cover_img_cbtn:hover {
+  background: rgba(29, 29, 29, 0.50);
+}
+
+.cover_img_cbtn a:hover {
+  color: #fff;
+}
+
+.cover_img_cbtn a:active, .profile_img_cbtn a:visited, .profile_img_cbtn a:before{
+  color: #fbd92e;
+}
+
+.acc_sidebar .profile_img {
+  max-width: 200px;
+  max-height: auto;
+}
+
+.acc_sidebar .btn {
+  border-radius: 0px;
+}
+
+.acc_sidebar .panel {
+  margin-bottom: 1px;
+  background-color: #282828;
+  border: 1px solid transparent;
+}
+
+.acc_container .custom-navigation {
+  min-width: 100% !important;
+  padding: 0px !important;
+}

@@ -1,0 +1,18 @@
+            <div class="card"> 
+              <h5 class="card-header info-color white-text text-center py-4">
+                <strong><p class="h4 text-center">{$page_title}</p></strong>
+              </h5>
+      
+              <div class="card-body px-lg-5">
+                {$notification}
+                <!-- <a data-fancybox="gallery" href="../uploads/default.jpg"><img class="w-50" src="../uploads/default.jpg"></a> -->
+
+                <div class="d-flex">
+                  <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a>
+                  <a href="../connection/filemanager/dialog.php?type=0" class="btn btn-info my-4 btn-block iframe-btn" type="button">View in window</a>
+                </div>                
+                <iframe class="container-fluid"  width="440" height="550" frameborder="0"
+                  src="../connection/filemanager/dialog.php?type=0">
+                </iframe>
+              </div> 
+            </div>  

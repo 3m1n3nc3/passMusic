@@ -1,0 +1,27 @@
+            <div class="card"> 
+              <h5 class="card-header info-color white-text text-center py-4">
+                <strong><p class="h4 text-center">{$page_title}</p></strong>
+              </h5>
+      
+              <div class="card-body px-lg-5">
+                {$notification}
+                {$allowed_conf}
+                <form style="color: #757575;" method="post" action="" enctype="multipart/form-data" class="needs-validation" novalidate>
+                  <label for="select">Select Configuration option</label>
+                  <select class="browser-default custom-select mb-4" id="select" name="setting">
+                    <option disabled>Choose a setting</option>
+                    {$settings}
+                  </select>  
+
+                  {$current_setting}
+
+                  {$input_field}  
+
+                  <div class="d-flex">
+                    <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a> 
+                    {$conf_btn}
+                  </div>
+                </form>
+
+              </div> 
+            </div>  

@@ -1,0 +1,32 @@
+                        <div class="panel panel-default">
+                            <div class="panel-body">
+                                <div class="row">         
+                                    <div class="col mx-auto"> 
+                                        <div id="preview-crop-profile"></div>
+                                        <div id="upload-profile" style="display: none;"></div> 
+                                    </div> 
+                                </div> 
+
+                                <div class="container-fluid" id="action-buttons">
+                                    <div class="row">  
+                                        <div class="col-md-12">
+                                            <label for="prof-image" class="btn btn-block btn-info">
+                                                {$lang->select_photo} <i class="fa fa-photo"></i>
+                                            </label>
+                                            <input type="file" id="prof-image" style="display: none;">
+
+                                            <button class="btn btn-block btn-success btn-upload-image my-1" style="display: none;" onclick="upload_action(0, 1)">
+                                                {$lang->upload_photo}
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                                <div class="row">         
+                                    <div class="col mx-auto"> 
+                                         <div id="profile-photo-message"></div>
+                                    </div> 
+                                </div> 
+                            </div>          
+                        </div>

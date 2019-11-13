@@ -134,6 +134,48 @@ function getLocale($type = null, $id = null) {
     }
 }
 
+function defineLocale($type = null, $set_id = null) { 
+    global $user;
+
+    // get locale
+    $locale = getLocale($type, $set_id);
+
+    $all_locale = '';
+    if ($locale) {
+        foreach ($locale as $list) {
+            if (isset($user)) {
+                if ($type == 1) {
+                    if ($user['state'] == $list['name']) {
+                        $sel = ' selected = "selected"';
+                    } else {
+                        $sel = '';
+                    }
+                } elseif ($type == 2) {
+                    if ($user['city'] == $list['name']) {
+                        $sel = ' selected = "selected"';
+                    } else {
+                        $sel = '';
+                    }
+                } else {
+                    if ($user['country'] == $list['name']) {
+                        $sel = ' selected = "selected"';
+                    } else {
+                        $sel = '';
+                    }
+                }
+            } else {
+                $sel = '';
+            }
+            $all_locale .= '<option'.$sel.' value="'.$list['name'].'" id="'.$list['id'].'">'.$list['name'].'</option>';
+        }
+    } else {
+        $stmt = $_POST['type'] == 1 ? 'cities for this state' : 'states for this country';
+        $all_locale .= '<option selected="selected" value="">No '.$stmt.'</option>'; 
+    }
+
+    return $all_locale;
+}
+
 function fileInfo($file, $type = null) {
     $getID3 = new getID3;
     $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
@@ -160,9 +202,9 @@ function fileInfo($file, $type = null) {
 function getImage($image, $type = null) {
     // $a = 1: Get direct link to image
     global $SETT, $framework;
-    if (!$image) {
-      $dir = $SETT['url'] . '/uploads/img/';
-      $image = 'default.png';
+    $default = $SETT['url'] . '/uploads/photos/default.png';
+    if (!$image) { 
+        $image = $default; 
     }
 
     $c = null;
@@ -171,10 +213,6 @@ function getImage($image, $type = null) {
       $dir_url = $SETT['url'] . '/uploads/photos/';
       $_dir = $SETT['working_dir'].'/uploads/photos/';
       $c = 1;
-    } elseif ($type == 2) {
-      // More Site specific images
-      $dir_url = $SETT['url'] . '/' . $SETT['template_url'] . '/images/';
-      $_dir = $SETT['template_url'] . '/images/';
     } else {
       // Site specific images
       $dir_url = $SETT['url'] . '/' . $SETT['template_url'] . '/img/';
@@ -186,20 +224,20 @@ function getImage($image, $type = null) {
         if (file_exists($_dir.$image) && is_file($_dir.$image)) {
           $image = $dir_url.$image;
         } else {
-          $image = $SETT['url'] . '/uploads/photos/default.png';
+          $image = $default;
         }
     } elseif ($type == 3)  {
         $image = $dir_url.$image;
         if (@exif_imagetype($image)) {
-          $image = $image;
+            $image = $image;
         } else {
-            $image = $SETT['url'] . '/uploads/photos/default.png';
+            $image = $default;
         }
     } else {
         if (file_exists($_dir.$image) && is_file($_dir.$image)) {
           $image = $dir_url.$image;
         } else {
-          $image = $SETT['url'] . '/uploads/photos/default.png';
+          $image = $default;
         }
     } 
     return $image;
@@ -246,6 +284,124 @@ function getFiles($source, $t=null) {
     }
     return;
 } 
+
+function fetchSocialInfo($profile, $type = null) {
+    global $configuration, $framework, $user;
+        
+        // Array: database column name => url model
+
+        $links = '';
+        if ($type) {
+            $social = array( 
+                'facebook'      => array('https://facebook.com/%s', 'fb-ic'), 
+                'twitter'       => array('https://twitter.com/%s', 'tw-ic'),
+                'instagram'     => array('https://instagram.com/%s', 'ins-ic')
+            );  
+            foreach($social as $value => $url) { 
+                $class = $url[1];
+                if ($type == 1) { 
+                    $links .= ((!empty($profile[$value])) ? '
+                    <li class="nav-item">
+                        <a class="nav-link waves-effect waves-light" href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'">
+                            <i class="fa '.icon(3, $value).'"></i>
+                        </a>
+                    </li>' : ''); 
+                } elseif ($type == 2) {
+                    $links .= ((!empty($profile[$value])) ? '
+                    <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow me on '.ucfirst($value).'" class="p-2 m-2 fa-lg '.$class.'"><i class="fa '.icon(3, $value).'"> </i></a>' : '');                        
+                } else {   
+                    $links .= ((!empty($profile[$value])) ? '  
+                        <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'" class="'.$value.'"><i class="fa '.icon(3, $value).'"></i></a>  ' : '');             
+                }
+            }
+        } else {
+            $social = array(
+                'site_office'   => array('%s', 'orange-text'),
+                'facebook'      => array('https://facebook.com/%s', 'fb-ic'),
+                'twitter'       => array('https://twitter.com/%s', 'tw-ic'),
+                'instagram'     => array('https://instagram.com/%s', 'ins-ic'),
+                'whatsapp'      => array('whatsapp:%s', 'green-text'),
+                'email'         => array('mailto:%s', 'red-text')
+            ); 
+            foreach($social as $value => $url) {
+                $_url = $url[0];
+                if ($profile[$value] == $profile['site_office']) {
+                    $icon = 'fa-map-marker'; 
+                    $links = '
+                    <li>
+                        <i class="fa '.icon(3, $icon).' fa-2x '.$url[1].'"></i>
+                        <p>
+                            '.ucfirst($profile['site_office']).'
+                        </p>
+                    </li>'; 
+                } else {
+                    $icon = $profile[$value] !== $profile['email'] ? $value : 'envelope';
+                    $links .= ((!empty($profile[$value])) ? '
+                    <li>
+                        <i class="fa '.icon(3, $icon).' fa-2x '.$url[1].'"></i>
+                        <p>
+                            <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'">'.$profile[$value].'</a>
+                        </p>
+                    </li>' : ''); 
+                }
+            } 
+            $links = 
+            '<ul class="contact-icons text-center list-unstyled">
+                '.$links.'
+            </ul>
+            ';
+        }
+        return $links;
+}
+
+function userAction($type = null) {
+    global $SETT, $configuration, $admin, $user, $user_role;
+
+    $dropdown = $user_profile = $sign_out = '';
+    if ($admin || $user) {
+        $logout_url = cleanUrls($SETT['url'] . '/index.php?page=introduction&logout=admin');
+        $logout_user = cleanUrls($SETT['url'] . '/index.php?page=introduction&logout=user');
+
+        $user_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['uid']);
+        $user_update_link = cleanUrls($SETT['url'] . '/index.php?page=account&view=update');
+        $admin_link = cleanUrls($SETT['url'] . '/index.php?page=admin&view=admin');
+
+        $sign_out .= $admin ? '<a href="'.$logout_url.'" class="dropdown-item">Admin Logout</a>' : '';
+        $sign_out .= $user ? '<a href="'.$logout_user.'" class="dropdown-item">Account Logout</a>' : '';        
+
+        $user_profile .= $admin ? '<a class="dropdown-item" href="'.$admin_link.'">Admin Details</a>' : '';
+        $user_profile .= $user ? '<a class="dropdown-item" href="'.$user_update_link.'">Update Profile</a>' : '';
+        $user_profile .= $user ? '<a class="dropdown-item" href="'.$user_link.'">View Profile</a>' : '';
+
+        if ($type == 1) {    
+            $dropdown .= $admin ? '<li><a href="'.$admin_link.'">Admin Details</a></li>' : '';
+            $dropdown .= $user ? '<li><a href="'.$user_update_link.'">Update Profile</a></li>' : '';
+            $dropdown .= $user ? '<li><a href="'.$user_link.'">View Profile</a></li>' : '';
+            $dropdown .= $admin ? '<li><a href="'.$logout_url.'">Admin Logout</a></li>' : '';
+            $dropdown .= $user ? '<li><a href="'.$logout_user.'">Account Logout</a></li>' : '';  
+        } else {
+            $dropdown = '
+            <li class="nav-item dropdown">
+                <a class="nav-link waves-effect waves-light dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="" rel="nofllow" title="Account Options">
+                    <i class="fa fa-user text-light"></i>
+                </a>
+                <div class="dropdown-menu dropdown-menu-right">
+                    '.$user_profile.'
+                    <div class="dropdown-divider"></div> 
+                    '.$sign_out.'
+                </div>
+            </li>';
+        }
+    } else {
+        $dropdown = $configuration['allow_login'] ? '
+        <li class="nav-item dropdown">
+            <a class="nav-link waves-effect waves-light" href="'.cleanUrls($SETT['url'] . '/index.php?page=admin&view=access&login=user').'" rel="nofllow" title="Login">
+                <i class="fa fa-user-o text-light"></i>
+            </a>
+        </li>' : '';
+    }
+    return $dropdown;  
+}
 
 /**
  * /* This function will convert your urls into cleaner urls
@@ -365,19 +521,27 @@ function deleteFile($name, $type = null, $fb = null) {
     global $SETT, $framework;
  
     if ($type == 1) {
-        $path = 'photos';
+        $path = 'photos/';
     } elseif ($type == 2) {
-        $path = 'files';
+        $path = 'files/';
+    } elseif ($type == 3) {
+        $dir = $SETT['working_dir'].'/'.$SETT['template_url'].'/img/'; 
     } else {
-        $path = 'audio';
+        $path = 'audio/';
     } 
-    $fallback = $SETT['working_dir'] . '/uploads/' . $path . '/' . $name; 
 
-    if ($framework->trueAjax() || $fb) {
-        $file =  '../uploads/' . $path . '/' . $name;
+    if ($type == 3) {
+        $file = $dir.$name;
+        $fallback = $file;
     } else {
-        $file =  getcwd() . '/uploads/' . $path . '/' . $name;
-    }  
+        $fallback = $SETT['working_dir'] . '/uploads/' . $path . $name; 
+
+        if ($framework->trueAjax() || $fb) {
+            $file =  '../uploads/' . $path . $name;
+        } else {
+            $file =  getcwd() . '/uploads/' . $path . $name;
+        }  
+    }
 
     if ($name !== 'default.png') {
         if (file_exists($file) && is_file($file)) {  
@@ -392,12 +556,42 @@ function deleteFile($name, $type = null, $fb = null) {
 }
 
 function notAvailable($string, $pad='', $type = null) {
+    if (strlen($type) >= 3) {
+        $title = '- '.$type.' -';
+        $pad = 'text-danger';
+        if ($type == 403) {
+            $string = 'You do not have sufficient privileges to access the resource you requested!';
+        } elseif ($type == 404) {
+            $string = 'The resource you requested was not found on this server!';
+        }
+        $type = 2;
+    } else {
+        $title = 'No content to see here';
+    }
     if ($type == 1) {
         $return = 
-        '<div class="tracker trackless song-container text-center">
+        '<div class="p-5 container-fluid text-center shadow-sm border border-info '.$pad.'">
             <div class="'.$pad.'pad-section">  
-                <i class="fa fa-cloud-download"></i>
-                <p class="small para">' . $string . '</p> 
+                <i class="'.$pad.' fa fa-question-circle"></i>
+                <p class="small">' . $string . '</p> 
+            </div>
+        </div>';
+    } elseif ($type == 2) {
+        $return = 
+        '<div class="row mb-4"> 
+            <div class="my-5"> 
+                <div class="card"> 
+                    <div class="card-body p-5"> 
+                        <h1 class="card-title d-flex justify-content-center">
+                            <strong class="text-default">'.$title.'</strong>
+                        </h1>
+                        <hr>
+                        <h1 class="text-center"><i class="'.$pad.' fa fa-question-circle"></i></h1>
+                        <div class="row my-3 mx-3 d-flex justify-content-center">
+                            <h2 class="'.$pad.'">' . $string . '</h2> 
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>';
     } else {
@@ -435,6 +629,34 @@ function restrictedContent($content, $tab = null) {
     return $section;
 }
 
+function userNavContent() {
+    global $LANG, $SETT, $PTMPL, $configuration, $framework, $admin, $user, $user_role;
+    if ($user || $admin) {
+        if ($admin) {
+            $theme = new themer('homepage/user_menu'); $section = '';
+            $admin_user = $framework->userData($admin['admin_user'], 1);
+
+            $PTMPL['user_photo'] = getImage($admin_user['photo'], 1);
+            $PTMPL['user_name'] = ucfirst($admin_user['username']);
+
+            $PTMPL['logout_admin'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=admin'); 
+            $PTMPL['admin_link'] = cleanUrls($SETT['url'] . '/index.php?page=admin'); 
+        }
+        if ($user) {
+            $theme = new themer('homepage/user_menu'); $section = '';
+            $PTMPL['user_photo'] = getImage($user['photo'], 1);
+            $PTMPL['user_name'] = ucfirst($user['username']); 
+
+            $PTMPL['logout_user'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=user'); 
+            $PTMPL['profile_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['username']);
+            $PTMPL['account_link'] = cleanUrls($SETT['url'] . '/index.php?page=account'); 
+        }
+
+        $section = $theme->make();
+        return $section;
+    } 
+}
+
 function globalTemplate($type) {
     global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
     if ($type == 1) {
@@ -450,12 +672,11 @@ function globalTemplate($type) {
     }
     $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
     $PTMPL['dashboard_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
-    $PTMPL['user_url'] = $user_url = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
-    $PTMPL['username_url'] = simpleButtons('logout', 'Account', $user_url, 1);
+    $PTMPL['account_url'] = $account_url = cleanUrls($SETT['url'] . '/index.php?page=account');
+    $PTMPL['username_url'] = simpleButtons('logout', 'Account', $account_url, 1);
     $PTMPL['site_title_'] = ucfirst($configuration['site_name']);
-    // $PTMPL['copyright'] = '&copy; ' . ucfirst($LANG['copyright']) . ' ' . date('Y') . ' ' . $contact_['c_line'];
-    $PTMPL['logout_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=true');
 
+    $PTMPL['user_session'] = userNavContent();
     if ($user_role >=3) {
       $management = cleanUrls($SETT['url'] . '/index.php?page=management');
       $PTMPL['management'] = simpleButtons("bordered background_green2", 'Manage Site <i class="fa fa-cog"></i>', $management);
@@ -479,29 +700,184 @@ function globalTemplate($type) {
     return $section;
 } 
 
-function superGlobalTemplate($type=null) {
-    global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
-    if ($type == 1) {
-        $theme = new themer('distribution/global/header'); $section = '';
-    } else {
-        $theme = new themer('distribution/global/footer'); $section = '';
-    }
-    $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
-    $PTMPL['artists_services'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services');
-    $PTMPL['sales_report'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=sales-report');
-    $PTMPL['user_url'] = $user_url = cleanUrls($SETT['url'] . '/index.php?page=account&profile=home');
-    $PTMPL['username_url'] = simpleButtons('logout', 'Account', $user_url, 1);
-    $PTMPL['site_title_'] = ucfirst($configuration['site_name']);
-    // $PTMPL['copyright'] = '&copy; ' . ucfirst($LANG['copyright']) . ' ' . date('Y') . ' ' . $contact_['c_line'];
-    $PTMPL['logout_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=true');
+function admin_sidebar() {
+    global $SETT, $PTMPL, $user, $framework, $databaseCL; 
+    $template = new themer('admin/side_bar'); $section = '';
+ 
+    $PTMPL['static_content_link'] = cleanUrls($SETT['url'].'/index.php?page=admin&view=static'); 
+    $PTMPL['admin_link'] = cleanUrls($SETT['url'].'/index.php?page=admin&view=admin');
+    $PTMPL['cofiguration_link'] = cleanUrls($SETT['url'].'/index.php?page=admin&view=config'); 
+    $PTMPL['filemanager_link'] = cleanUrls($SETT['url'].'/index.php?page=admin&view=filemanager'); 
+    $PTMPL['admin_url'] = cleanUrls($SETT['url'] . '/index.php?page=admin'); 
 
-    if ($user_role >=3) {
-      $management = cleanUrls($SETT['url'] . '/index.php?page=management');
-      $PTMPL['management'] = simpleButtons("bordered background_green2", 'Manage Site <i class="fa fa-cog"></i>', $management);
+    $sidebar_links = array(
+        'start'         => 'Start',
+        'static'        => 'Static Content',
+        'releases'      => 'Manage Releases',
+        'admin'    => 'Admin Details',
+        'config'        => 'Site Configuration',
+        'filemanager'   => 'File Manager'
+    );
+
+    $bar_links = '';
+    foreach ($sidebar_links as $links => $title) { 
+        $active = isset($_GET['view']) && $_GET['view'] == $links ? ' active' : ''; 
+
+        $bar_links .= '<a href="'.cleanUrls($SETT['url'].'/index.php?page=admin&view='.$links).'" class="list-group-item list-group-item-action'.$active.'">'.$title.'</a>';
+    }
+    $PTMPL['sidebar_links'] = $bar_links; 
+
+    $section = $template->make(); 
+    return $section; 
+} 
+ 
+function superGlobalTemplate($type = null) {
+    global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $databaseCL, $user, $admin, $user_role;
+
+    $PTMPL['home_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
+    $PTMPL['artists_services'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services');
+    $PTMPL['about_page_url'] = cleanUrls($SETT['url'] . '/index.php?page=static&view=about');
+    $PTMPL['contact_page_url'] = cleanUrls($SETT['url'] . '/index.php?page=static&view=contact'); 
+
+    $PTMPL['new_release'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
+    $PTMPL['all_releases'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases');
+    $PTMPL['artist_services'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artist-services'); 
+    $PTMPL['sales_report'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=sales-report'); 
+
+    $PTMPL['social_linkers'] = fetchSocialInfo($configuration, 3);  
+    $PTMPL['social_links'] = fetchSocialInfo($configuration, 1);  
+    $PTMPL['social_links'] .= userAction();       
+    $PTMPL['distro_user_links'] = userAction(1);       
+    $PTMPL['site_name'] = $configuration['site_name'];  
+
+    if ($admin || $user_role >= 4) {
+        $moderate = cleanUrls($SETT['url'] . '/index.php?page=admin');
+        $PTMPL['admin_url'] = '<a href="'.$moderate.'" class="ml-3"><i class="fa fa-cog"></i> Site Admin </a>';   
+    }
+ 
+    // Set footer navigation links
+    $nav_list = $foot_list = $foot_list_var = '';
+    $databaseCL->limit = 10;
+    $databaseCL->start = 0;
+    $databaseCL->parent = 'static'; 
+    $databaseCL->priority = null;
+    $navis = $databaseCL->fetchStatic( null, 1 );
+
+    $foot_list .= '<li><a href="'.$PTMPL['contact_page_url'].'">About Us</a></li>';
+    $foot_list_var .= '<li><a href="'.$PTMPL['contact_page_url'].'">Contact Us</a></li>';
+    if ($navis) {
+        $i = 1;
+        foreach ($navis as $link) {
+            $i++;
+            $view_link = cleanUrls($SETT['url'].'/index.php?page=static&view='.$link['safelink']);
+            if ($link['header'] == '1') {
+                $hs = 1;
+                if ($type == 2) {
+                   $nav_list .= '<li><a href="'.$view_link.'">'.$link['title'].'</a></li>';
+                } else {
+                    $nav_list .= '<a class="dropdown-item waves-effect waves-light font-weight-bold" href="'.$view_link.'">'.$link['title'].'</a>';
+                }
+            } elseif ($link['footer'] == '1') {
+                if ($i > 6) {
+                    $foot_list_var .= '<li><a href="'.$view_link.'">'.$link['title'].'</a></li>';
+                } else {
+                    $foot_list .= '<li><a href="'.$view_link.'">'.$link['title'].'</a></li>';
+                }
+            }
+        }
+
+        $PTMPL['content_menu_link'] = isset($hs) ? '
+        <li class="nav-item dropdown ml-4 mb-0">
+            <a class="nav-link dropdown-toggle waves-effect waves-light font-weight-bold"
+            id="contentMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> COMMUNITY AND SUPPORT </a>
+            <div class="dropdown-menu dropdown-primary dropdown-menu-right" aria-labelledby="contentMenuLink">
+                 '.$nav_list.'
+            </div>
+        </li>' : '';  
+
+        $PTMPL['distro_support_drop'] = isset($hs) ? $nav_list : '';
     } 
+    $PTMPL['footer_list_var'] = $foot_list_var; 
+    $PTMPL['footer_list'] = $foot_list;  
+    
+    $databaseCL->parent = 'footer'; 
+    $databaseCL->priority = '3';
+    $footro =  $databaseCL->fetchStatic(null, 1)[0];
+    if ($footro) {
+        $PTMPL['footer_text_title'] = $footro['title'];
+        $PTMPL['footer_text'] = $framework->rip_tags($footro['content']);
+    } else {
+        $PTMPL['footer_text_title'] = $configuration['site_name'];
+        $PTMPL['footer_text'] = $framework->rip_tags($configuration['slug']);        
+    }
+
+    $databaseCL->reverse = $databaseCL->limit = $databaseCL->start = $databaseCL->parent = $databaseCL->priority = null;
+
+    if ($type == 3) {
+        $theme = new themer('distribution/global/footer'); $section = '';
+    } elseif ($type == 2) {
+        $theme = new themer('distribution/global/header'); $section = '';
+    } elseif ($type == 1) {
+        $theme = new themer('distribution/global/mdb-header'); $section = '';
+    } else { 
+        $theme = new themer('distribution/global/mdb-footer'); $section = '';
+    }
     $section = $theme->make();
     return $section;
-} 
+}  
+
+function bigBanner($image = '', $type = null, $title = '', $button_link = 'null') {
+    global $SETT, $PTMPL, $configuration, $user, $framework, $collage; 
+    $template = new themer('distribution/global/banner'); $section = ''; 
+
+    if (!$title) {
+        $title = $configuration['site_name'];
+    }
+
+    $retitle = explode(' ', $title);
+    if (count($retitle) > 1) {
+        $pre_title = $retitle[0].' '.$retitle[1];
+    } else {
+        $pre_title = $retitle[0];
+    }
+    $retitle = str_replace($pre_title, $pre_title.'<br>', $title);
+
+    $banner_title = explode(' ', $retitle);
+    if (count($banner_title) > 2) {
+        $ban_title = $banner_title[3];
+        $banner_title = str_replace($ban_title, '<span>'.$ban_title.'</span>', $retitle);
+    } else {
+        $banner_title = $retitle;
+    }
+    $PTMPL['banner_title'] = $banner_title;
+
+    if ($button_link) {
+        $button_link = explode(',', $button_link);
+        $button_linked = '';
+        if (is_array($button_link)) {
+            foreach ($button_link as $link) {
+                $class = $framework->urlTitle($link, 2) == 1 ? 'btn-get-started' : 'btn-services';
+                $link_title = $framework->urlTitle($link);
+                $linked = str_ireplace('-', ' ', $link);
+                $linked = str_ireplace('_', ' ', $linked);
+                $link = $framework->urlTitle($link, 1);
+                $button_linked .= '<a href="'.$link.'" class="'.$class.'">'.$link_title.'</a>';
+            }
+        }
+        $PTMPL['buttons'] = $button_linked;
+    }  
+    // 
+    // <a href="#services" class="btn-services scrollto">Our Services</a>
+
+    if ($type == 2) {
+        $PTMPL['banner_image'] = getImage($image);
+    } else {
+        $PTMPL['banner_image'] = getImage($image, 1);
+    }
+
+    $section = $template->make();
+    return $section; 
+}
 
 /*
 * Generate a modal menu

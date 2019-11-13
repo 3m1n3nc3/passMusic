@@ -1,11 +1,11 @@
 <header id="header">
 	<div class="container">
 		<div class="logo float-left"> 
-			<a href="#intro" class="scrollto"><img src="{$site_url}/{$template_path}/{$template_name}/img/logo.png" alt="" class="img-fluid"></a>
+			<a href="#intro" class="scrollto"><img src="{$site_logo}" alt="" class="img-fluid"></a>
 		</div>
 		<nav class="main-nav float-right d-none d-lg-block">
 			<ul>
-				<li class="drop-down"><a href="">Distribution</a>
+				<li class="drop-down"><a href="">Distribution</a> 
 					<ul>
 						<li><a href="{$all_releases_link}">Discography</a></li>
 						<li><a href="{$new_release_link}">New Release</a></li>
@@ -13,12 +13,17 @@
 				</li>
 				</li>
 				<li><a href="{$artists_services}">Artist Services</a></li>
-				<li><a href="{$sales_report}">Reports and Statistics</a></li>
-				<li><a href="#portfolio">Community And Support</a></li> 
+				<li><a href="{$sales_report}">Reports and Statistics</a></li> 
+				<li class="drop-down"><a href="">Community And Support</a>
+					<ul> 
+						{$distro_support_drop}
+						<li><a href="{$about_page_url}">About us</a></li>
+						<li><a href="{$contact_page_url}">Contact us</a></li>
+					</ul>
+				</li>
 				<li class="drop-down"><a href="">Your Account</a>
 					<ul>
-						<li><a href="#">Account Settings</a></li>
-						<li><a href="#">Logout</a></li>
+						{$distro_user_links}
 					</ul>
 				</li>
 			</ul>

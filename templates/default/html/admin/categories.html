@@ -1,0 +1,53 @@
+            <div class="card"> 
+              <h5 class="card-header info-color white-text text-center py-4">
+                <strong><p class="h4 text-center">{$page_title}</p></strong>
+              </h5>
+      
+              <div class="card-body px-lg-5">
+                {$notification}
+                <form style="color: #757575;" method="post" action="" class="needs-validation" novalidate>
+                  
+                  <div class="form-row">
+                    <div class="col-5">
+                      <label for="select">Select Category</label>
+                      <select class="browser-default custom-select mb-4" id="select" name="category">
+                        <option disabled>Choose an option</option>
+                        {$categories}
+                      </select>
+                    </div>
+
+                    <div class="col">
+                      <button class="btn btn-success my-4" type="submit" name="select_category">Update</button>
+                    </div>
+                    <div class="col">
+                      <a href="{$new_btn}" class="btn btn-info my-4">Create New</a>
+                    </div>
+                  </div>
+                </form>
+                  
+                <form style="color: #757575;" method="post" action="" class="needs-validation" novalidate>
+                  <div class="mb-4 mx-0">
+                    <label for="content_title">Title</label>   
+                    <input type="text" id="content_title" class="form-control" placeholder="Content Title" name="title" value="{$ct_title}" required>   
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid title.
+                    </div>
+                  </div>  
+
+                  <div class="mb-4 mx-0">
+                    <label for="quote">Description</label>
+                    <textarea id="description" class="form-control" placeholder="Description..." row="5" name="info" required>{$ct_description}</textarea>
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a description.
+                    </div>
+                  </div>
+                  
+                  <div class="d-flex">
+                    <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a>
+                    {$delete_btn}
+                    <button class="btn btn-info my-4 btn-block flex-grow-1" type="submit" name="create_">{$up_btn}</button>
+                  </div>
+                </form>
+
+              </div> 
+            </div>  

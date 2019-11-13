@@ -1,0 +1,114 @@
+            <div class="card"> 
+              <h5 class="card-header info-color white-text text-center py-4">
+                <strong><p class="h4 text-center">{$page_title}</p></strong>
+              </h5>
+      
+              <div class="card-body px-lg-5">
+                {$notification}
+                <form style="color: #757575;" method="post" action="" enctype="multipart/form-data" class="needs-validation" novalidate>
+                  
+                  <div class="form-row">
+                    <small id="helper" class="form-text text-danger border p-2 m-2 mt-0">{$lang->static_content_notice}</small>
+                    <div class="col-md-6">
+                      <label for="select">Parent</label>
+                      <select class="browser-default custom-select mb-4" id="select" name="parent"> 
+                        {$static_parents}
+                      </select>
+                    </div>
+
+                    <div class="col-md-6">
+                      <label for="select">Content Priority</label>
+                      <select class="browser-default custom-select mb-4" id="select" name="priority"> 
+                        {$priority}
+                      </select>
+                    </div>
+                  </div>
+
+                  <label for="select">Select Icon</label>
+                  <select class="browser-default custom-select mb-4" id="select" name="icon">
+                    <option disabled>Choose an option</option>
+                    {$icons}
+                  </select>
+                  
+                  <div class="mb-4 mx-0">
+                    <label for="content_title">Content Title</label>   
+                    <input type="text" id="content_title" class="form-control" placeholder="Content Title" name="title" value="{$content_title}" required>   
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid title.
+                    </div>
+                  </div>  
+
+                  <div class="mb-4 mx-0">
+                    <label for="post_details">Main Content</label>
+                    <small id="helper" class="form-text text-info mt-0">{$lang->use_image_btn} <br> {$lang->append_profile_notice}</small>
+                    <textarea id="details" class="form-control" placeholder="Main Content..." name="main_content" required>{$main_content}</textarea>
+                    <div class="mt-0 invalid-feedback">
+                      Please write some descriptive content.
+                    </div>
+                  </div>
+                  
+                  <div class="border border-light rounded p-2">
+                    {$banner}
+                    <label for="upload-col">Upload Banner Image</label>
+                    <small id="helper" class="form-text text-info mt-0">If you add an image it will be displayed as a mast cover for the post</small>
+                    <div class="input-group mb-4" id="upload-col">
+                      <div class="input-group-prepend">
+                        <span class="input-group-text">Choose File</span>
+                      </div>
+                      <div class="custom-file">
+                        <input type="file" class="custom-file-input" id="fileInput" aria-describedby="fileInput" name="image">
+                        <label class="custom-file-label" for="fileInput">File Name</label>
+                      </div>
+                    </div> 
+                    
+                    <small id="helper" class="form-text text-info border p-2 m-2 mt-0">{$lang->banner_buttons_notice}</small>
+                    <div class="mb-4 mx-0">
+                      <label for="content_title">Banner Buttons</label>   
+                      <input type="text" id="banner_buttons" class="form-control" placeholder="Banner Buttons" name="banner_buttons" value="{$banner_buttons}">    
+                    </div>  
+                  </div>
+                  
+                  <div class="d-flex">
+                    <div class="custom-control custom-checkbox mb-4 pr-5">
+                      <input type="checkbox" class="custom-control-input" id="checkbox_footer" name="footer"{$footer_check}>
+                      <label class="custom-control-label" for="checkbox_footer">Show in footer</label>
+                    </div> 
+
+                    <div class="custom-control custom-checkbox mb-4 pr-5">
+                      <input type="checkbox" class="custom-control-input" id="checkbox_header" name="header"{$header_check}>
+                      <label class="custom-control-label" for="checkbox_header">Show in header</label>
+                    </div> 
+                  </div>
+
+                  <div class="d-flex">
+                    <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a>
+                    {$remove_banner_btn}
+                    <button class="btn btn-info my-4 btn-block" type="submit" name="create_content">{$up_btn}</button>
+                  </div>
+                </form>
+
+              </div> 
+            </div> 
+
+            <script>
+              var myEditor;
+
+              ClassicEditor
+                .create( 
+                  document.querySelector( '#post_details, #details' ) , { 
+                    ckfinder: {
+                      uploadUrl: '{$upload_script}'
+                    },
+                    image: { 
+                      toolbar: [ 'imageTextAlternative', '|', 'imageStyle:alignLeft', 'imageStyle:full', 'imageStyle:alignRight' ], 
+                      styles: [ 'full', 'alignLeft', 'alignRight' ]
+                    }                    
+                  })
+                .then( editor => {
+                  console.log( 'Editor was initialized', editor );
+                  myEditor = editor;
+                })
+                .catch( err => {
+                  console.error( err.stack );
+                });
+            </script>
