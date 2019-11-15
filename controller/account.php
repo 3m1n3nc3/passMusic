@@ -5,7 +5,8 @@ function mainContent() {
 
 	$PTMPL['page_title'] = 'Account'; 
 	
-	$PTMPL['site_url'] = $SETT['url']; 
+	$PTMPL['site_url'] = $SETT['url'];
+    $messaging = new social;
 
     $mod = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
     $adn = cleanUrls($SETT['url'] . '/index.php?page=admin');
@@ -70,6 +71,7 @@ function mainContent() {
             <label for="label">Record Label</label>
             <input type="text" id="label" class="form-control mb-4" name="label" placeholder="Record Label" value="'.$PTMPL['label'].'"> 
         ' : '';
+        $PTMPL['user_username_url'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist=').'<span id="repusr">'.$PTMPL['username'].'</span>';  
 
         if (isset($_GET['view'])) { 
             if ($_GET['view'] == 'update') {
@@ -98,51 +100,41 @@ function mainContent() {
                 $theme = new themer('account/notifications'); 
 
                 $PTMPL['page_title'] = 'Notifications'; 
-                
-                $notifications = $databaseCL->fetchNotifications();
-                if ($notifications) {
-                    $notification_list = '';
-                    foreach ($notifications as $new) {
-                        $databaseCL->track = $new['object'];
 
-                        if ($new['type'] == 1 || $new['type'] == 3) {
-                            $track = $databaseCL->fetchTracks(null, 2);
-                        } else {
+                $PTMPL['notification_list'] = showNotifications();
+            } elseif ($_GET['view'] == 'messages') {
+                $theme = new themer('account/messages'); 
 
-                        }
-                        $track = ($new['type'] == 1 ? $databaseCL->fetchTracks(null, 2) : $databaseCL->fetchAlbum($new['object']))[0];
+                $PTMPL['page_title'] = 'Messages'; 
 
-                        $by = $framework->userData($new['by'], 1);
-                        $by_profile = '<a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$by['username']).'">'.ucfirst($by['username']).'</a>';
-                        if ($new['type'] == 0) {
-                            $icon = 'users';
-                            $icon_color = ' text-info';
-                            $action = sprintf($LANG['follow_notice'], $by_profile);
-                        } elseif ($new['type'] == 1 || $new['type'] == 2) {
-                            $icon = 'heart';
-                            $icon_color = ' text-danger';
-                            $sub = $new['type'] == 1 ? $LANG['track'] : $LANG['album'];
-                            $action = sprintf($LANG['liked_notice'], $by_profile, $sub, ucfirst($track['title']));
-                        } elseif ($new['type'] == 3 || $new['type'] == 4) {
-                            $action = sprintf($LANG['comment_notice'], $by_profile);
-                        } else {
-
-                        }
-                        $notification_list .= '
-                        <div class="project_details mb-3">
-                            <div class="project_details__text text-justify">
-                                '.$action.'
-                                <br><b><i class="fa '.icon(3, $icon).$icon_color.'"></i> '.$marxTime->timeAgo($new['date']).'</b> 
-                            </div>
-                        </div>';
-                    }
-                    $PTMPL['notification_list'] = $notification_list;
+                $thread = isset($_GET['thread']) ? $_GET['thread'] : '';
+                $treader = $user['uid'];
+                $message_thread = $framework->dbProcessor("SELECT * FROM messenger WHERE `thread` = '$thread' AND `thread` != '' AND `receiver` != '$treader'", 1)[0];
+                if ($message_thread) {
+                    $message_reciever = $message_thread['receiver'];
+                    $message_sender = $message_thread['sender'];            
+                } else {
+                    $message_reciever = isset($_GET['r_id']) ? $_GET['r_id'] : '';
+                    $message_sender = isset($_GET['user_id']) ? $_GET['user_id'] : $user['uid'];
                 }
+
+                // Fetch the message
+                if (isset($_GET['mid']) || isset($_GET['thread']) || isset($_GET['r_id'])) {
+                    $PTMPL['messages'] = $messaging->messenger_master($message_sender, $message_reciever);
+
+                    // Fetch the followers
+                    // $social->active = $_GET['id'];      
+                } else {
+                    // Show ads if user id is not set
+                    $PTMPL['messages'] = '<div class="mt-3 m-2">Start a chat</div>';
+                }  
+                // $social->onlineTime = $settings['online_time']; 
+                $PTMPL['follows'] = $messaging->activeChats($user['uid'], 0);         
             }
         } else {
             $theme = new themer('account/account'); 
         }
-            
+
         $PTMPL['content'] = $theme->make();
     }
 	// Set the active landing page_title 

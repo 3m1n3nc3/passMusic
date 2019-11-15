@@ -1049,6 +1049,20 @@ class framework {
 		}	
 	}
 
+	//Get users real name
+	function realName($username, $first = null, $last = null) { 
+		if($first && $last) {
+			$name = ucfirst($first).' '.ucfirst($last);
+		} elseif($first) {
+			$name = ucfirst($first);
+		} elseif($last) {
+			$name = ucfirst($last);
+		} else {
+			$name = ucfirst($username);
+		}
+		return $name;
+	}
+
 	function mdbColors($key, $type = null) { 
 		$colors = array(
 			0 	=>	'light-text',
@@ -1539,6 +1553,375 @@ class framework {
 		}
 		return $navigation;	 
 	}
+}
+/**
+ * Manage viewing and sending of messages
+ */
+class social extends framework {
+
+
+	/**
+	* Check if the user is online
+	*/
+	function online_state($user, $gettime=null, $type=0) {
+		global $LANG, $configuration, $marxTime;
+
+		$timeNow = time();
+		$data = $this->userData($user, 1);
+		$online_time = $gettime ? $gettime : $configuration['online_time']; 
+
+		// Set icon to show online status
+		if(($timeNow - strtotime($data['online'])) > $online_time) {
+			$info = $LANG['offline'];
+			$icon = '<i class="small-icon fa fa-circle text-warning" data-toggle="tooltip" data-placement="right" data-title="'.$info.'"></i>';
+			$last = $LANG['last_seen'].' '.$marxTime->timeAgo($data['online'], 1);
+			$status = 0;
+		} else {
+			$info = $LANG['online'];
+			$icon = '<i class="small-icon fa fa-circle text-success" data-toggle="tooltip" data-placement="right" data-title="'.$info.'"></i>';
+			$last = $LANG['last_seen'].' '.$LANG['just_now'];
+			$status = 1;
+		}
+		if ($type == 0) {
+			return array('icon' => $icon, 'text' => $info, 'last_seen' => $last);
+		} else {
+			if ($status) {
+				return $status;
+			} else { 
+				$this->dbProcessor(sprintf("UPDATE " .TABLE_USERS. " SET `online` = '%s' WHERE `id` = '%s'", $timeNow, $this->db_prepare_input($user)), 0, 1);				
+			}			
+		}
+	}
+
+	/**
+	* Write or read messages from db
+	*/
+	function fetchMessages($type, $receiver, $chat_id=null, $start=null) {
+		// type 0: Read
+		// type 1: Check for new messages
+		// type 2: Fetch new message
+		// type 3: Fetch newly posted message
+		// type 4: set the message status as read
+		// type 5: fetch the last message
+		//---------------------- 
+		global $user, $configuration;
+
+		if($start == 0) {
+			$start = '';
+		} else { 
+			$start = 'AND `messenger`.`cid` < \''.$this->db_prepare_input($chat_id).'\'';
+		}
+
+		if ($type == 0) { 
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s OR (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s ORDER BY `messenger`.`cid` DESC LIMIT %s", $user['uid'], $this->db_prepare_input($receiver), $start, $this->db_prepare_input($receiver), $user['uid'], $start, ($configuration['per_messenger'] + 1));
+			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 1) {
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger WHERE `sender` = '%s' AND `receiver` = '%s' AND `seen` = '0'", $this->db_prepare_input($receiver), $user['uid']);
+			$process = $this->dbProcessor($sql, 1);
+			if ($process) {
+				return $this->fetchMessages(2, $receiver);
+			}
+			return false;
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE `sender` = '%s' AND `receiver` = '%s' AND `seen` = '0' AND `messenger`.`sender` = `users`.`uid` ORDER BY `messenger`.`cid` DESC", $this->db_prepare_input($receiver), $user['uid']); 
+			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 3) {
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) ORDER BY `messenger`.`cid` DESC LIMIT 1", $user['uid'], $this->db_prepare_input($receiver));
+			return $this->dbProcessor($sql, 1);
+		} elseif($type == 4) { 
+			$sql = sprintf("UPDATE " . TABLE_MESSAGE . " SET `seen` = '1', `date` = `date` WHERE `sender` = '%s' AND `receiver` = '%s' AND `seen` = '0'", $this->db_prepare_input($receiver), $user['uid']);
+			$this->dbProcessor($sql, 0);
+		} elseif ($type == 5) { 
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) OR (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) ORDER BY `messenger`.`cid` DESC LIMIT 1", $user['uid'], $this->db_prepare_input($receiver), $this->db_prepare_input($receiver), $user['uid']);
+			return $this->dbProcessor($sql, 1); 
+		}		
+	}
+
+	/**
+	* Display the messages
+	*/
+	function messenger($type, $receiver) {
+		global $SETT, $LANG, $user, $configuration;
+		// Type 0: all messages
+		// Type 1: Fetch just sent message
+		// Type 2: Fetch new received message
+		// Type 3: Fetch more messages
+
+		// $action = new actions;
+		$marxTime = new marxTime;
+
+		$more = $readmore = ''; 
+		$read_msg = '';
+
+		if ($type == 0) {
+			$messages = $this->fetchMessages(0, $receiver);
+		} elseif ($type == 1) {
+			$messages = $this->fetchMessages(3, $receiver);
+		} elseif ($type == 2) {
+			$messages = $this->fetchMessages(1, $receiver);
+		} elseif ($type == 3) {
+			$messages = $this->fetchMessages(0, $receiver, $this->chat_id, $this->start);
+		} 
+		
+		if (empty($messages)) {
+			return false;
+		}
+		// Update the message status to seen
+		if($type !== 1) {
+			$this->fetchMessages(4, $receiver);
+		}
+
+		$messages = array_reverse($messages);
+
+		if(array_key_exists($configuration['per_messenger'], $messages)) {
+			$readmore = 1;
+			
+			// Unset the first array element used to predict if the Load More Messages should be shown
+			unset($messages[0]);
+		}
+  
+		foreach ($messages as $cmsg) {
+			// Get the user's profile data
+			$profile_name = $this->realName($cmsg['username'], $cmsg['fname'], $cmsg['lname']);
+			$profile_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$cmsg['username']);
+			$clean_message = $this->rip_tags($cmsg['message']);
+			$clean_message = $this->decodeText($clean_message); 
+
+			$time = $marxTime->timeAgo($cmsg['date'], 1);
+
+			if ($cmsg['username'] == $user['username']) {
+				$delete = '<a onclick="delete_the('.$cmsg['cid'].', 10)" data-toggle="tooltip" data-placement="left" title="'.$LANG['delete'].'"><i class="fa fa-trash text-danger px-1 hoverable rounded-circle"></i></a>';
+				$seen = $cmsg['seen'] == 1 ? '<i class="fa fa-check text-success"></i>' : '';
+				$read_msg .= '
+			    <div class="outgoing_msg" id="message_'.$cmsg['cid'].'">
+			      <div class="sent_msg">
+			        <p>'.$clean_message.'</p>
+			        <span class="time_date">
+			        	'.$time.'
+			        	<span class="teal-text">'.$seen.'</span>
+			        	'.$delete.'
+			        </span>
+			      </div>
+			    </div>';				
+			} else { 
+				$read_msg .= '
+			    <div class="incoming_msg">
+			      <a href="'.$profile_link.'" data-toggle="tooltip" data-placement="bottom" title="@'.$profile_name.'">
+			        <div class="incoming_msg_img"> 
+			      	  <img class="rounded-circle" src="'.getImage($cmsg['photo'], 1).'" alt="'.$cmsg['username'].'"> 
+			        </div>
+			      </a>
+			      <div class="received_msg">
+			        <div class="received_withd_msg">
+			          <p>'.$clean_message.'</p>
+			          <span class="time_date">
+			          	'.$time.'
+			          </span>
+			        </div>
+			      </div>
+			    </div>';				
+			}
+		}
+		if($readmore) {
+			$more = '<div class="more-messages text-center grey-text"><a onclick="loadMessages('.htmlentities($receiver, ENT_QUOTES).', \'\', '.$messages[1]['cid'].', 1)" style="cursor: pointer;">'.$LANG['show_more'].'... </a><span class="more_loader"><span></div>';
+		}	 
+
+		return $more.$read_msg;
+	}
+
+	/**
+	* Display the messages and show send new message input
+	*/
+	function messenger_master($sender, $receiver) {
+		global $SETT, $LANG, $user, $databaseCL;  
+
+		$fetch_msg = $this->messenger(0, $receiver);
+		// Collect user data
+		$profile = $this->userData($receiver, 1);
+		$profile_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$profile['username']);
+		$profile_name = $this->realName($profile['username'], $profile['fname'], $profile['lname']);
+		// Show the user's online status 
+		$online = $this->online_state($receiver);
+		// Show the follow link 
+		$follow = clickFollow($receiver, $user['uid']);
+		// Check and block chat follower 
+		$blocked = $databaseCL->manageBlock($receiver);
+		// Check if logged user is bloked 
+		// Fetch messages
+		$fetch_messages = $this->messenger(0, $receiver);
+		$fetch_messages = $fetch_messages ? $fetch_messages : $this->messageError($LANG['too_quiet']);
+
+		// Show the input if the user is not blocked
+		if ($blocked['status'] && $blocked['user'] == $user['uid']) {
+			$input = '
+			<h5 class="border blue-grey-border rounded m-2 p-3 blue-grey-text text-center grey lighten-5"> 
+			  '.$LANG['cant_reply'].'
+			</h5>';
+		} else {
+			$input = '
+			<div class="form-group"> 
+			  <textarea class="form-control" id="write_msg" rows="3" placeholder="'.$LANG['type_message'].'..."></textarea>
+			</div>
+			<div class="text-right"> 
+				<button type="button" class="btn btn-light text send-message">Send</button>
+			</div>';
+		}
+
+        $messages = '
+        <div class="msg_history p-2" id="messages_read">
+          '.$fetch_messages.'
+        </div>
+        <div id="loader"></div>
+        <div class="p-2 border-top border-light chat-profile">
+        	<img class="rounded" src="'.getImage($profile['photo'], 1).'" alt="'.$profile['username'].'">
+        	'.$online['icon'].'
+        	<a href="'.$profile_link.'" class="px-1">'.$profile_name.'</a>
+        	'.$follow.'
+        	'.$blocked['link_icon'].'
+        	<span class="float-right">'.$online['last_seen'].'</span>
+        </div>
+        <div class="type_msg">
+          <div class="input_msg_write">
+          	<input type="hidden" value="'.$receiver.'" id="message-receiver" /> 
+          	'.$input.'
+          </div>
+        </div>';
+        return $messages;
+	}
+
+
+	/**
+	* Add the message to DB
+	*/
+	function send_message($receiver, $message) {
+		global $LANG, $user, $userApp;
+
+		$rec_data = $this->userData($receiver, 1);
+		$sender = $user['uid'];
+
+		if(strlen($message) > 300) {
+			return messageNotice($LANG['message_too_long'], 3);
+		} elseif($receiver == $user['uid']) {
+			return messageNotice($LANG['message_self'], 3);
+		} elseif(!$rec_data['username']) {
+			return messageNotice($LANG['user_not_exist'], 3);
+		}
+
+		$check_msgs = $this->fetchMessages(0, $receiver)[0];
+		if ($check_msgs) {
+			$thread = $check_msgs['thread'];
+		} else {
+			$thread = $this->generateToken(10);
+			if (!$check_msgs['thread']) {
+				$this->dbProcessor("UPDATE messenger SET `thread` = '$thread' WHERE (`sender` = '$sender' AND `receiver` = '$receiver') OR (`sender` = '$receiver' AND `receiver` = '$sender')", 0, 1);
+			}
+		}
+
+		$message = $this->rip_tags($message);
+		$sql = sprintf("INSERT INTO " . TABLE_MESSAGE . " (`sender`, `receiver`, `message`, `thread`, `seen`, `date`) VALUES ('%s', '%s', '%s', '%s', '%s', CURRENT_TIMESTAMP)", $sender, $this->db_prepare_input($receiver), $this->db_prepare_input($message), $thread, 0);
+		$send = $this->dbProcessor($sql, 0, 1);
+		if ($send == 1) {
+			return $this->messenger(1, $receiver);
+		}
+	}	
+
+	/**fetchFollowers($user_id, 1) 
+	* Fetch active chats
+	*/
+	function activeChats($user_id = null, $type = null, $string = null) {
+		global $SETT, $LANG, $configuration, $user, $marxTime;
+		$messaging = new social;
+		// Type 0: All Followers
+		// Type 1: Search Followers
+		$timeNow = time();
+		$user_id = $user_id ? $user_id : $user['uid'];
+		// $array = $this->follow($user_id, 4);
+		// $r = '';
+		// if (isset($array)) {
+		// 	foreach ($array as $key) {
+		// 		$r .= $key['leader_id'].',';
+		// 	}
+		// }
+
+		// preg_match('[\W]', substr($r,-1), $q); 
+		// $subs = $r ? rtrim($r, $q[0]) : '';
+		if ($type == 0) {
+			$sql = sprintf("
+				SELECT thread FROM messenger WHERE `thread` != '' AND (`sender` = '%s' OR `receiver` = '%s')
+				GROUP BY thread
+				ORDER BY `thread` DESC", $this->db_prepare_input($user_id), $this->db_prepare_input($user_id));
+		} elseif ($type == 1) {
+			if($string) {
+				// Search followers
+				$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE (`username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s') AND `id` IN (%s) ORDER BY `online` DESC", '%'.db_prepare_input($string).'%', '%'.db_prepare_input($string).'%', db_prepare_input($subs));
+			} else {
+				// Display current friends
+				$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE `id` IN (%s) ORDER BY `online` DESC", db_prepare_input($subs));
+			}
+		} else {
+			// Show online followers
+			$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE `id` IN (%s) AND `online` > '%s'-'%s' ORDER BY `online` DESC", db_prepare_input($subs), $timeNow, $this->online_time);
+		}
+		
+		$process = $this->dbProcessor($sql, 1);
+
+		$follow_list = '';
+		if ($type == 0 || $type == 1) {
+			if (isset($process)) {
+				foreach ($process as $thread) {
+					$thread = $thread['thread'];
+					$message = $this->dbProcessor("SELECT * FROM messenger WHERE `thread` = '$thread' ORDER BY `date` DESC", 1)[0];
+					$user_profile_id = $message['sender'] == $user_id ? $message['receiver'] : $message['sender'];
+					$profile = $this->userData($user_profile_id, 1);
+					$profile_name = $this->realName($profile['username'], $profile['fname'], $profile['lname']);
+					$active = isset($this->active) && $this->active == $key['id'] ? 'active_chat' : '';
+ 					
+ 					$last_msg = $messaging->fetchMessages(5, $user_profile_id)[0];
+					$messaging_link = cleanUrls($SETT['url'] . '/index.php?page=account&view=messages&mid='.$last_msg['cid'].'&r_id='.$user_profile_id.'&thread='.$thread);
+
+					// Set icon to show online status
+					if(($timeNow - strtotime($profile['online'])) > $configuration['online_time']) {
+						$icon = 'warning';
+					} else {
+						$icon = 'success';
+					}
+					$online = $this->online_state($profile['uid']);
+
+					$bold = $last_msg['seen'] ? '' : ' class="font-weight-bold"';
+
+					$follow_list .= '
+					<a href="'.$messaging_link.'" id="hoverable">
+					  <div class="chat_list '.$active.'">
+					    <div class="chat_people">
+					      <div class="chat_img"> 
+					        <img class="rounded-circle" src="'.getImage($profile['photo'], 1).'" alt="sunil"> 
+					      </div>
+					      <div class="chat_ib">
+					        <h5>'.$profile_name.' 
+					        	'.$online['icon'].'
+					        	<span class="chat_date">'.$marxTime->timeAgo(strtotime($last_msg['date']), 2).'</span></h5>
+					        <p'.$bold.'>'.$this->myTruncate($last_msg['message'], 80, ' ', '').'</p>
+					      </div>
+					    </div>
+					  </div>
+					</a>';
+				} 				
+			} else {
+					$follow_list = '
+					<div class="chat_list">
+						<div class="chat_people">
+							<div class="chat_ib"><h5>'.$LANG['nobody_here'].'</h5></div>
+						</div>
+					</div>';
+				}
+
+		}
+		return $follow_list;
+	}
+
+	function messageError($error) {
+		return '<div class="message-error">'.$error.'</div>';
+	}	
 }
 
 /**
@@ -2239,7 +2622,7 @@ class databaseCL extends framework {
 		// 0 or null: get Following
 		// 
 		$next = isset($this->last_id) ? " AND relationship.id > ".$this->last_id : '';
-		$limit = isset($this->limit) ? ($this->limit !== true ? " LIMIT ".$this->limit : " LIMIT ".$configuration['page_limits']) : '';
+		$limit = isset($this->limit) ? ($this->limit !== true ? " LIMIT ".$this->limit : " LIMIT ".$configuration['page_limits']) : ''; 
 		if ($type == 3) {
 			$sql = sprintf("SELECT follower_id FROM relationship WHERE `follower_id` = '%s' AND leader_id` = '%s'", $this->leader_id, $this->follower_id);
 		} if ($type == 1) {
@@ -2403,15 +2786,15 @@ class databaseCL extends framework {
 		global $user, $configuration, $user_role, $admin;	
 		
 		if (isset($this->limiter)) {
-			$limit = sprintf(' ORDER BY `date` DESC LIMIT %s, %s', $this->start, $this->limiter);
+			$limit = sprintf(' ORDER BY `date` DESC  LIMIT %s, %s', $this->start, $this->limiter);
 		} else {
 			$limit = ' ORDER BY `date` DESC';
 		}
 
-		$status = isset($this->status) ? $this->status : 0;
+		$status = isset($this->seen) ? ' AND `status` = \''.$this->seen.'\'' : '';
 		$uid = $id ? $id : $user['uid'];
 
-		$sql = sprintf("SELECT * FROM notification WHERE `uid` = '%s' AND `status` = '%s' %s", $uid, $status, $limit);
+		$sql = sprintf("SELECT * FROM notification WHERE `uid` = '%s'%s%s", $uid, $status, $limit);
 		return $this->dbProcessor($sql, 1);
 	}
 
@@ -2682,6 +3065,79 @@ class databaseCL extends framework {
 			$event = $type == 1 ? ' WHERE (`value` != \'event\' AND `value` != \'exhibition\')' : '';
 			return $this->dbProcessor(sprintf("SELECT id, title, value, info FROM categories%s", $event), 1); 
 		}
+	}
+	
+	/**
+	 * [manageBlock sets the users to user access 
+	 * to blocked or unblocked on the block user table]
+	 * @param  [type]  	$uid    	this is the id of the user to check up or block
+	 * @param  integer  $type   	if this is set to 1 the user block will be toggled 
+	 * @param  integer  $swap    	setting this to 1 will check if the logged in user is blocked
+	 *                            	else it will check if the user with the provided $uid is blocked
+	 * @param  integer  $feedback 	decide what style to return for the live block button
+	 * @return array          		an array containing the status of the block, as an icon, link or link with icon
+	 */
+	function manageBlock($uid, $type = 0, $swap = 0, $feedback = 0) {
+		// Type 0: Show the block button
+		// Type 1: Block or Unblock a user
+		global $LANG, $user;
+ 
+		$u = $this->userData($uid, 1);
+		$fullname = $this->realName($u['username'], $u['fname'], $u['lname']);
+		
+		// If the username does not exist, return nothing
+		if(empty($u)) {
+			return false;
+		} else {
+			// Check if this user was blocked
+			$sql = sprintf("SELECT * FROM blocked_users WHERE (`user_id` = '%s' AND `by` = '%s') OR (`user_id` = '%s' AND `by` = '%s')", $this->db_prepare_input($u['uid']), $user['uid'], $user['uid'], $this->db_prepare_input($u['uid']));
+
+			$state = $this->dbProcessor($sql, 1);
+			$blocked = $state[0];
+			$state = $state && count($state) > 0 ? 1 : 0;
+			
+			// Block or unblock
+			if($type) {
+				// If there is a block, unblock
+				if($state) {
+					// Remove the block
+					$sql = sprintf("DELETE FROM blocked_users WHERE `user_id` = '%s' AND `by` = '%s'", $this->db_prepare_input($u['uid']), $user['uid']); 
+					$status = 0; 
+				} else {
+					// unblock
+					$sql = sprintf("INSERT INTO blocked_users (`user_id`, `by`) VALUES ('%s', '%s')", $this->db_prepare_input($u['uid']), $user['uid']); 
+					$status = 1;
+				}
+				$action = $this->dbProcessor($sql, 0, 1); 
+			} else {
+				$status = $state; 
+			}
+		} 
+
+		// Set the icon
+		$ban_icon = '<i class="fa fa-ban text-danger px-1 hoverable rounded-circle"></i>';
+		$unban_icon = '<i class="fa fa-check-circle-o text-success px-1 hoverable rounded-circle"></i>'; 
+
+		$block_link = '<a onclick="blockAction('.$uid.', 1, '.$feedback.')" data-toggle="tooltip" data-placement="right" title="'.$LANG['block'].' '.$fullname.'" id="block_" style="cursor: pointer;">%s</a>';
+
+		$unblock_link = '<a onclick="blockAction('.$uid.', 1, '.$feedback.')" data-toggle="tooltip" data-placement="right" title="'.$LANG['unblock'].' '.$fullname.'" id="unblock_" style="cursor: pointer;">%s</a>';
+
+		if($status && $blocked['by'] == $user['uid']) {
+			// Show only icon
+			$icon = sprintf($unblock_link, $unban_icon); 
+			// Show only the link
+			$link = sprintf($unblock_link, $LANG['unblock']); 
+			// Show link and icon
+			$link_icon = sprintf($unblock_link, $unban_icon.$LANG['unblock']);  
+		} else {
+			// Show only icon
+			$icon = sprintf($block_link, $ban_icon); 
+			// Show only the link
+			$link = sprintf($block_link, $LANG['block']); 
+			// Show link and icon
+			$link_icon = sprintf($block_link, $ban_icon.$LANG['block']); 
+		}
+		return array('icon' => $icon, 'link' => $link, 'link_icon' => $link_icon, 'status' => $status, 'user' => $blocked['user_id']);		
 	}
 }
 

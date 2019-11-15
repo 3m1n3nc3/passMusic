@@ -28,7 +28,10 @@
         <!-- Username -->
         <label for="username">Username</label>
         <input type="text" id="username" class="form-control" name="username" placeholder="Username" value="{$username}" onkeyup="validateInput(event, 1)">
-        <div id="username_check" class="mb-4"></div>
+        <div class="mb-4">
+            <small id="user_username_url" class="form-text text-muted mb-4">{$user_username_url} </small>
+            <span id="username_check"></span>
+        </div>
 
         <!-- Record Label -->
         {$show_label_form}

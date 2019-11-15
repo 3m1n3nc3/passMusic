@@ -1,15 +1,23 @@
       <div class="user"> 
         <div class="user__notifications">
-          <i class="ion-ios-notifications"></i>
+          <div class="dropdown">
+            <a class="dropdown-toggle" type="button" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+              <i class="ion-ios-notifications"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-right dropdown-notification" aria-labelledby="notificationDropdown">
+              {$user_notification}
+              <div class="text-center m-2"><a href="{$all_notifications_link}">All Notifications</a></div>
+            </ul>
+          </div>
         </div>
         
         <div class="user__inbox">
-          <i class="ion-ios-archive"></i>
+          <i class="ion-ios-mail-unread"></i> <!-- <i class="ion-ios-mail-open"></i> -->
         </div>
         
         <div class="user__info">
           <span class="user__info__img">  
-            <img src="{$user_photo}" alt="Profile Picture" class="img-responsive" id="dropdownMenu1" data-toggle="dropdown"/>  
+            <img src="{$user_photo}" alt="Profile Picture" class="img-responsive"/>  
           </span>
           
           <span class="user__info__name">  

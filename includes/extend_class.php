@@ -646,6 +646,8 @@ function userNavContent() {
             $theme = new themer('homepage/user_menu'); $section = '';
             $PTMPL['user_photo'] = getImage($user['photo'], 1);
             $PTMPL['user_name'] = ucfirst($user['username']); 
+            $PTMPL['user_notification'] = showNotifications(1);
+            $PTMPL['all_notifications_link'] = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications'); 
 
             $PTMPL['logout_user'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=user'); 
             $PTMPL['profile_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['username']);
@@ -2717,4 +2719,84 @@ function projectsCard($rows, $artist_id = null) {
     </div>';
  
     return $cards;
+}    
+
+function showNotifications($type = null) {        
+    global $PTMPL, $LANG, $SETT, $configuration, $admin, $user, $user_role, $framework, $databaseCL, $marxTime; 
+
+    $framework->all_rows = $databaseCL->fetchNotifications();
+    $PTMPL['pagination'] = $framework->pagination();
+    $notifications = $databaseCL->fetchNotifications();
+
+    if ($notifications) {
+        $notification_list = '';
+        foreach ($notifications as $new) {
+            $databaseCL->track = $new['object'];
+
+            if ($new['type'] == 1 || $new['type'] == 3) {
+                // Show track links
+                $track = $databaseCL->fetchTracks(null, 2)[0];
+                $track_title = ucfirst($track['title']);
+                $track_url = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
+                $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
+            } else {
+                // Show album links
+                $album = $databaseCL->fetchAlbum($new['object'])[0];
+                $track_title = ucfirst($album['title']);
+                $track_url = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$album['safe_link']);
+                $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
+            } 
+            $_state = $new['status'] ? 'span' : 'b';
+
+            $by = $framework->userData($new['by'], 1);
+            $by_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$by['username']);
+            $by_profile = '<a href="'.$by_url.'">'.ucfirst($by['username']).'</a>';
+            $action_var_url = $track_url;
+            if ($new['type'] == 0) {
+                $icon = 'users';
+                $icon_color = ' text-info';
+                $action = sprintf($LANG['follow_notice'], $by_profile);
+                $action_var = sprintf($LANG['follow_notice'], ucfirst($by['username']));
+                $action_var_url = $by_url;
+            } elseif ($new['type'] == 1 || $new['type'] == 2) {
+                $icon = 'heart';
+                $icon_color = ' text-danger';
+                $sub = $new['type'] == 1 ? $LANG['track'] : $LANG['album'];
+                $action = sprintf($LANG['liked_notice'], $by_profile, $sub, $track_link);
+                $action_var = sprintf($LANG['liked_notice'], ucfirst($by['username']), $sub, $track_title);
+            } elseif ($new['type'] == 3 || $new['type'] == 4) {
+                $icon = 'comment';
+                $icon_color = ' text-success';
+                $sub = $new['type'] == 3 ? $LANG['track'] : $LANG['album'];
+                $action = sprintf($LANG['comment_notice'], $by_profile, $sub, $track_link);
+                $action_var = sprintf($LANG['comment_notice'], ucfirst($by['username']), $sub, $track_title);
+            } else {
+                $icon = 'bullhorn';
+                $icon_color = ' text-warning';
+                $action_var_url = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications#notification_'.$new['id']);
+                $action = $action_var = $new['content'];
+            }
+
+            if ($type == 1) {
+                $notification_list .= '
+                <a href="'.$action_var_url.'" id="nav_notification_'.$new['id'].'">
+                    <li>
+                        <div class="mx-2">
+                            '.$action_var.'
+                            <br><i class="fa '.icon(3, $icon).$icon_color.'"></i> <'.$_state.'>'.$marxTime->timeAgo($new['date']).'</'.$_state.'>
+                        </div> 
+                    </li>
+                </a>';
+            } else {
+                $notification_list .= '
+                <div class="project_details mb-3" id="notification_'.$new['id'].'">
+                    <div class="project_details__text text-justify">
+                        '.$action.'
+                        <br><i class="fa '.icon(3, $icon).$icon_color.'"></i> <'.$_state.'>'.$marxTime->timeAgo($new['date']).'</'.$_state.'> 
+                    </div>
+                </div>';
+            }
+        }
+        return $notification_list;
+    }
 }

@@ -110,8 +110,142 @@ $(document).ready(function() {
 				}
 			}
 		}); 
-	}); 
+	}); 	
+
+	$(document).on('keydown', 'textarea#write_msg', function(e) {
+		if(e.keyCode==13) {
+			sendMessage();
+		}
+	});	
+
+	$(document).on('click', ".send-message", sendMessage);
+	$(document).on('keyup', "#chat-search", searchMessages);
 }); 
+
+function sendMessage() {
+	// Store the message into var
+	var message = $('textarea#write_msg').val();
+	var rid = $('#message-receiver').attr('value');
+	if(message) {
+		// Remove chat errors if any
+		$('.chat-error').remove();
+		
+		// Show the progress animation
+		$('#loader').html(spinner(2, 7, 2, 1));
+		
+		// Reset the chat input area			
+		$('textarea#write_msg').val('');
+		 
+		$.ajax({
+			type: "POST",
+			url: site_url+"/connection/send_message.php",
+			data: 'message='+encodeURIComponent(message)+'&receiver='+rid,
+			cache: false,
+			success: function(html) {
+				// Check if in the mean time any message was sent
+				checkNewMessages();
+				
+				// Append the new chat to the div chat container
+				$('.msg_history').append(html);
+				$('#loader').hide(); 
+				
+				// Scroll at the bottom of the div (focus new content)
+				$(".msg_history").scrollTop($(".msg_history")[0].scrollHeight);
+			}
+		});
+	}
+}
+
+function loadMessages(user_id, username, chat_id, start) {
+	if(!chat_id) {
+		$('#top-header').show();
+	}
+	$('#loader, .more_loader').html(spinner(2, 7, 2, 1));
+
+	$.ajax({
+		type: "POST",
+		url: site_url+"/connection/load_message.php",
+		data: "user_id="+user_id+"&chat_id="+chat_id+"&start="+start, 
+		cache: false,
+		success: function(html) {
+			// Remove the loader animation
+			if(!chat_id) {
+				$('.msg_history').empty();
+				$('#top-header').hide();
+			} else {
+				$('.more-messages').remove();
+			} 
+			
+			// Append the new message
+			$('.msg_history').prepend(html);
+			$('#loader').hide();
+		
+			if(username) { 
+				$(".msg_history").scrollTop($(".msg_history")[0].scrollHeight);
+			} 
+		}
+	});
+}
+
+function checkNewMessages(){
+	var user_id = $('#message-receiver').attr('value');
+	// Check whether user_id is defined or not (avoid making requests when out of the chat page)
+	if(user_id) {
+		$.ajax({
+			type: "POST",
+			url: site_url+"/connection/load_message.php",
+			data: "user_id="+user_id+"&type=1",
+			success: function(html) {
+				if(html) {
+					$('.msg_history').append(html);
+					 
+					$(".msg_history").scrollTop($(".msg_history")[0].scrollHeight);
+				}
+		   }
+		});
+	}
+}
+
+function searchMessages() {
+	var q = $('#chat-search').val();
+	$('.inbox_chat').empty();
+	
+	// If the text input is 0, remove everything instantly by setting the MS to 1
+	
+	$('#search-loader').html(spinner(2, 7, 2, 1));
+	var ms = 200;
+	
+	setTimeout(function() {
+		if(q == $('#chat-search').val()) {
+			
+			$.ajax({
+				type: "POST",
+				url: site_url+"/connection/load_message.php",
+				data: 'q='+q+'&search=1&list=1',  
+				cache: false,
+				success: function(html) {
+					$('#remove').hide();
+					$('.inbox_chat').html(html);
+				}
+			});
+		}
+	}, ms);
+}
+
+function blockAction(id, type, feedback) {
+	// type 0: View status
+	// type 1: Block
+	$('#block_').html(spinner(2, 7, 2, 1));
+	$.ajax({
+		type: "POST",
+		url: site_url+"/connection/block.php",
+		data: "id="+id+"&type="+type+"&feedback=2", 
+		cache: false,
+		success: function(html) {
+			$('#block_').html(html);
+		}
+	});
+}
 
 function errorMessage(xhr, status, error) { 
    	const message = 'An Error Occurred - ' + xhr.status + ': ' + xhr.statusText + '<br> ' + error;  
@@ -510,6 +644,8 @@ function validateInput(e,type) {
       	}
 	    // Store the username into var
 	    var data = $('input#'+content).val(); console.log(type+' '+data+' '+content);
+      	(type == 1) ? $('#repusr').html(data) : '';
+
 	    if(data) { 
 	      	// Show the progress animation
 	      	$('#'+content+'_check').html(spinner(1, 4, 1, 1));

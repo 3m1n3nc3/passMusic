@@ -3,10 +3,10 @@
 #> # is used to add comments to a .gitignore file
 #
 # Ignore all files like these 
-# *.mp3
-# *.wav
-# *.amr
-# *.jpeg 
-# *.jpg
-# *.JPG
+*.mp3
+*.wav
+*.amr
+*.jpeg 
+*.jpg
+*.JPG
 *.zip

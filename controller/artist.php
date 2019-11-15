@@ -32,7 +32,15 @@ function mainContent() {
 		} else {
 			$PTMPL['list_albums'] = notAvailable('This '.$role.' has no albums yet', 'no-padding ');
 		}
-		
+
+		// Count and show the sidebar follows
+		$follower_c = $databaseCL->fetchFollowers($artist['uid'], 1);
+		$follower_f = $databaseCL->fetchFollowers($artist['uid'], 2);
+	    $PTMPL['count_followers'] = $follower_c ? count($follower_c) : 0;
+	    $PTMPL['count_following'] = $follower_f ? count($follower_f) : 0;  
+	    $PTMPL['followers'] = showFollowers($artist['uid'], 1);
+	    $PTMPL['following'] = showFollowers($artist['uid'], 2);
+
 		// Show the count and follow button of followers
 		$PTMPL['followers_display'] = display_likes_follows(null, $artist['uid']); 
 	    $PTMPL['follow_btn'] = clickFollow($artist['uid'], $user['uid']);
@@ -62,13 +70,6 @@ function mainContent() {
 	    $PTMPL['list_tracks'] = $list_tracks;
 
 	    $PTMPL['most_popular'] = mostPopular($artist['uid']);
-
-		$follower_c = $databaseCL->fetchFollowers($artist['uid'], 1);
-		$follower_f = $databaseCL->fetchFollowers($artist['uid'], 2);
-	    $PTMPL['count_followers'] = $follower_c ? count($follower_c) : 0;
-	    $PTMPL['count_following'] = $follower_f ? count($follower_f) : 0;  
-	    $PTMPL['followers'] = showFollowers($artist['uid'], 1);
-	    $PTMPL['following'] = showFollowers($artist['uid'], 2);
 
 	    // Artist stats
 	    $track_list = $databaseCL->fetchTracks($artist['uid'], 5); 

@@ -3,24 +3,34 @@
  * Time management and calculation class, written by 3m1n3nc3
  */
 class marxTime
-{
+{   
+    public $time; 
+
     /**
      * Time Difference function
      */     
     function timeAgo($time, $x=0)
     {
         // Use strtotime() function to convert your time stamps before sending to the plugin
-        $time = strtotime($time);
+        if (isset($this->time)) {
+            $time = strtotime($this->time); 
+        } else {
+            $time = strtotime($time);
+        }
         $time_difference = time() - $time;
 
-        if($time_difference < 1 && $x==0) { return 'less than 1 second ago'; }
-        $seconds = array( 12 * 30 * 24 * 60 * 60 =>  'year',
-                    30 * 24 * 60 * 60       =>  'month',
-                    24 * 60 * 60            =>  'day',
-                    60 * 60                 =>  'hour',
-                    60                      =>  'minute',
-                    1                       =>  'second', 
-                   -1                       =>  'millisecond' 
+        if($time_difference < 1) { 
+            return 'Less than 1 second ago'; 
+        }
+
+        $seconds = array( 
+            12 * 30 * 24 * 60 * 60  =>  'year',
+            30 * 24 * 60 * 60       =>  'month',
+            24 * 60 * 60            =>  'day',
+            60 * 60                 =>  'hour',
+            60                      =>  'minute',
+            1                       =>  'second', 
+           -1                       =>  'millisecond' 
         );
 
         foreach( $seconds as $secs => $ret )
@@ -33,7 +43,7 @@ class marxTime
                 $y = $ret == 'hour' || $ret == 'minute' || $ret == 'second' || $ret == 'millisecond' ? true : false;
                 // Check the request type
                 if ($x == 1) {
-                    if ($ret == 'day' && $t==1) {
+                    if ((date('d', time()) - date('d', $time)) == 1) {
                         // If the time is been more than a day but less than two show yesterday
                         return date('h:i A', $time).' | Yesterday'; 
                     } elseif ($ret == 'year') {
@@ -41,6 +51,9 @@ class marxTime
                         return date('h:i A', $time).' | '.date('F j Y', $time); 
                     } elseif ($y) {
                         // If the time is been less than or equal to a day show today
+                        if ($ret == 'second') {
+                            return 'A moment ago';
+                        }
                         return date('h:i A', $time).' | Today'; 
                     } else {
                         // If the time is been more than two days show the date

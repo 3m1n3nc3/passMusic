@@ -50,6 +50,31 @@ $LANG['liked_notice'] = '<b>%s</b> liked your %s: <b>%s</b>';
 $LANG['comment_notice'] = '<b>%s</b> commented your %s: <b>%s</b>';
 $LANG['follow_notice'] = '<b>%s</b> is now following you';
 
+// Messages
+$LANG['messenger'] = 'Messenger';
+$LANG['message'] = 'Message';
+$LANG['no_message'] = 'No Message';
+$LANG['no_new_message'] = 'No New Message';
+$LANG['view_all_message'] = 'View all Messages';
+$LANG['new_message'] = 'New Message Received';
+$LANG['new_message_count'] = 'You have %s Unread Messages';
+$LANG['chat'] = 'Chat';
+$LANG['search'] = 'Search';
+$LANG['type_message'] = 'Type a Message';
+$LANG['nobody_here'] = 'It\'s too lonely here, follow some people, to chat with them!';
+$LANG['too_quiet'] = 'Don\'t you think it\'s too quiet here?';
+$LANG['block'] = 'Block';
+$LANG['unblock'] = 'Unblock';
+$LANG['seen'] = 'Seen';
+$LANG['just_now'] = 'Just Now';
+$LANG['send'] = 'Send';
+$LANG['send_message'] = 'Send Message';
+$LANG['last_seen'] = 'Last Seen';
+$LANG['cant_reply'] = 'You cannot reply to this chat!';
+$LANG['message_self'] = 'You can\'t send a message to yourself';
+$LANG['user_not_exist'] = 'This user does not exist';
+$LANG['message_too_long'] = 'The message was too long and could not be posted';
+
 // Player controls
 $LANG['prev_track'] = 'Previous Track';
 $LANG['play'] = 'Play';
@@ -63,6 +88,11 @@ $LANG['volume'] = 'Volume';
 
 
 $LANG['administrator'] = 'Administrator';
+$LANG['online'] = 'Online';
+$LANG['offline'] = 'Offline';
+$LANG['last_seen'] = 'Last seen';
+$LANG['delete'] = 'Delete';
+$LANG['show_more'] = 'Show More';
 
 // Headings
 $LANG['approved'] = 'Approved';
@@ -102,7 +132,6 @@ $LANG['upload_profile_photo'] = 'Upload profile photo';
 $LANG['upload_cover_photo'] = 'Upload cover photo';
 $LANG['select_photo'] = 'Choose photo';
 $LANG['upload_photo'] = 'Upload photo';
-
 
 $LANG['no_stem_added'] = 'No stem files have been added to the project';
 $LANG['no_colab_request'] = 'No new colab request';
