@@ -1,0 +1,45 @@
+<div class="section">
+
+    <!-- Default form register -->
+    <h2 class="mb-4">{$page_title}</h2>
+ 
+    <div class="text-left rounded p-5 mb-4">
+        
+       {$notification}
+
+        <div class="row inbox_msg">
+            <div class="col-md-8 mb-5 border-right py-5">
+                {$messages}
+            </div>
+            <div class="col-md-4 mb-5">
+                <div class="headind_srch">
+                    <div class="recent_heading">
+                        <h4>Active {$lang->chat}</h4>
+                    </div> 
+                </div> 
+                <div class="inbox_chat">
+                    {$follows}
+                </div>
+            </div>
+            <div class="col-md-4 my-5">
+                <div class="headind_srch">
+                    <div class="recent_heading">
+                        <h4>Followers</h4>
+                    </div>
+                    <div class="srch_bar">
+                        <div class="stylish-input-group">
+                            <input type="text" class="search-bar" id="chat-search" placeholder="{$lang->search}" > 
+                        </div>
+                    </div>
+                </div>
+                <div id="search-loader"></div>
+                <div class="inbox_chat">
+                    {$follows}
+                </div>
+            </div>
+        </div>
+
+        {$pagination}
+
+    </div> 
+</div>  
