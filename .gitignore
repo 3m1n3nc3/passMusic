@@ -6,7 +6,7 @@
 *.mp3
 *.wav
 *.amr
-# *.jpeg 
-# *.jpg
-# *.JPG
+*.jpeg 
+*.jpg
+*.JPG
 *.zip
