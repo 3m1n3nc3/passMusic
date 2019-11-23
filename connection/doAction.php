@@ -1,5 +1,6 @@
 <?php 
 require_once(__DIR__ .'/../includes/autoload.php');
+  $messaging = new social;
 
   $do = $delete = 0;
   if ($_POST['type'] == 6) {
@@ -72,8 +73,10 @@ require_once(__DIR__ .'/../includes/autoload.php');
         $delete = $framework->dbProcessor($sql, 0, 1);
     } else {
 
-      // Set the notification
-      $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `type`) VALUES ('%s', '%s', '0')", $_POST['item_id'], $user['uid']), 0, 1); 
+      // Set the notification 
+      $messaging->sender = $user['uid'];
+      $messaging->receiver = $_POST['item_id'];
+      $messaging->sendNotification(1);
 
       // Add the follow
       $sql = sprintf("INSERT INTO relationship (`follower_id`, `leader_id`) VALUES ('%s', '%s')", $user['uid'], $_POST['item_id']);
@@ -96,9 +99,10 @@ require_once(__DIR__ .'/../includes/autoload.php');
 
       } else { 
 
-        // Set the notification
-        $notif = $_POST['type'] == 2 ? 1 : 2;
-        $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `object`, `type`) VALUES ('%s', '%s', '%s', '%s')", $_POST['item_id'], $user['uid'], $_POST['item_id'], $notif), 0, 1); 
+        // Set the notification 
+        $messaging->sender = $user['uid'];
+        $messaging->receiver = $_POST['item_id'];
+        $messaging->sendNotification(2, $_POST['type'], $_POST['item_id']); // item_id should be the receivers_id, check to confirm if working
 
         // Add the like
         $sql = sprintf("INSERT INTO %s (`type`, `user_id`, `item_id`) VALUES ('%s', '%s', '%s')", $_POST['table'], $_POST['type'], $user['uid'], $_POST['item_id']);

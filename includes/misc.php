@@ -18,7 +18,7 @@ $PTMPL['template_url'] = $SETT['template_url'] = $SETT['template_path'].'/'.$SET
 $PTMPL['full_template_url'] = $SETT['full_template_url'] = $SETT['url'].'/'.$PTMPL['template_url'];
 $SETT['working_dir'] = $_SERVER["DOCUMENT_ROOT"];
 
-$_SESSION['username'] = 'davidson';
+// $_SESSION['username'] = 'davidson';
 // Check who is logged in right now
 if (isset($_SESSION['username'])) { 
 	$user = $framework->userData($_SESSION['username'], 2);
@@ -26,7 +26,7 @@ if (isset($_SESSION['username'])) {
 } elseif (isset($_COOKIE['username'])) {
 	$user = $framework->userData($_COOKIE['username'], 2);
 } 
-$_SESSION['admin']='super';
+// $_SESSION['admin']='super';
 if (isset($_SESSION['admin'])) { 
 	$admin = $framework->administrator(2, $_SESSION['admin']); 
 } elseif (isset($_COOKIE['admin'])) {

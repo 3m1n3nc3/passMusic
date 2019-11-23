@@ -1,0 +1,45 @@
+<div class="section">
+
+    <div class="panel panel-default"> 
+      <div class="panel-body">  
+        <div class="row header-summary mt-3">
+            <div class="col-md-12">
+
+                <!-- Default form register -->
+                <h2 class="mb-4">{$page_title}</h2>
+                <hr>
+                <form method="post" action="" class="text-left rounded p-5 mb-4"> 
+                   {$notification} 
+
+                    <!-- Username -->
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" class="form-control mb-4" placeholder="Username" value="{$username}">  
+
+                    <!-- Password -->
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Password" aria-describedby="PasswordHelp">
+                    <small id="PasswordHelp" class="form-text text-muted mb-4"> At least 8 characters and 1 digit </small>
+
+                    <!-- Newsletter -->
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="remember" name="remember"{$remember}>
+                        <label class="custom-control-label" for="Remember">Remember me</label>
+                    </div>
+                    <!-- Sign up button -->
+                    <button class="btn btn-info my-4" type="submit" name="login">Login</button> 
+                    <a href="{$login_url}" class="h3 mx-5"><span class="font-weight-bold"> Not yet registered? </span></a>
+
+                    <hr>
+                    <!-- Terms of service -->
+                    <p>By 
+                        <em>Login in</em> you agree to our
+                        <a href="" target="_blank">terms of service</a></p>
+                </form>
+
+            </div>  
+        </div>
+      </div>     
+    </div>
+    
+    {$upload_photo_modal}
+</div>

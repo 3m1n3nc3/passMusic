@@ -124,11 +124,11 @@ ul ul, ul ol, ol ol, ol ul {
   border: none;
 }
 .header .user__actions .dropdown-menu:before {
-  font-family: "Ionicons";
-  content: "\f365";
+  font-family: "fontAwesome";
+  content: "\f0de";
   position: absolute;
-  top: -30px;
-  right: 7px;
+  top: -20px;
+  right: 1px;
   color: #282828;
   font-size: 36px;
 }
@@ -1719,6 +1719,7 @@ animation: seeking .5s linear infinite, seeking-in .5s linear;
 }
 
 .chat-profile {
+  position: relative;
   color: #747474;
   display: block;
   font-size: 12px;
@@ -1739,8 +1740,8 @@ animation: seeking .5s linear infinite, seeking-in .5s linear;
 }
 
 .chat-profile .small-icon{
-  left: 40px;
-  bottom: 104px;
+  left: 20px;
+  bottom: 5px;
   position: absolute;
 }
 
@@ -1761,9 +1762,14 @@ img{
 }
 
 .inbox_msg {
-  border: 1px solid #c4c4c4;
+  background: #282828;
+  border-radius: 15px;
   clear: both;
   overflow: hidden;
+}
+
+.inbox_msg .border, .inbox_msg .border-right, .inbox_msg .border-left, .inbox_msg .border-top, .inbox_msg .border-bottom {
+  border-color: #525151 !important;
 }
 
 .top_spac{ 
@@ -1772,34 +1778,40 @@ img{
 
 .recent_heading {
   float: left; 
-  width:40%;
+  width: 100%;
+}
+
+.recent_heading h4 {
+  color: #aaaaaa;
+  font-size: 21px;
+  margin: auto;
+}
+
+.col-md-4.small-padding {
+  padding: 5px 0px 5px 5px;
 }
 
 .srch_bar {
   display: inline-block;
   text-align: right;
   width: 100%; padding:
+  margin-top: 5px;
 }
 
-.headind_srch{ 
+.headind_srch { 
   padding:10px 29px 10px 20px; 
-  overflow:hidden; 
-  border-bottom:1px 
+  overflow:hidden;  
   solid #c4c4c4;
 }
 
-.recent_heading h4 {
-  color: #05728f;
-  font-size: 21px;
-  margin: auto;
-}
-
 .srch_bar input{ 
-  border:1px solid #cdcdcd; 
-  border-width:0 0 1px 0; 
-  width:80%; 
-  padding:2px 0 4px 6px; 
-  background:none;
+  background: rgba(0, 0, 0, 0.58) none repeat scroll 0 0;
+  color: #4c4c4c;
+  border: medium none;
+  border-width: 0 0 1px 0;
+  border-radius: 5px;
+  width: 100%; 
+  padding: 2px 0 4px 6px;  
 }
 
 .srch_bar .input-group-addon button {
@@ -1848,18 +1860,19 @@ img{
 }
 
 .chat_list {
-  border-bottom: 1px solid #c4c4c4;
-  margin: 0;
-  padding: 18px 5px 10px;
+  background: rgba(17, 17, 17, 0.51);
+  border-radius: 10px;
+  margin-bottom: 2px;
+  padding: 18px 8px 10px;
 }
 
 .chat_list:hover {
-    background-color: #dedcdc;
+  background-color: #0e0e0e;
 }
 
 .inbox_chat { 
   height: auto; 
-  max-height: 520px;
+  max-height: 250px;
   overflow-y: scroll;
 }
 
@@ -1876,16 +1889,23 @@ img{
   width: 6%;
 }
 
+.incoming_msg {
+  margin: 26px 0px 26px;
+}
+
 .received_msg {
   display: inline-block;
   padding: 0 0 0 10px;
   vertical-align: top;
   width: 92%;
- }
+}
 
- .received_withd_msg p {
-  background: #ebebeb none repeat scroll 0 0;
-  border-radius: 3px;
+.received_withd_msg p {
+  background: #d8dadc none repeat scroll 0 0;
+  border-top-left-radius: 2px;
+  border-top-right-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
   color: #646464;
   font-size: 14px;
   margin: 0;
@@ -1901,7 +1921,7 @@ img{
 }
 
 .received_withd_msg { 
-  width: 57%;
+  width: 65%;
 }
 
 .mesgs {
@@ -1910,9 +1930,12 @@ img{
   width: 60%;
 }
 
- .sent_msg p {
-  background: #243a51 none repeat scroll 0 0;
-  border-radius: 3px;
+.sent_msg p {
+  background: #525151 none repeat scroll 0 0; 
+  border-top-left-radius: 10px;
+  border-top-right-radius: 0px;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
   font-size: 14px;
   margin: 0; color:#fff;
   padding: 5px 10px 5px 12px;
@@ -1926,11 +1949,12 @@ img{
 
 .sent_msg {
   float: right;
-  width: 46%;
+  width: 65%;
 }
 
 .input_msg_write input {
-  background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+  background: rgba(0, 0, 0, 0.64) none repeat scroll 0 0;
+  border-radius: 15px;
   border: medium none;
   color: #4c4c4c;
   font-size: 15px;
@@ -1939,7 +1963,7 @@ img{
 }
 
 .input_msg_write textarea {
-  background: rgba(0, 0, 0, 0) none repeat scroll 0 0;
+  background: rgba(0, 0, 0, 0.58) none repeat scroll 0 0;
   border: medium none;
   color: #4c4c4c;
   font-size: 15px;
@@ -1949,8 +1973,7 @@ img{
   min-height: 48px; 
 }
 
-.type_msg {
-  border-top: 1px solid #c4c4c4;
+.type_msg { 
   position: relative;
 }
 
@@ -1981,6 +2004,23 @@ img{
   font: normal normal normal 10px/1 FontAwesome;
   font-size: x-small;
 }
+
+.delete-msg {
+  cursor: pointer;
+}
+
+.delete-msg i:hover {
+  color: red;
+}.delete-msg i:hover {
+  color: #716666;
+  text-shadow: 2px 0px 5px #1f0303;
+}
+
+.delete-msg i:hover {
+  color: #716666;
+  text-shadow: 2px 0px 5px #1f0303;
+}
+
 /* ------------------------------- */
 /* End Messenger
 ---------------------------------- */

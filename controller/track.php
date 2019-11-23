@@ -10,6 +10,17 @@ function mainContent() {
 	$databaseCL->track = isset($_GET['track']) ? $_GET['track'] : (isset($_GET['id']) ? $_GET['id'] : '');
 	$track = $databaseCL->fetchTracks(null, 2)[0];
 
+	// Fetch similar tracks
+	$PTMPL['related_tracks'] = relatedItems(3, $track['id']);
+
+	// Show the track stat
+    $databaseCL->limit = $configuration['page_limits'];
+    $PTMPL['sidebar_statistics'] = sidebarStatistics($track['id'], 1);
+
+    // Show the secondary navigation bar
+    $PTMPL['secondary_navigation'] = secondaryNavigation($track['artist_id']);
+
+    // Show the track data
 	$PTMPL['track_author_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$track['username']);
 	$PTMPL['track_art'] = $PTMPL['cover_photo'] = getImage($track['art'], 1, 1); 
  
@@ -44,16 +55,6 @@ function mainContent() {
 	$play_class = '<button class="button-dark" id="top-play-btn"> <i class="ion-ios-play jp-play"></i> Play </button>';
 	$play_track = getTrack($track, $play_class);
 	$PTMPL['play_track'] = $track ? $play_track : $play_class;
-
-	// Fetch similar tracks
-	$PTMPL['related_tracks'] = relatedItems(3, $track['id']);
-
-	// Show the track stat
-    $databaseCL->limit = $configuration['page_limits'];
-    $PTMPL['sidebar_statistics'] = sidebarStatistics($track['id'], 1);
-
-    // Show the secondary navigation bar
-    $PTMPL['secondary_navigation'] = secondaryNavigation($track['artist_id']);
 
     // Show the small stats bar
     $sidebar = new themer('artists/small_right_sidebar');

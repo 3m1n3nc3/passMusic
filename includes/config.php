@@ -53,6 +53,7 @@ $action = array('homepage'			=> 'homepage',
 				'distribution'		=> 'distribution',
 				'admin'				=> 'admin',
 				'account'			=> 'account',
+				'search'			=> 'search',
 				'static'			=> 'static'
 				); 
 

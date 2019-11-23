@@ -1,4 +1,4 @@
-<?php 
+  <?php 
 require_once(__DIR__ .'/../includes/autoload.php');
 
 $post_type = $_POST['type']; 

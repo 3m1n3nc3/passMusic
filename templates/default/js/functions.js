@@ -119,13 +119,38 @@ $(document).ready(function() {
 	});	
 
 	$(document).on('click', ".send-message", sendMessage);
+
 	$(document).on('keyup', "#chat-search", searchMessages);
-}); 
+
+	$(document).on('click', "#notificationDropdown", function() { 
+		$('.dropdown-notification-inner').html('<div class="text-center">'+spinner(2, 7, 2)+'</div>');
+		checkNewNotifications(1);
+	});
+
+	$(document).on('click', "#messageDropdown", function() {
+		$('.dropdown-message-inner').html('<div class="text-center">'+spinner(2, 7, 2)+'</div>');  
+	});
+});
+
+// Check for new notifications, messages and incoming messages
+console.log('timeOut interval and suspend: ', timeoutInt.interval, timeoutInt.suspend);
+safeInterval(function(){
+  // Refresh the notifications
+   // loadNotifications(0);
+   checkNewNotifications();
+  // Refresh the chat 
+  	if (page_name == 'messages' && $('#message-receiver').attr('value')) {
+   		checkNewMessages();
+  	}
+}, timeoutInt.interval, timeoutInt.suspend); // timeoutInt.interval, timeoutInt.suspend default: 5000,300
 
 function sendMessage() {
 	// Store the message into var
 	var message = $('textarea#write_msg').val();
 	var rid = $('#message-receiver').attr('value');
+	if (!rid) {
+		var rid = $('#message-group').attr('value');
+	}
 	if(message) {
 		// Remove chat errors if any
 		$('.chat-error').remove();
@@ -206,9 +231,32 @@ function checkNewMessages(){
 	}
 }
 
+function checkNewNotifications(view) { 
+	// Check whether user_id is defined or not (avoid making requests when out of the chat page) 
+	if (view) { var status = '&view='+view;} else {var status = '';}
+	$.ajax({
+		type: "POST",
+		url: site_url+"/connection/load_message.php",
+		data: "type=2"+status,
+		dataType: "JSON",
+		success: function(response) {
+			if(response) {
+				$('.dropdown-notification-inner').html(response.notifications); 
+				$('.dropdown-message-inner').html(response.messages); 
+				$('#notification-counter').html(response.count_noti);
+				$('#message-counter').html(response.count_msg);
+			}
+	   	},
+	    error: function(xhr, status, error){
+	      $('.dropdown-notification-inner').html(errorMessage(xhr, status, error));
+	      $('.dropdown-message-inner').html(errorMessage(xhr, status, error));
+	    }
+	}); 
+}
+
 function searchMessages() {
 	var q = $('#chat-search').val();
-	$('.inbox_chat').empty();
+	$('#followers_chat').empty();
 	
 	// If the text input is 0, remove everything instantly by setting the MS to 1
 	
@@ -224,12 +272,53 @@ function searchMessages() {
 				data: 'q='+q+'&search=1&list=1',  
 				cache: false,
 				success: function(html) {
-					$('#remove').hide();
-					$('.inbox_chat').html(html);
+					$('#search-loader').hide();
+					$('#followers_chat').html(html);
 				}
 			});
 		}
 	}, ms);
+}
+
+// Send notifications to users
+$('.send_msg_notn').on('click', function() {
+  var receiver = $(this).data('receiver');
+  toggleModal('sendMsgModal');
+  $('#recipient_id').attr('value', receiver); 
+  $('#recipient_name').html($(this).data('username'));
+  $('#subject').val(''); 
+  $('#message').val(''); 
+  $('#response').html('');
+});
+
+$('#sendMultipleNotifications').on('click', function() {
+  $('#subject').val(''); 
+  $('#message').val(''); 
+  $('#recipient_id').attr('value', ''); 
+  $('#recipient_name').html('All Users');
+  $('#response').html('');
+});
+
+function sendNotificationMsg(receiver) {
+  var receiver = $('#recipient_id').attr('value');
+  var subject = $('#subject').val(); 
+  var message = $('#message').val(); 
+  var type = $('input[name="message_type"]:checked').val(); 
+
+  $('#response').html('<div class="text-center">'+spinner(0, 1, 0, 1)+'</div>');
+
+  $.ajax({
+    type: 'POST',
+    url: site_url + '/connection/send_notification.php',
+    data: {receiver: receiver, subject: subject, message: message, type: type},
+    dataType: 'JSON',
+    success: function (data) {
+      $('#response').html(data.msg); 
+    },
+    error: function(xhr, status, error){
+      $('#response').html(errorMessage(xhr, status, error));
+    }
+  });
 }
 
 function blockAction(id, type, feedback) {
@@ -247,17 +336,39 @@ function blockAction(id, type, feedback) {
 	});
 }
 
-function errorMessage(xhr, status, error) { 
-   	const message = 'An Error Occurred - ' + xhr.status + ': ' + xhr.statusText + '<br> ' + error;  
-    const errorMessage = 
-    '<div class="card m-2 text-center">'+
-		'<div class="card-header p-2">Server Response: </div>'+
-		'<div class="card-body p-2 text-info">'+
-			'<div class="card-text font-weight-bold text-danger">'+message+'</div>'
-			+xhr.responseText+
-		'</div>'+
-	'</div>';
-	return errorMessage;
+function firstDelete(data) { 
+	// Type 0: Notifications 
+	// Type 1: Message
+	var type = data.type;	console.log(data); 
+	var query = {data:data};
+	var action = data.action;
+ 
+	$('#'+action+'_'+data.id).html(spinner(2, 7, 2, 1));
+
+	if (deleteConfirm() == true) {
+		$.ajax({
+			type: "POST",
+			url: site_url+"/connection/delete.php",
+			data: query,
+			dataType: "JSON", 
+			success: function(html) {
+				if(type == 0) {
+					$('#set-message_'+data.id).html(html);
+					$('#'+action+'_'+data.id).fadeOut(500, function() { $('#notification_'+data.id).remove(); }); 
+				} else if(type == 1) { 
+					if (html.status == 1) {
+						$('#'+action+'_'+data.id).fadeOut(500, function() { $('#message_'+data.id).remove(); });
+					} else {
+						$.notify(html.status, 'warn');
+					}
+				}
+			},
+		    error: function(xhr, status, error){
+		      $('#'+action+'_'+data.cid).html(errorMessage(xhr, status, error));
+		    }
+
+		});
+	}
 }
 
 function projectFiles(type, project, id) {
@@ -634,14 +745,13 @@ $(document).on('mouseup', function() {
 });
 
 // Validate a username
-function validateInput(e,type) {
+function validateInput(e,type, selector) {
 	charStr = String.fromCharCode(e.keyCode); console.log(charStr);
   	if(/[a-zA-Z0-9-_]/.test(charStr) || e.keyCode == 13 || e.keyCode == 16 || e.keyCode == 8) {
-      	if (type == 1) {
-      		var content = 'username';
-      	} else {
-      		var content = 'email';
-      	}
+  		var attribute = $(selector).attr('id');console.log(attribute);
+ 
+      	var content = attribute; 
+
 	    // Store the username into var
 	    var data = $('input#'+content).val(); console.log(type+' '+data+' '+content);
       	(type == 1) ? $('#repusr').html(data) : '';
@@ -653,7 +763,7 @@ function validateInput(e,type) {
 	      	$.ajax({
 	        	type: "POST",
 	        	url: site_url+"/connection/validation.php",
-	        	data: 'data='+encodeURIComponent(data)+'&type='+type,
+	        	data: 'data='+encodeURIComponent(data)+'&type='+type+'&attribute='+attribute,
 	        	cache: false,
 	        	success: function(html) {
 	        		$('#'+content+'_check').html(html);

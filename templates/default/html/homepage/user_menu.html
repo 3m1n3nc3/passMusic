@@ -3,16 +3,27 @@
           <div class="dropdown">
             <a class="dropdown-toggle" type="button" id="notificationDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
               <i class="ion-ios-notifications"></i>
+              <div class="notification-pill" id="notification-counter"></div>
             </a>
             <ul class="dropdown-menu dropdown-menu-right dropdown-notification" aria-labelledby="notificationDropdown">
-              {$user_notification}
+              <div class="dropdown-notification-inner"></div>
               <div class="text-center m-2"><a href="{$all_notifications_link}">All Notifications</a></div>
             </ul>
           </div>
         </div>
-        
+        <!-- <span class="badge">2</span> -->
         <div class="user__inbox">
-          <i class="ion-ios-mail-unread"></i> <!-- <i class="ion-ios-mail-open"></i> -->
+          <div class="dropdown">
+            <a class="dropdown-toggle" type="button" id="messageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+              <i class="ion-ios-mail-unread"></i>
+              <div class="notification-pill" id="message-counter"></div>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-right dropdown-message" aria-labelledby="messageDropdown">
+              <div class="dropdown-message-inner"></div>
+              <div class="text-center m-2"><a href="{$all_notifications_link}">All Notifications</a></div>
+            </ul>
+          </div>
+           <!-- <i class="ion-ios-mail-open"></i> -->
         </div>
         
         <div class="user__info">
@@ -30,12 +41,8 @@
             <button class="dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
             <i class="ion-ios-arrow-down"></i>
             </button>
-            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu1">
-              <li><a href="{$profile_link}">Profile</a></li>
-              <li><a href="{$account_link}">Settings</a></li>
-              <li><a href="{$admin_link}">Admin</a></li>
-              <li><a href="{$logout_user}">Log Out</a></li>
-              <li><a href="{$logout_admin}">Admin Log Out</a></li>
+            <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu1">  
+              {$user_links}
             </ul>
           </div>
         </div>

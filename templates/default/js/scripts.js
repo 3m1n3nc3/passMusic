@@ -12,6 +12,39 @@ $(function () {
   });
 })
 
+// Check for errors and set a timeout and limit for setTimeout()
+function safeInterval(func, wait, times){
+    var interv = function(w, t){
+        return function(){
+            if(typeof t === "undefined" || t-- > 0){
+                setTimeout(interv, w);
+                try{
+                    func.call(null);
+                }
+                catch(e){
+                    t = 0;
+                    throw e.toString();
+                }
+            }
+        };
+    }(wait, times);
+
+    setTimeout(interv, wait);
+};
+
+function errorMessage(xhr, status, error) { 
+    const message = 'An Error Occurred - ' + xhr.status + ': ' + xhr.statusText + '<br> ' + error;  
+    const errorMessage = 
+    '<div class="card m-2 text-center">'+
+    '<div class="card-header p-2">Server Response: </div>'+
+    '<div class="card-body p-2 text-info">'+
+      '<div class="card-text font-weight-bold text-danger">'+message+'</div>'
+      +xhr.responseText+
+    '</div>'+
+  '</div>';
+  return errorMessage;
+}
+
 function toggleModal(modal_name) { 
   // $('#'+modal_name).modal('dispose');
   $('#'+modal_name).modal('toggle');
@@ -25,6 +58,17 @@ function checkbox(boxname) {
             p = '0'; }        
     });
     return p;
+}
+
+function deleteConfirm(conf_) {
+  // conf_ : predefined confirmation message
+  var quest = conf_ ? conf_ : 'Are you sure you want to delete?';
+  var confirmed = confirm(quest);
+  if (confirmed == true) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function deleteItem(options) {
@@ -266,6 +310,7 @@ clipboard.on('error', function(e) {
     }
 }(jQuery);
 
+// Set users country selection
 $('.select-country').on('change', function () {
     try {
         let target = $('#' + $(this).attr('data-target'));

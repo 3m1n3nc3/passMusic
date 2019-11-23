@@ -6532,13 +6532,114 @@ fieldset:disabled a.btn {
   padding: 0px !important;
 }
 
-.dropdown-notification {
+.user__inbox .dropdown .dropdown-menu:before, .user__notifications .dropdown .dropdown-menu:before {
+  font-family: "fontAwesome";
+  content: "\f0de";
+  position: absolute;
+  top: -23px;
+  right: 0px;
+  color: #282828;
+  font-size: 36px;
+}
+
+.dropdown-notification, .dropdown-message {
+  top: 50px;
   min-width: 360px;
   background: #282828;
 }
 
-.dropdown-notification li {
+.dropdown-notification .dropdown-notification-inner, .dropdown-message .dropdown-message-inner {
+  max-height: 500px;
+  overflow-y: scroll;
+}
+
+.dropdown-notification li, .dropdown-message li {
   border-bottom: 1px solid #515151;
   padding-top: 5px;
   padding-bottom: 5px;
+}
+
+.notification-pill {
+  position: relative;
+  display: inline;
+  cursor: pointer;
+}
+
+.notification-pill .counter { 
+  display: inline-block;
+  min-width: 10px;
+  padding: 2px 4px;
+  font-size: 10px;
+  font-weight: bold;
+  line-height: 1;
+  color: #fff;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: middle;
+  background-color: #3c763d;
+  border-radius: 10px;
+  position: absolute;
+  bottom: 0px;
+  right: 6px;
+}
+
+.notification-pill .counter:hover { 
+  background: #3d7333; 
+}
+
+.main-search-box {
+  margin: 0 auto 0 auto;
+  min-width: 410px;
+  width: var(--content-width);
+  position: relative;
+} 
+
+.main-search-box > input { 
+  border-radius: 22px;
+  border: none;
+  background: white;
+  color: #181818;
+  font-size: 16px;
+  height: 44px;  
+  padding-left: 40px;
+  padding-right: 115px;
+  outline: none; 
+  box-shadow: 0 1px 6px 0 rgba(32, 33, 36, .28); 
+  box-sizing: border-box;
+  left: 0;
+  margin: 0;  
+  width: 100%;
+} 
+
+.main-search-box > button {
+  position: absolute;
+  right: 0px;
+  border-top-right-radius: 22px;
+  border-bottom-right-radius: 22px;
+  border: none;
+  background: #d7881e;
+  color: #ffffff;
+  font-size: 16px;
+  height: 44px;
+  outline: none;
+  box-shadow: 0 1px 6px 0 rgba(32, 33, 36, .28);
+  box-sizing: border-box;
+  margin: 0;
+  width: 20%;
+}
+
+.main-search-box > button:hover { 
+  background: #bb6f07;
+  box-shadow: 5px 5px 15px black;
+}
+
+#main-search-box-icon {  
+  bottom: 0;
+  height: 30px;
+  left: 0;
+  margin: auto 0;
+  margin-inline-start: 16px;
+  position: absolute;
+  top: 0;
+  font-size: 24px;
 }

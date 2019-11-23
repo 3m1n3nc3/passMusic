@@ -443,7 +443,7 @@ function mainContent() {
 											<img class="card-img-top" src="'.$photo.'" alt="'.$name.'" width="200px" height="200px;">
 											<div class="card-body text-center" style="padding: 5px;">
 												<h4 class="card-title">'.$name.'</h4>
-												<a href="'.$update.'" class="btn btn-primary">Update Profile</a>
+												<a href="'.$update.'" class="btn btn-primary mb-1">Update Profile</a>
 												'.$profile.'
 											</div>
 										</div>
@@ -458,7 +458,8 @@ function mainContent() {
 					} else {
 						$theme = new themer('distribution/artist_services');
 					}
-				} elseif ($_GET['action'] == 'sales-report') {
+				} 
+				elseif ($_GET['action'] == 'sales-report') {
 					$stat = $databaseCL->releaseStats($user['uid'])[0];
 					$dataset = '';
 					$quarterly_data = dataSet();
@@ -520,6 +521,68 @@ function mainContent() {
 					$PTMPL['incomplete_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases&stat=1');
 
 					$theme = new themer('distribution/sales_reports');
+				} 
+				elseif ($admin && $_GET['action'] == 'management_tools') {
+					// This is to update the basic users profile information
+					$theme = new themer('distribution/sales_reports');
+
+					if (isset($_GET['update_user']) && $_GET['update_user'] !== '') {
+						$theme = new themer('distribution/mt_artist_update');
+						// Fetch the user data
+						$userdata = $framework->userData($framework->db_prepare_input($_GET['update_user']), 1);
+						// Display the user data
+						// 
+						if ($userdata) { 
+							$PTMPL['profile_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
+							$PTMPL['fullname'] = $framework->realName($userdata['username'], $userdata['fname'], $userdata['lname']);
+							$PTMPL['fname'] = isset($_POST['fname']) ? $framework->db_prepare_input($_POST['fname']) : $userdata['fname'];
+							$PTMPL['lname'] = isset($_POST['lname']) ? $framework->db_prepare_input($_POST['lname']) : $userdata['lname'];
+							$PTMPL['label'] = isset($_POST['label']) ? $framework->db_prepare_input($_POST['label']) : $userdata['label'];
+							$PTMPL['email'] = isset($_POST['email']) ? $framework->db_prepare_input($_POST['email']) : $userdata['email'];
+							$PTMPL['description'] = isset($_POST['description']) ? $framework->db_prepare_input($_POST['description']) : $userdata['intro'];
+							$user_role = (isset($_POST['role']) ? $framework->db_prepare_input($_POST['role']) : $userdata['role']);
+							$PTMPL['user_role'.$user_role] = ' selected="selected"';
+							$PTMPL['photo'] = getImage($userdata['photo'], 1);
+
+							if (isset($_POST['update_user'])) {
+								$do_update = $framework->dbProcessor(sprintf("UPDATE users SET `fname` = '%s', `lname` = '%s', `label` = '%s', `email` = '%s', `intro` = '%s', `role` = '%s' WHERE `uid` = '%s'", $PTMPL['fname'], $PTMPL['lname'], $PTMPL['label'], $PTMPL['email'], $PTMPL['description'], $user_role, $userdata['uid']), 0, 1);
+								if ($do_update == 1) {
+									$PTMPL['notification'] = messageNotice('Basic user data for '.$PTMPL['fullname'].' has been updated', 1);
+								} else {
+									$PTMPL['notification'] = messageNotice($do_update);
+								}
+							}
+						}
+					}
+					elseif (isset($_GET['update_track']) && $_GET['update_track'] !== '') {
+						$theme = new themer('distribution/mt_track_update');
+						// Fetch the track dataset
+						$databaseCL->track = $framework->db_prepare_input($_GET['update_track']);
+						$trackdata = $databaseCL->fetchTracks(0, 2)[0];
+
+						if ($trackdata) {
+							$PTMPL['update_artist_url'] = cleanUrls($SETT['url'].'/index.php?page=distribution&action=management_tools&update_user='.$trackdata['artist_id']);
+							$PTMPL['track_link'] = cleanUrls($SETT['url'].'/index.php?page=track&track='.$trackdata['safe_link']);
+							$PTMPL['title'] = isset($_POST['title']) ? $framework->db_prepare_input($_POST['title']) : $trackdata['title'];
+							$PTMPL['label'] = isset($_POST['label']) ? $framework->db_prepare_input($_POST['label']) : $trackdata['label'];
+							$PTMPL['pline'] = isset($_POST['pline']) ? $framework->db_prepare_input($_POST['pline']) : $trackdata['pline'];
+							$PTMPL['cline'] = isset($_POST['cline']) ? $framework->db_prepare_input($_POST['cline']) : $trackdata['cline'];
+							$PTMPL['description'] = isset($_POST['description']) ? $framework->db_prepare_input($_POST['description']) : $trackdata['description'];
+							$public = (isset($_POST['public']) ? $framework->db_prepare_input($_POST['public']) : $trackdata['public']);
+							$PTMPL['public'.$public] = ' selected="selected"';
+							$PTMPL['photo'] = getImage($trackdata['art'], 1);
+
+							if (isset($_POST['update_track'])) {
+								$do_update = $framework->dbProcessor(sprintf("UPDATE tracks SET `title` = '%s', `label` = '%s', `cline` = '%s', `pline` = '%s', `description` = '%s', `public` = '%s' WHERE `id` = '%s'", $PTMPL['title'], $PTMPL['label'], $PTMPL['cline'], $PTMPL['pline'], $PTMPL['description'], $public, $trackdata['id']), 0, 1);
+								if ($do_update == 1) {
+									$PTMPL['notification'] = messageNotice('Basic track data for '.$PTMPL['title'].' has been updated', 1);
+								} else {
+									$PTMPL['notification'] = messageNotice($do_update);
+								}
+							}
+						}
+					}
+					
 				} else {
 					// Show the 404 page
 					// 

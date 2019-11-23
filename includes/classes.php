@@ -45,8 +45,9 @@ class framework {
 	    // Limit clause to enable pagination
         if (isset($this->limited)) {
             $limit = sprintf(' LIMIT %s', $this->limited);
-        } elseif (isset($this->limit)) {
-            $limit = sprintf(' ORDER BY date DESC LIMIT %s, %s', $this->start, $this->limit);
+        } elseif (isset($this->limit) || isset($this->limiter)) {
+        	$limiter = isset($this->limiter) ? $this->limiter : $this->limit;
+            $limit = sprintf(' ORDER BY uid DESC LIMIT %s, %s', $this->start, $limiter);
         } else {
             $limit = '';
         }
@@ -91,7 +92,7 @@ class framework {
             }
         } elseif (isset($this->username)) {
             $username = $this->username;
-            $auth = $this->userData($username);
+            $auth = $this->checkUser();
 
             if ($auth['username']) {
                 if ($this->remember == 1) {
@@ -106,9 +107,10 @@ class framework {
                     $_SESSION['username'] = $auth['username'];
                     $_SESSION['password'] = $auth['password'];
                     $logged = true;
-                }
-            }
-            return $username;
+                } 
+            } else {
+				$logged = false;
+			}
 
         } elseif ($type) {
             $auth = $this->userData($this->username);
@@ -136,25 +138,35 @@ class framework {
         return false;
     }
 
+	function checkUser() {
+		$username = $this->username;
+		$password = $this->password;
+		$sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE `username` = '%s' AND `password` = '%s'", $username, $password);
+       	return $this->dbProcessor($sql, 1)[0];
+	}
+
     // Registeration function
     function registrationCall() {
         // Prevents bypassing the FILTER_VALIDATE_EMAIL
-        $email = htmlspecialchars($_POST['email'], ENT_QUOTES, 'UTF-8');
-
+        
+        $email = htmlspecialchars($this->email, ENT_QUOTES, 'UTF-8');
+        $username = $this->username;
+        $newsletter = $this->newsletter;
+        $password = $this->password;
         $token = $this->generateToken();
-        $password = hash('md5', $_POST['password']);
-        $sql = sprintf("INSERT INTO " . TABLE_USERS . " (`email`, `username`, `password`, `f_name`, `l_name`,
-		 `country`, `state`, `city`, `token`) VALUES 
-	        ('%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')", $this->email, $this->username,
-            $this->password, $this->firstname, $this->lastname, $this->country, $this->state, $this->city, $token);
+
+        $sql = sprintf(
+        	"INSERT INTO " . TABLE_USERS . " (`email`, `username`, `newsletter`, `password`, `token`) 
+        	VALUES ('%s', '%s', '%s', '%s', '%s')", $email, $username, $newsletter, $password, $token);
         $response = $this->dbProcessor($sql, 0, 1);
 
         if ($response == 1) {
-            $_SESSION['username'] = $this->username;
+            $_SESSION['username'] = $username;
             $_SESSION['password'] = $password;
-            $process = 1;
+        	return $username;
+        } else {
+        	return $response;
         }
-        return $response;
     }
 
     function updateProfile() {
@@ -271,6 +283,15 @@ class framework {
         return 1;
     } 
 
+	function resetToken($type = null) {
+		if ($type) {
+			$table = 'admin';
+		} else {
+			$table = 'users';
+		}
+		$this->dbProcessor(sprintf("UPDATE `%s` SET `auth_token` = '%s' WHERE `username` = '%s'", $table, $this->generateToken(null, 1), $this->db_prepare_input($this->username)));
+	}
+
 	function account_activation($token, $username) {
 		global $SETT, $LANG, $configuration, $user, $framework;
 		if($token == 'resend') { 
@@ -326,26 +347,24 @@ class framework {
         }
     }
 
-
 	function mailerDaemon($sender, $receiver, $subject) {
 		// Load up the site settings
-		global $SETT, $configuration, $user, $mail;
+		global $SETT, $configuration, $user, $mail; 
 
-		$user_data = $this->userData($this->user_id, 1);
 		$message = $this->message;
 
 		// show the message details if test_mode is on
 		$return_response = null;
-		$echo =
-		'<small class="p-1"><div class="text-warning text-justify"
-			Sender: '.$sender.'<br>
-			Receiver: '.$receiver.'<br>
-			Subject: '.$subject.'<br>
-			Message: '.$message.'<br></div>
-		</small>';
-		if ($this->trueAjax() && $configuration['mode'] == 0) {
-			echo $echo;
-		} 
+
+		if ($this->trueAjax() && $configuration['smtp_debug'] != 0) {
+			// echo '
+			// <small class="p-1"><div class="text-warning text-justify"
+			// 	Sender: '.$sender.'<br>
+			// 	Receiver: '.$receiver.'<br>
+			// 	Subject: '.$subject.'<br>
+			// 	Message: '.$message.'<br></div>
+			// </small>';
+		}
 
 	    // Send a test email message
 	    if (isset($this->test)) {
@@ -354,81 +373,77 @@ class framework {
 	    	$subject = 'Test EMAIL Message from '.$configuration['site_name'];
 	    	$message = 'Test EMAIL Message from '.$configuration['site_name'];
 	    	$return_response = successMessage('Test Email Sent');
-	    }
+	    }   
 
-		if ($user_data && $user_data['allow_emails'] == 0 && !isset($this->activation)) {
-			return false;
-		} else {
-			// If the SMTP emails option is enabled in the Admin Panel
-			if($configuration['smtp']) { 
- 
-				require_once(__DIR__ . '/vendor/autoload.php');
-				
-				//Tell PHPMailer to use SMTP
-				$mail->isSMTP();
+		// If the SMTP emails option is enabled in the Admin Panel
+		if($configuration['smtp']) { 
 
-				//Enable SMTP debugging
-				// 0 = off 
-				// 1 = client messages
-				// 2 = client and server messages
-				$mail->SMTPDebug = $configuration['mode'] == 0 ? 2 : 0;
-				
-				$mail->CharSet = 'UTF-8';	//Set the CharSet encoding
-				
-				$mail->Debugoutput = 'html'; //Ask for HTML-friendly debug output
-				
-				$mail->Host = $configuration['smtp_server'];	//Set the hostname of the mail server
-				
-				$mail->Port = $configuration['smtp_port'];	//Set the SMTP port number - likely to be 25, 465 or 587
-				
-				$mail->SMTPAuth = $configuration['smtp_auth'] ? true : false;	//Whether to use SMTP authentication
-				
-				$mail->Username = $configuration['smtp_username'];	//Username to use for SMTP authentication
-				
-				$mail->Password = $configuration['smtp_password'];	//Password to use for SMTP authentication
-				
-				$mail->setFrom($sender, $configuration['site_name']);	//Set who the message is to be sent from
-				
-				$mail->addReplyTo($sender, $configuration['site_name']);	//Set an alternative reply-to address
-				if($configuration['smtp_secure'] !=0) {
-					$mail->SMTPSecure = $configuration['smtp_secure'];
-				} else {
-					$mail->SMTPSecure = false;
-				}
-				//Set who the message is to be sent to
-				if(is_array($receiver)) {
-					foreach($receiver as $address) {
-						$mail->addAddress($address);
-					}
-				} else {
-					$mail->addAddress($receiver);
-				}
-				//Set the message subject 
-				$mail->Subject = $subject;
-				//convert HTML into a basic plain-text alternative body,
-				//Read an HTML message body from an external file, convert referenced images to embedded
-				$mail->msgHTML($message);
+			require_once(__DIR__ . '/vendor/autoload.php');
+			
+			//Tell PHPMailer to use SMTP
+			$mail->isSMTP();
 
-				//send the message, check for errors
-				if(!$mail->send()) {
-					// Return the error in the Browser's console
-					#echo $mail->ErrorInfo;
+			//Enable SMTP debugging
+			// 0 = off 
+			// 1 = client messages
+			// 2 = client and server messages
+			$mail->SMTPDebug = $configuration['smtp_debug'];
+			
+			$mail->CharSet = 'UTF-8';	//Set the CharSet encoding
+			
+			$mail->Debugoutput = 'html'; //Ask for HTML-friendly debug output
+			
+			$mail->Host = $configuration['smtp_server'];	//Set the hostname of the mail server
+			
+			$mail->Port = $configuration['smtp_port'];	//Set the SMTP port number - likely to be 25, 465 or 587
+			
+			$mail->SMTPAuth = $configuration['smtp_auth'] ? true : false;	//Whether to use SMTP authentication
+			
+			$mail->Username = $configuration['smtp_username'];	//Username to use for SMTP authentication
+			
+			$mail->Password = $configuration['smtp_password'];	//Password to use for SMTP authentication
+			
+			$mail->setFrom($sender, $configuration['site_name']);	//Set who the message is to be sent from
+			
+			$mail->addReplyTo($sender, $configuration['site_name']);	//Set an alternative reply-to address
+			if($configuration['smtp_secure'] !=0) {
+				$mail->SMTPSecure = $configuration['smtp_secure'];
+			} else {
+				$mail->SMTPSecure = false;
+			}
+			//Set who the message is to be sent to
+			if(is_array($receiver)) {
+				foreach($receiver as $address) { 
+					$mail->addAddress($address); 
 				}
 			} else {
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=utf-8' . PHP_EOL;
-				$headers .= 'From: '.$configuration['site_name'].' <'.$sender.'>' . PHP_EOL .
-					'Reply-To: '.$configuration['site_name'].' <'.$sender.'>' . PHP_EOL .
-					'X-Mailer: PHP/' . phpversion();
-				if(is_array($receiver)) {
-					foreach($receiver as $address) {
-						@mail($address, $subject, $message, $headers);
-					}
-				} else {
-					@mail($receiver, $subject, $message, $headers);
+				$mail->addAddress($receiver);
+			}
+			//Set the message subject 
+			$mail->Subject = $subject;
+			//convert HTML into a basic plain-text alternative body,
+			//Read an HTML message body from an external file, convert referenced images to embedded
+			$mail->msgHTML($message);
+
+			//send the message, check for errors
+			if(!$mail->send()) {
+				// Return the error in the Browser's console
+				#echo $mail->ErrorInfo;
+			}
+		} else {
+			$headers  = 'MIME-Version: 1.0' . "\r\n";
+			$headers .= 'Content-type: text/html; charset=utf-8' . PHP_EOL;
+			$headers .= 'From: '.$configuration['site_name'].' <'.$sender.'>' . PHP_EOL .
+				'Reply-To: '.$configuration['site_name'].' <'.$sender.'>' . PHP_EOL .
+				'X-Mailer: PHP/' . phpversion();
+			if(is_array($receiver)) {
+				foreach($receiver as $address) {
+					@mail($address, $subject, $message, $headers);
 				}
-			}			
-		}
+			} else {
+				@mail($receiver, $subject, $message, $headers);
+			}
+		}	 
 		return $return_response;
 	}
 
@@ -470,7 +485,9 @@ class framework {
 			$role = $user['role'];
 		} 
 		
-		if ($role) {
+		if ($role == 0) {
+			return $user['role'];
+		} else {
 			if ($role == 1) {
 				$role = 'User';
 			} elseif ($role == 2) {
@@ -483,8 +500,6 @@ class framework {
 				$role = 'Super Administrator';
 			}
 			return $role;
-		} else {
-			return $user['role'];
 		}
 
 	}
@@ -514,35 +529,73 @@ class framework {
 	Email template
 	 */
 	function emailTemplate() {
-		global $LANG, $SETT, $configuration, $contact_;
-		$username = $this->username;
-		$content = $this->content;
+		global $LANG, $SETT, $configuration, $framework;
+		$site_copy = '&copy; Copyright '.date('Y').' <strong><a href="'.$SETT['url'].'">'.$configuration['site_name'].'</a><strong>. All Rights Reserved';   
+
+	    $fullname = isset($this->recievername) ? $this->recievername : '{$eml->fullname}';
+
+		$content = isset($this->content) ? $this->content : '';
 		$template = '
-		<div style="background: #f7fff5; padding: 35px;">
-			<div style="width: 200px;">'.$contact_['address'].'</div><hr>
-			<div style="font: green; border: solid 1px lightgray; border-radius: 7px; background: white; margin: 50px; ">
-				<div style="padding: 10px;background: lightgray;display: flex; width: 100%;">
-				<img src="'.getImage('logo-full.png', 2).'" width="50px" height="auto" alt="'.ucfirst($configuration['site_name']).'Logo">
+		<div style="background: #afc4d0; padding: 35px;">
+			<div style="width: 200px;">'.$configuration['site_office'].'</div><hr style="border-top: 1px solid rgb(221, 226, 230);">
+			<div style="text-align: center; margin-top: 50px;">
+				<img src="'.getImage($configuration['intro_logo'], 1).'" width="100px" height="100px" alt="'.ucfirst($configuration['site_name']).'Logo" style="border-radius: 50%; box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);">
+			</div>
+			<div style="font: message-box; border: solid 1px lightgray; border-radius: 7px; background: white; margin: 15px; box-shadow: 0 2px 5px 0 rgba(0, 0, 0, 0.16), 0 2px 10px 0 rgba(0, 0, 0, 0.12);">
+				<div style="padding: 10px; background: #f2f2f2; display: flex; width: 100%; border-top-left-radius: 7px; border-top-right-radius: 7px;">
 				<h3>'.ucfirst($configuration['site_name']).'</h3>
 				</div>
-				<div style="margin: 25px;">
-					<p style="font-weight: bolder;">Hello '.$username.',</p>
+				<div style="margin: 15px;">
+					<p style="font-weight: bolder;">Hello '.$fullname.',</p>
 					<p style="color: black;">
 						'.$content.'
 					</p>
 				</div>
 			</div>
-			<div style="margin-left: 35px; margin-right: 35px; padding-bottom: 35px;">This message was sent from <a href="'.$SETT['url'].'" target="_blank">'.$SETT['url'].'</a>, because you have requested one of our services. Please ignore this message if you are not aware of this action. You can also make inquiries to <a href="mailto:'.$contact_['email'].'">'.$contact_['email'].'</a></div>
+			<div style="margin-left: 35px; margin-right: 35px; padding-bottom: 35px;">This message was sent from <a href="'.$SETT['url'].'" target="_blank">'.$SETT['url'].'</a>, because you granted us permission to do so. Please ignore this message if you are not aware of this action. You can also send us a message to remove yourself <a href="mailto:'.$configuration['email'].'">'.$configuration['email'].'</a></div>
 		</div>
 		<div style="text-align: center; padding: 15px; background: #fff;">
 			<div>'.ucfirst($configuration['site_name']).'</div>
 			<div style="color: teal;">
-				&copy; ' . ucfirst($LANG['copyright']) . ' ' . date('Y') . ' ' . $contact_['c_line'].'
+				'.$site_copy.'
 			</div>
 		</div>';
 		return $template;
 	}	
 
+	function message_template($template) {
+	    global $LANG, $PTMPL, $SETT, $user, $configuration, $EML, $framework;  
+
+	    // Message receivers details 
+	    $EML['username'] = $username = isset($this->username) ? $this->username : '';
+	    $EML['password'] = isset($this->password) ? $this->password : '';
+	    $EML['firstname'] = $firstname = isset($this->firstname) ? $this->firstname : '';
+	    $EML['lastname'] = $lastname = isset($this->lastname) ? $this->lastname : '';
+	    $EML['fullname'] = $framework->realName($username, $firstname, $lastname);
+	    $EML['key'] = isset($this->key) ? $this->key : '';
+	    $EML['email'] = isset($this->email) ? $this->email : '';
+
+	    $EML['sitename'] = $configuration['site_name'];
+
+	    // Details of who is performing an action
+	    $EML['sender_username'] = $sender_username = isset($this->sender_username) ? $this->sender_username : '';
+	    $EML['sender_firstname'] = $sender_firstname = isset($this->sender_firstname) ? $this->sender_firstname : '';
+	    $EML['sender_lastname'] = $sender_lastname = isset($this->sender_lastname) ? $this->sender_lastname : '';
+	    $EML['sender_fullname'] = $framework->realName($sender_username, $sender_firstname, $sender_lastname);
+
+	    // The action triggering this Message
+	    $EML['action'] = isset($this->action) ? $this->action : '';
+
+	    // action on poll ot post
+	    $EML['action_on'] = isset($this->action_on) ? $this->action_on : '';
+
+		$msg = preg_replace_callback('/{\$eml->(.+?)}/i', function($matches) {
+			global $EML;
+			return (isset($EML[$matches[1]])?$EML[$matches[1]]:"");
+		}, $template);
+
+	    return $msg; 
+	} 
 
 	/**
 	* Manage the payments
@@ -951,8 +1004,7 @@ class framework {
 	    return $tit;	
 	}
 
-
-	function urlRequery($query) {
+	function urlRequery($query = '') {
 	    global $SETT;
 		$set = '';
 		if (isset($_GET['view'])) {
@@ -960,7 +1012,13 @@ class framework {
 		} 
 		if (isset($_GET['set'])) {
 			$set .= '&set='.$_GET['set'];
+		} 
+		if (isset($_GET['q']) && $_GET['page'] == 'search') {
+			$_GET['page'] = 'search';
 		}
+		if (isset($_GET['pagination'])) {
+			$set .= '&pagination='.$_GET['pagination'];
+		} 
 		return cleanUrls($SETT['url'] . '/index.php?page=' . $_GET['page'].$set.$query);
 	}
 
@@ -982,9 +1040,10 @@ class framework {
 	    exit;
 	}
 
-	function autoComplete($_type = null, $preset = null) {
+	function autoComplete($_type = null, $preset = null, $gjson = 0) {
 		global $SETT, $configuration, $databaseCL, $marxTime;
 
+		$i = 0;
 		if ($_type == 1) {
 			$tag_array = [];
 			$tags = $databaseCL->fetchGenre();
@@ -1000,7 +1059,20 @@ class framework {
 			$tag_array = []; 	
 			if ($tags) {
 			  foreach ($tags as $key => $value) {
-				$tag_array[] = '"'.ucfirst($value).'"';
+			  	$i++;
+			  	if ($gjson == 1) {
+			  		// get json formated like {var_1:400}
+			  		$tag_array[] = 'var_'.$i.':'.ucfirst($value);
+			  	} elseif ($gjson == 2) {
+			  		// get json formated like {"var_1":"400"}
+			  		$tag_array[] = '"var_'.$i.'":"'.ucfirst($value).'"';
+			  	} elseif ($gjson == 3) {
+			  		// get json formated like {'var_1':'400'}
+			  		$tag_array[] = '\'var_'.$i.'\':\''.ucfirst($value).'\'';
+			  	} else {
+			  		// get a numeric keyed array
+					$tag_array[] = '"'.ucfirst($value).'"';
+				}
 			  }
 			}
 		} else {
@@ -1013,7 +1085,11 @@ class framework {
 			}
 		}
 		$tag_list = implode(', ', $tag_array);
-		return '['.$tag_list.']';
+	  	if ($gjson) {
+			return '{'.$tag_list.'}';
+	  	} else {
+			return '['.$tag_list.']';
+		}
 	}
 
 	/**
@@ -1453,20 +1529,23 @@ class framework {
 		return $data;
 	}
 
-	public function pagination($type = null) {
+	function pagination($type = null) {
 		global $SETT, $LANG, $configuration, $databaseCL;
 
 		$page = $SETT['url'].$_SERVER['REQUEST_URI'];
 		if (isset($_GET['pagination'])) {
 			$page = str_replace('&pagination='.$_GET['pagination'], '', $page);
 		}
-
-		// Pagination Navigation settings
-		if ($type == 1) {
-			$perpage = $configuration['per_featured'];
+		if (isset($this->limit_records)) {
+			$perpage = $this->limit_records;
 		} else {
-			$perpage = $configuration['per_page'];
-		}
+			// Pagination Navigation settings
+			if ($type == 1) {
+				$perpage = $configuration['per_featured'];
+			} else {
+				$perpage = $configuration['per_page'];
+			}
+		} 
 		if(isset($_GET['pagination']) && $_GET['pagination'] !== ''){
 		    $curpage = $_GET['pagination'];
 		} else{
@@ -1480,7 +1559,7 @@ class framework {
 			$all_rows = [];
 		}
 		$count = count($all_rows);
-		if ($_GET['page'] == 'homepage' && !isset($_GET['archive'])) {
+		if (isset($_GET['page']) && $_GET['page'] == 'homepage' && !isset($_GET['archive'])) {
 			$count = $count - 1;
 		}
 		$this->limiter = $databaseCL->limiter = $perpage; 
@@ -1551,6 +1630,7 @@ class framework {
 		} else {
 		  	$navigation = '';
 		}
+		$this->all_rows = $this->limit_records = null;
 		return $navigation;	 
 	}
 }
@@ -1594,15 +1674,84 @@ class social extends framework {
 	}
 
 	/**
+	* Write or read messages from db for group chat
+	*/
+	function fetchGroupMessages($type, $receiver = null, $chat_id = null, $start = null) {
+		// type 0: Read
+		// type 1: Check for new messages 
+		// type 2: Fetch newly posted message
+		// type 3: delete the message status so set message as read
+		// type 4: fetch the last message in the row
+		// type 5: fetch the new unread message
+		// type 6: fetch thread for the group
+		//---------------------- 
+		global $user, $configuration;
+
+		if($start == 0) {
+			$start = '';
+		} else { 
+			$start = 'AND `messenger`.`cid` < \''.$this->db_prepare_input($chat_id).'\'';
+		}
+
+		// Check for group thread
+		$thread = '';
+		if (isset($_SESSION['group_thread'])) {
+            $thread = $_SESSION['group_thread'];
+        } elseif (isset($this->thread)) {
+			$thread = $this->thread;
+		}
+
+		if ($type == 0) { 
+			$sql = sprintf("SELECT * FROM  messenger, users WHERE (
+				`messenger`.`thread` = '%s' AND `messenger`.`sender` = `users`.`uid` AND `messenger`.`thread` IN (SELECT `thread` FROM messenger WHERE `sender` = '%s')) %s ORDER BY `messenger`.`cid` DESC LIMIT %s", 
+				$thread, $user['uid'], $start, ($configuration['per_messenger'] + 1));
+			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 1) { 
+			$sql = sprintf("SELECT * FROM messenger, users WHERE `thread` = '%s' AND `cid` IN (SELECT `cid` FROM message_status WHERE `uid` = '%s') AND `messenger`.`sender` != '%s' AND `messenger`.`sender` = `users`.`uid` ORDER BY `messenger`.`cid` DESC", $thread, $user['uid'], $user['uid']); 
+			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 2) {
+			$sql = sprintf("SELECT * FROM messenger, users WHERE `thread` = '%s' AND `cid` = (SELECT `cid` FROM message_status WHERE `uid` = '%s' ORDER BY `id` DESC LIMIT 1) AND `messenger`.`sender` = `users`.`uid` ORDER BY `messenger`.`cid` DESC LIMIT 1", $thread, $user['uid']);  
+			return $this->dbProcessor($sql, 1);
+		} elseif($type == 3) { 
+			// Check for the cid from session delete it and unset the session 
+			if ($chat_id) {
+				$chat_id = $chat_id;
+			} elseif (isset($_SESSION['delete_cid'])) {
+				$chat_id = $_SESSION['delete_cid'];
+			}
+			$sql = sprintf("DELETE FROM message_status WHERE `uid` = '%s' AND `cid` = '%s'", $user['uid'], $chat_id);
+			$this->dbProcessor($sql, 0);
+			if (isset($_SESSION['delete_cid'])) {
+				unset($_SESSION['delete_cid']);
+			}
+		} elseif ($type == 4) { 
+			$sender = $receiver;
+			$sql = sprintf("SELECT * FROM messenger, users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`thread` IN (SELECT `thread` FROM messenger WHERE `sender` = '%s') AND `messenger`.`sender` = `users`.`uid`) ORDER BY `messenger`.`cid` DESC LIMIT 1", $sender, $sender);
+			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 5) { 
+			$limit = isset($this->limit) ? ' LIMIT '.$this->limit : '';
+			$status = isset($this->seen) ? ' AND `seen` = \''.$this->seen.'\'' : '';
+			$sql = sprintf("
+				SELECT thread, sender FROM messenger WHERE `receiver` = '%s'%s
+				GROUP BY thread, sender
+				ORDER BY sender ASC%s", $user['uid'], $status, $limit); 
+			return $this->dbProcessor($sql, 1); 	//
+		} elseif ($type == 6) {
+			return $this->dbProcessor(sprintf("SELECT thread FROM messenger WHERE `thread` LIKE '%s' AND `receiver` = '$receiver'", '%grpc_%'), 1)[0];	
+		}	
+	}
+
+	/**
 	* Write or read messages from db
 	*/
-	function fetchMessages($type, $receiver, $chat_id=null, $start=null) {
+	function fetchMessages($type, $receiver = null, $chat_id = null, $start = null) {
 		// type 0: Read
 		// type 1: Check for new messages
 		// type 2: Fetch new message
 		// type 3: Fetch newly posted message
 		// type 4: set the message status as read
 		// type 5: fetch the last message
+		// type 6: fetch the new unread message
 		//---------------------- 
 		global $user, $configuration;
 
@@ -1613,7 +1762,7 @@ class social extends framework {
 		}
 
 		if ($type == 0) { 
-			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s OR (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s ORDER BY `messenger`.`cid` DESC LIMIT %s", $user['uid'], $this->db_prepare_input($receiver), $start, $this->db_prepare_input($receiver), $user['uid'], $start, ($configuration['per_messenger'] + 1));
+			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE  (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s OR (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) %s ORDER BY `messenger`.`cid` DESC LIMIT %s", $user['uid'], $this->db_prepare_input($receiver), $start, $this->db_prepare_input($receiver), $user['uid'], $start, ($configuration['per_messenger'] + 1));
 			return $this->dbProcessor($sql, 1); 
 		} elseif ($type == 1) {
 			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger WHERE `sender` = '%s' AND `receiver` = '%s' AND `seen` = '0'", $this->db_prepare_input($receiver), $user['uid']);
@@ -1634,6 +1783,14 @@ class social extends framework {
 		} elseif ($type == 5) { 
 			$sql = sprintf("SELECT * FROM " . TABLE_MESSAGE . " AS messenger, " . TABLE_USERS . " AS users WHERE (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) OR (`messenger`.`sender` = '%s' AND `messenger`.`receiver` = '%s' AND `messenger`.`sender` = `users`.`uid`) ORDER BY `messenger`.`cid` DESC LIMIT 1", $user['uid'], $this->db_prepare_input($receiver), $this->db_prepare_input($receiver), $user['uid']);
 			return $this->dbProcessor($sql, 1); 
+		} elseif ($type == 6) { 
+			$limit = isset($this->limit) ? ' LIMIT '.$this->limit : '';
+			$status = isset($this->seen) ? ' AND `seen` = \''.$this->seen.'\'' : '';
+			$sql = sprintf("
+				SELECT thread, sender FROM messenger WHERE `receiver` = '%s'%s
+				GROUP BY thread, sender
+				ORDER BY sender ASC%s", $user['uid'], $status, $limit); 
+			return $this->dbProcessor($sql, 1); 			
 		}		
 	}
 
@@ -1653,22 +1810,52 @@ class social extends framework {
 		$more = $readmore = ''; 
 		$read_msg = '';
 
-		if ($type == 0) {
-			$messages = $this->fetchMessages(0, $receiver);
-		} elseif ($type == 1) {
-			$messages = $this->fetchMessages(3, $receiver);
-		} elseif ($type == 2) {
-			$messages = $this->fetchMessages(1, $receiver);
-		} elseif ($type == 3) {
-			$messages = $this->fetchMessages(0, $receiver, $this->chat_id, $this->start);
-		} 
+		// Check if this is a group chat 
+		$thread = $this->thread = '';
+        if (isset($_SESSION['group_thread'])) {
+            $thread = $this->thread = $_SESSION['group_thread'];
+        } elseif (isset($this->thread)) {
+            $thread = $this->thread = $this->thread;
+        }
+        $preserve = isset($this->preserve) ? $this->preserve : 0;
+		str_ireplace('grpc', '', $thread, $is_group);
+
+		if ($is_group) {
+			if ($type == 0) {
+				$messages = $this->fetchGroupMessages(0, $receiver); 
+			} elseif ($type == 1) {
+				$messages = $this->fetchGroupMessages(2, $receiver);
+			} elseif ($type == 2) {
+				$messages = $this->fetchGroupMessages(1, $receiver);
+			} elseif ($type == 3) {
+				$messages = $this->fetchGroupMessages(0, $receiver, $this->chat_id, $this->start);
+			}  			
+		} else {
+			if ($type == 0) {
+				$messages = $this->fetchMessages(0, $receiver); 
+			} elseif ($type == 1) {
+				$messages = $this->fetchMessages(3, $receiver);
+			} elseif ($type == 2) {
+				$messages = $this->fetchMessages(1, $receiver);
+			} elseif ($type == 3) {
+				$messages = $this->fetchMessages(0, $receiver, $this->chat_id, $this->start);
+			} 
+		}
 		
 		if (empty($messages)) {
 			return false;
 		}
 		// Update the message status to seen
 		if($type !== 1) {
-			$this->fetchMessages(4, $receiver);
+			if ($is_group && $preserve === 0) {
+				// if this is a group chat delete all the listed notifications
+				foreach ($messages as $_cid) {
+					$this->fetchGroupMessages(3, $receiver, $_cid['cid']);
+				}
+			} else {
+				// Else just update the message status
+				$this->fetchMessages(4, $receiver);
+			}
 		}
 
 		$messages = array_reverse($messages);
@@ -1690,7 +1877,7 @@ class social extends framework {
 			$time = $marxTime->timeAgo($cmsg['date'], 1);
 
 			if ($cmsg['username'] == $user['username']) {
-				$delete = '<a onclick="delete_the('.$cmsg['cid'].', 10)" data-toggle="tooltip" data-placement="left" title="'.$LANG['delete'].'"><i class="fa fa-trash text-danger px-1 hoverable rounded-circle"></i></a>';
+				$delete = '<a onclick="firstDelete({action:\'message\', type:1, id:'.$cmsg['cid'].'})" data-toggle="tooltip" data-placement="left" title="'.$LANG['delete'].'" class="delete-msg" id="delete_'.$cmsg['cid'].'"><i class="fa fa-trash text-danger px-1 hoverable rounded-circle"></i></a>';
 				$seen = $cmsg['seen'] == 1 ? '<i class="fa fa-check text-success"></i>' : '';
 				$read_msg .= '
 			    <div class="outgoing_msg" id="message_'.$cmsg['cid'].'">
@@ -1736,17 +1923,31 @@ class social extends framework {
 		global $SETT, $LANG, $user, $databaseCL;  
 
 		$fetch_msg = $this->messenger(0, $receiver);
-		// Collect user data
-		$profile = $this->userData($receiver, 1);
-		$profile_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$profile['username']);
-		$profile_name = $this->realName($profile['username'], $profile['fname'], $profile['lname']);
+
+		// Collect profile data
+		str_ireplace('grpc', '', $this->thread, $is_group);
+		$follow = '';
+		if (isset($_SESSION['group_thread'])) {
+			$project = $databaseCL->fetchProject($receiver)[0];
+			$profile_link = cleanUrls($SETT['url'] . '/index.php?page=project&project='.$project['safe_link']);
+			$profile_name = 'Project '.ucfirst($project['safe_link']);
+			$profile_photo = $project['cover'];
+			if ($project['status']) {
+		        $follow = clickApprove($project['id'], $user['uid'], 1); 
+		    }
+		} else {
+			$profile = $this->userData($receiver, 1);
+			$profile_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$profile['username']);
+			$profile_name = $this->realName($profile['username'], $profile['fname'], $profile['lname']);
+			$profile_photo = $profile['photo'];
+			// Show the follow link 
+			$follow = clickFollow($receiver, $user['uid']);
+		}
 		// Show the user's online status 
 		$online = $this->online_state($receiver);
-		// Show the follow link 
-		$follow = clickFollow($receiver, $user['uid']);
 		// Check and block chat follower 
 		$blocked = $databaseCL->manageBlock($receiver);
-		// Check if logged user is bloked 
+		// Check if logged user is blocked 
 		// Fetch messages
 		$fetch_messages = $this->messenger(0, $receiver);
 		$fetch_messages = $fetch_messages ? $fetch_messages : $this->messageError($LANG['too_quiet']);
@@ -1767,100 +1968,207 @@ class social extends framework {
 			</div>';
 		}
 
+		// To prevent checking for incoming chats, set $is_group ? 'receiver' to $is_group ? 'group'
+		$msg_receiver = $is_group ? 'receiver' : 'receiver'; 
         $messages = '
         <div class="msg_history p-2" id="messages_read">
           '.$fetch_messages.'
         </div>
         <div id="loader"></div>
-        <div class="p-2 border-top border-light chat-profile">
-        	<img class="rounded" src="'.getImage($profile['photo'], 1).'" alt="'.$profile['username'].'">
+        <div class="my-2 chat-profile">
+        	<img class="rounded" src="'.getImage($profile_photo, 1).'" alt="'.$profile_name.' Photo">
         	'.$online['icon'].'
         	<a href="'.$profile_link.'" class="px-1">'.$profile_name.'</a>
         	'.$follow.'
         	'.$blocked['link_icon'].'
-        	<span class="float-right">'.$online['last_seen'].'</span>
+        	<span class="float-right">'.(!isset($project) ? $online['last_seen'] : '').'</span>
         </div>
         <div class="type_msg">
           <div class="input_msg_write">
-          	<input type="hidden" value="'.$receiver.'" id="message-receiver" /> 
+          	<input type="hidden" value="'.$receiver.'" id="message-'.$msg_receiver.'" />
           	'.$input.'
           </div>
         </div>';
         return $messages;
 	}
 
-
 	/**
 	* Add the message to DB
 	*/
 	function send_message($receiver, $message) {
-		global $LANG, $user, $userApp;
+		global $LANG, $user, $databaseCL;
 
+		$gms = null;
 		$rec_data = $this->userData($receiver, 1);
 		$sender = $user['uid'];
 
 		if(strlen($message) > 300) {
 			return messageNotice($LANG['message_too_long'], 3);
-		} elseif($receiver == $user['uid']) {
-			return messageNotice($LANG['message_self'], 3);
-		} elseif(!$rec_data['username']) {
-			return messageNotice($LANG['user_not_exist'], 3);
+		} else {
+			if (isset($_SESSION['group_thread'])) {
+				// check for group members
+			    $group_members = $databaseCL->fetch_projectCollaborators($receiver);
+			    // check the group info
+    			$project = $databaseCL->fetchProject($receiver)[0];
+    			if (!$project) {
+    				return messageNotice($LANG['group_not_exist'], 3);
+    			} elseif (!$group_members) {
+    				return messageNotice('This group has no members', 3);
+    			}
+    			$thread_prepend = $_SESSION['group_thread']; 
+			} else {
+				if($receiver == $user['uid']) {
+					return messageNotice($LANG['message_self'], 3);
+				} elseif(!$rec_data['username']) {
+					return messageNotice($LANG['user_not_exist'], 3);
+				}
+    			$thread_prepend = $this->generateToken(10);
+			}
 		}
 
 		$check_msgs = $this->fetchMessages(0, $receiver)[0];
 		if ($check_msgs) {
 			$thread = $check_msgs['thread'];
 		} else {
-			$thread = $this->generateToken(10);
+			$thread = $thread_prepend;
 			if (!$check_msgs['thread']) {
 				$this->dbProcessor("UPDATE messenger SET `thread` = '$thread' WHERE (`sender` = '$sender' AND `receiver` = '$receiver') OR (`sender` = '$receiver' AND `receiver` = '$sender')", 0, 1);
 			}
 		}
 
+		// Send the message immediately
 		$message = $this->rip_tags($message);
 		$sql = sprintf("INSERT INTO " . TABLE_MESSAGE . " (`sender`, `receiver`, `message`, `thread`, `seen`, `date`) VALUES ('%s', '%s', '%s', '%s', '%s', CURRENT_TIMESTAMP)", $sender, $this->db_prepare_input($receiver), $this->db_prepare_input($message), $thread, 0);
 		$send = $this->dbProcessor($sql, 0, 1);
 		if ($send == 1) {
+			// If this is a group chat, send notification
+	        if (isset($_SESSION['group_thread'])) { 
+	        	$cid = $this->dbProcessor(sprintf("SELECT cid FROM messenger WHERE `thread` = '%s' AND `sender` = '%s' ORDER BY `cid` DESC LIMIT 1", $thread, $user['uid']), 1)[0]['cid'];  
+	        	// Notify all the group members
+	        	// First delete the last notification for this user
+	        	$this->fetchGroupMessages(3); 
+	        	$_SESSION['delete_cid'] = $cid;
+	        	foreach ($group_members as $mb) {
+					$this->dbProcessor(sprintf("INSERT INTO message_status (`status`, `cid`, `uid`) VALUES ('1', '%s', '%s')", $cid, $mb['user']), 0);
+	        	} 
+	        }
+	        // Return the message you just sent
 			return $this->messenger(1, $receiver);
 		}
-	}	
+	}	 
 
-	/**fetchFollowers($user_id, 1) 
+	function sendNotification($type = 0, $datatype = null, $data_id = null) {
+		global $SETT, $configuration, $admin, $user, $framework;
+
+		// Get the sender
+		if (isset($this->sender)) {
+			$sender = $this->sender;
+		} elseif ($admin) {
+			$sender = $admin['admin_user'];
+		} else {
+			$sender = $user['uid'];
+		}
+
+		// Get the receiver
+		if (isset($this->receiver)) {
+			$receiver = $this->receiver;
+		} else {
+			$receiver = $user['uid'];
+		}
+
+		// Get the receiver
+		if (isset($this->notification)) {
+			$notification = $this->notification;
+		} else {
+			$notification = '';
+		}
+
+		$i = 0; $count = 0;
+		if (is_array($receiver)) { 
+			foreach ($receiver as $uid) {
+				$receiver = $uid; $i++;
+				if ($type == 1) {
+				   // Set the notification for following
+				    $status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `type`) VALUES ('%s', '%s', '0')", $receiver, $sender), 0, 1);
+				} elseif ($type == 2) {
+			      // Set the notification for likes
+		        	$notification_type = $datatype == 2 ? 1 : 2;
+		        	$status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `object`, `type`) VALUES ('%s', '%s', '%s', '%s')", $receiver, $sender, $data_id, $notification_type), 0, 1); 
+				} else {
+					// Set the notification for admin (Custom)
+					$status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `content`, `type`) VALUES ('%s', '%s', '%s', '5')", $receiver, $sender, $notification), 0, 1);
+				}				
+			}
+			$count = ($i-1);
+		} else {
+			if ($type == 1) {
+			   // Set the notification for following
+			    $status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `type`) VALUES ('%s', '%s', '0')", $receiver, $sender), 0, 1);
+			} elseif ($type == 2) {
+		      // Set the notification for likes
+	        	$notification_type = $datatype == 2 ? 1 : 2;
+	        	$status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `object`, `type`) VALUES ('%s', '%s', '%s', '%s')", $receiver, $sender, $data_id, $notification_type), 0, 1); 
+			} else {
+				// Set the notification for admin (Custom)
+				$status = $framework->dbProcessor(sprintf("INSERT INTO notification (`uid`, `by`, `content`, `type`) VALUES ('%s', '%s', '%s', '5')", $receiver, $sender, $notification), 0, 1);
+			}
+		}
+		return array($status, $count);
+	}
+	
+	/**
+	* Fetch friends
+	*/
+	function friendship($user_id = null, $string = null) {
+		global $SETT, $LANG, $configuration, $user, $marxTime, $framework, $databaseCL; 
+
+		$process = $databaseCL->fetchFollowers($user_id, 1);
+		$person = '';
+		if ($process) {
+			foreach ($process as $followers) {
+				$_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$followers['username']);
+				$person .= '
+				<a href="'.$_link.'" class="friend">
+					<i class="ion-ios-person"></i>
+					'.$framework->realName($followers['username'], $followers['fname'], $followers['lname']).'
+				</a>';
+			}
+		}
+		return $person;
+	}
+
+	/**
 	* Fetch active chats
 	*/
 	function activeChats($user_id = null, $type = null, $string = null) {
-		global $SETT, $LANG, $configuration, $user, $marxTime;
+		global $SETT, $LANG, $configuration, $user, $marxTime, $databaseCL;
 		$messaging = new social;
 		// Type 0: All Followers
 		// Type 1: Search Followers
 		$timeNow = time();
 		$user_id = $user_id ? $user_id : $user['uid'];
-		// $array = $this->follow($user_id, 4);
-		// $r = '';
-		// if (isset($array)) {
-		// 	foreach ($array as $key) {
-		// 		$r .= $key['leader_id'].',';
-		// 	}
-		// }
-
-		// preg_match('[\W]', substr($r,-1), $q); 
-		// $subs = $r ? rtrim($r, $q[0]) : '';
+ 
 		if ($type == 0) {
 			$sql = sprintf("
-				SELECT thread FROM messenger WHERE `thread` != '' AND (`sender` = '%s' OR `receiver` = '%s')
+				SELECT thread FROM messenger WHERE `thread` != '' AND (`sender` = '%s' OR `receiver` = '%s') OR
+				(`sender` != '%s' AND `sender` IN (SELECT `sender` FROM messenger WHERE `thread` LIKE '%s'))
 				GROUP BY thread
-				ORDER BY `thread` DESC", $this->db_prepare_input($user_id), $this->db_prepare_input($user_id));
+				ORDER BY `thread` DESC", $this->db_prepare_input($user_id), $this->db_prepare_input($user_id), $this->db_prepare_input($user_id), '%grpc_%');
 		} elseif ($type == 1) {
-			if($string) {
-				// Search followers
-				$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE (`username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s') AND `id` IN (%s) ORDER BY `online` DESC", '%'.db_prepare_input($string).'%', '%'.db_prepare_input($string).'%', db_prepare_input($subs));
+			if ($string) {
+				$sql = sprintf("
+				SELECT * FROM users WHERE (`username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s') AND `uid` IN (
+					SELECT follower_id FROM relationship WHERE `leader_id` = '%s'
+				) ORDER BY `online` DESC", '%'.$this->db_prepare_input($string).'%', '%'.$this->db_prepare_input($string).'%', $this->db_prepare_input($user_id));		
 			} else {
-				// Display current friends
-				$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE `id` IN (%s) ORDER BY `online` DESC", db_prepare_input($subs));
-			}
+				$sql = sprintf("
+				SELECT * FROM users WHERE `uid` IN (
+					SELECT follower_id FROM relationship WHERE `leader_id` = '%s'
+				) ORDER BY `online` DESC", $this->db_prepare_input($user_id));
+			} 
 		} else {
 			// Show online followers
-			$sql = sprintf("SELECT * FROM ".TABLE_USERS." WHERE `id` IN (%s) AND `online` > '%s'-'%s' ORDER BY `online` DESC", db_prepare_input($subs), $timeNow, $this->online_time);
+			$sql = sprintf("SELECT * FROM users WHERE `id` IN (%s) AND `online` > '%s'-'%s' ORDER BY `online` DESC", db_prepare_input($subs), $timeNow, $this->online_time);
 		}
 		
 		$process = $this->dbProcessor($sql, 1);
@@ -1869,15 +2177,34 @@ class social extends framework {
 		if ($type == 0 || $type == 1) {
 			if (isset($process)) {
 				foreach ($process as $thread) {
-					$thread = $thread['thread'];
-					$message = $this->dbProcessor("SELECT * FROM messenger WHERE `thread` = '$thread' ORDER BY `date` DESC", 1)[0];
-					$user_profile_id = $message['sender'] == $user_id ? $message['receiver'] : $message['sender'];
-					$profile = $this->userData($user_profile_id, 1);
+					if ($type == 1) {
+						$user_profile_id = $thread['uid'];  
+					} else {
+						$thread = $thread['thread'];
+						$message = $this->dbProcessor("SELECT * FROM messenger WHERE `thread` = '$thread' ORDER BY `date` DESC", 1)[0];
+						$user_profile_id = $message['sender'] == $user_id ? $message['receiver'] : $message['sender'];
+					}
+
+					str_ireplace('grpc', '', $thread, $is_group);
+					if ( $is_group) {
+						$projc = $databaseCL->fetchProject($message['receiver'])[0];
+						$profile = $this->userData($message['sender'], 1);
+						$last_msg = $messaging->fetchGroupMessages(4, $message['sender'])[0];
+						$user_profile_id = ($projc['id'] ? $projc['id'] : $last_msg['receiver']);
+						$prjt = ' on Project '.$projc['title'];
+						$last_msg_thread = $message['thread'];
+					} else {
+						$profile = $this->userData($user_profile_id, 1);
+ 						$last_msg = $messaging->fetchMessages(5, $user_profile_id)[0];
+						$last_msg_thread = $last_msg['thread'];
+ 						$prjt = '';
+					}
 					$profile_name = $this->realName($profile['username'], $profile['fname'], $profile['lname']);
 					$active = isset($this->active) && $this->active == $key['id'] ? 'active_chat' : '';
  					
- 					$last_msg = $messaging->fetchMessages(5, $user_profile_id)[0];
-					$messaging_link = cleanUrls($SETT['url'] . '/index.php?page=account&view=messages&mid='.$last_msg['cid'].'&r_id='.$user_profile_id.'&thread='.$thread);
+ 					$last_msg_date = $last_msg['thread'] ? $marxTime->timeAgo($last_msg['date'], 2) : '';
+					$msg_query = $last_msg['thread'] ? '&cid='.$last_msg['cid'].'&r_id='.$user_profile_id.'&thread='.$last_msg_thread : '&r_id='.$user_profile_id;
+					$messaging_link = cleanUrls($SETT['url'] . '/index.php?page=account&view=messages'.$msg_query);
 
 					// Set icon to show online status
 					if(($timeNow - strtotime($profile['online'])) > $configuration['online_time']) {
@@ -1888,32 +2215,33 @@ class social extends framework {
 					$online = $this->online_state($profile['uid']);
 
 					$bold = $last_msg['seen'] ? '' : ' class="font-weight-bold"';
+					$last_msg_text = $last_msg['message'] ? $last_msg['message'] : $LANG['start_a_message'];
 
 					$follow_list .= '
 					<a href="'.$messaging_link.'" id="hoverable">
-					  <div class="chat_list '.$active.'">
-					    <div class="chat_people">
-					      <div class="chat_img"> 
-					        <img class="rounded-circle" src="'.getImage($profile['photo'], 1).'" alt="sunil"> 
-					      </div>
-					      <div class="chat_ib">
-					        <h5>'.$profile_name.' 
-					        	'.$online['icon'].'
-					        	<span class="chat_date">'.$marxTime->timeAgo(strtotime($last_msg['date']), 2).'</span></h5>
-					        <p'.$bold.'>'.$this->myTruncate($last_msg['message'], 80, ' ', '').'</p>
-					      </div>
-					    </div>
-					  </div>
+						<div class="chat_list '.$active.'">
+							<div class="chat_people">
+								<div class="chat_img">
+									<img class="rounded-circle" src="'.getImage($profile['photo'], 1).'" alt="'.$profile_name.'_photo">
+								</div>
+								<div class="chat_ib">
+									<h5>'.$profile_name.$prjt.'
+									'.$online['icon'].'
+									<span class="chat_date">'.$last_msg_date.'</span></h5>
+									<p'.$bold.'>'.$this->myTruncate($last_msg_text, 80, ' ', '').'</p>
+								</div>
+							</div>
+						</div>
 					</a>';
 				} 				
 			} else {
-					$follow_list = '
-					<div class="chat_list">
-						<div class="chat_people">
-							<div class="chat_ib"><h5>'.$LANG['nobody_here'].'</h5></div>
-						</div>
-					</div>';
-				}
+				$follow_list = '
+				<div class="chat_list">
+					<div class="chat_people">
+						<div class="chat_ib"><h5>'.$LANG['nobody_here'].'</h5></div>
+					</div>
+				</div>';
+			}
 
 		}
 		return $follow_list;
@@ -2017,11 +2345,16 @@ class databaseCL extends framework {
 	/**
 	 * This function is very powerful as it will delete the user and all his associated records from the program
 	 * @param  variable $id is the identifier of the user to delete
-	 * @param  variable $fb is used as fallback when an ajax xhr request type is not possible for a ajax request
+	 * @param  variable $fb is used as fallback when an ajax xhr request type is not possible for an ajax request
 	 * @return Boolean     returns true if a user was deleted else it returns false
 	 */
-	function deleteUser($id, $fb = null) {
+	function deleteUser($id, $fb = null, $test = null) {
 		$id = $this->db_prepare_input($id);
+
+		// Test if you can get to this function
+		if (isset($test)) {
+			return messageNotice('You have reached the delete user function, removing the $test argument will execute this function. <b>UID: '.$id.'</b>');
+		}
 
 		// Try to delete the user from the db
 		$destroy = $this->dbProcessor("DELETE FROM `users` WHERE `uid` = '{$id}'", 0, 1);
@@ -2103,6 +2436,53 @@ class databaseCL extends framework {
 			return true;
 		} else {
 			return false;
+		}
+	}
+
+	function deleteTrack($id, $test = null) {
+
+		// Test if you can get to this function
+		if (isset($test)) {
+			return messageNotice('You have reached the delete track function, removing the $test argument will execute this function. <b>ID: '.$id.'</b>');
+		}
+
+		// if the user id was passed, start deleting
+		$destroy = $this->dbProcessor("DELETE FROM tracks WHERE `id` = '{$id}'", 0, 1);
+
+		// If the user was deleted successfully
+		if ($destroy == 1) { 
+		    // Delete all related records of this track 
+		    // Remove from sale
+		    $this->dbProcessor("DELETE FROM playlistentry WHERE track = '{$id}'", 0); 
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '2' AND item_id  = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM likes WHERE `type` = '1' AND item_id  = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM views WHERE track = '{$id}'", 0); 
+			return true;
+		} else {
+			return $destroy;
+		}
+	}
+
+	function deleteProject($id, $test = null) {
+		// Test if you can get to this function
+		if (isset($test)) {
+			return messageNotice('You have reached the delete project function, removing the $test argument will execute this function. <b>ID: '.$id.'</b>');
+		}
+
+		// if the id was passed, start deleting
+		$destroy = $this->dbProcessor("DELETE FROM projects WHERE `id` = '{$id}'", 0, 1);
+
+		// If the project was deleted successfully
+		if ($destroy == 1) { 
+		    // Delete all related records of this tproject 
+		    $this->dbProcessor("DELETE FROM projects WHERE `id` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM stems WHERE `project` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM collaborators WHERE `project` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM collabrequests WHERE `project` = '{$id}'", 0);
+		    $this->dbProcessor("DELETE FROM instrumentals WHERE `project` = '{$id}'", 0);
+		    return TRUE;
+		} else {
+			return $destroy;
 		}
 	}
 
@@ -2354,16 +2734,21 @@ class databaseCL extends framework {
 
 	function fetchTracks($artist_id, $type=null) {
 		global $user, $configuration;
+		// 6: Get all tracks on the site
 		// 5: just select all tracks by this artist and return an array of id as list
 		// 4: Count the views on all tracks by this artist
 		// 3: Get all tracks by this artist
 		// 2: Get a particular track
 		// 1: Get the most popular track
 		// 0: Get all tracks not in an album
+		// 
+        $limit = isset($this->limiter) ? sprintf(' ORDER BY id DESC LIMIT %s, %s', $this->start, $this->limiter) : '';
+        $filter = isset($this->filter) ? $this->filter : '';
+
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id = (SELECT MAX(`track`) FROM `views` WHERE tracks.id = views.track)", $this->db_prepare_input($artist_id));
 		} elseif ($type == 2) {
-			$sql = sprintf("SELECT * FROM tracks,users WHERE tracks.id = '%s' AND users.uid = tracks.artist_id OR tracks.safe_link = '%s' AND users.uid = tracks.artist_id", $this->db_prepare_input($this->track), $this->db_prepare_input($this->track));
+			$sql = sprintf("SELECT * FROM tracks,users WHERE users.uid = tracks.artist_id AND tracks.id = '%s' OR tracks.safe_link = '%s'", $this->db_prepare_input($this->track), $this->db_prepare_input($this->track));
 		} elseif ($type == 3) {
 			$next = "";
 			if (isset($this->last_id)) { 
@@ -2390,6 +2775,8 @@ class databaseCL extends framework {
 				}
 			}
 			return $rows;
+		} elseif (6) {
+			$sql = sprintf("SELECT * FROM users, tracks WHERE users.uid = tracks.artist_id%s%s", $filter, $limit);
 		} else {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id NOT IN (SELECT track FROM albumentry WHERE 1)", $this->db_prepare_input($artist_id));
 		}
@@ -2642,15 +3029,22 @@ class databaseCL extends framework {
 		// 1: Fetch all of this artists playlist
 		// 0 or Null: Fetch one playlist by id, plid, or title
 		// 
-		$extra = '';
-		$limit = isset($this->limit) ? ' LIMIT '.$this->limit : ' LIMIT '.$configuration['page_limits'];
+		$extra = $limit = '';
+		if (isset($this->limiter)) {
+        	$limit = sprintf(' ORDER BY id DESC LIMIT %s, %s', $this->start, $this->limiter);
+		} elseif(!isset($this->all)) {
+			$limit = isset($this->limit) ? ' LIMIT '.$this->limit : ' LIMIT '.$configuration['page_limits'];
+		}
+        $filter = isset($this->filter) ? $this->filter : '';
+
 		if (isset($this->extra)) {
 			$extra = $this->extra == true ? ' `playlist`.`by` = \''.$user['uid'].'\' AND ' : $this->extra;
 		}
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM users,playlist WHERE `playlist`.`by` = '%s' AND `users`.`uid` = `playlist`.`by`", $this->db_prepare_input($id));
 		} elseif ($type == 2) {
-			$sql = "SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND `playlist`.`public` = 1";
+			$private = !isset($this->get_all) ? ' AND `playlist`.`public` = 1': '';
+			$sql = sprintf("SELECT *, (SELECT count(track) FROM playlistentry WHERE `playlist` = playlist.id) AS track_count , (SELECT count(subscriber) FROM playlistfollows WHERE `playlist` = playlist.id) AS subscribers  FROM users,playlist WHERE `users`.`uid` = `playlist`.`by`%s%s%s", $private, $filter, $limit);
 		} elseif ($type == 3) {
 			$sql = sprintf("SELECT * FROM playlist WHERE `playlist`.`public` = '1' AND `playlist`.`title` LIKE '%s' ORDER BY views DESC%s", '%'.$this->title.'%', $limit);
 		} else {
@@ -2694,12 +3088,21 @@ class databaseCL extends framework {
 		return $this->dbProcessor($sql, 1);
 	}
 
-	function fetchProject($id, $type = null) {
+	function fetchProject($id, $type = null) { 
 		global $user, $configuration;	 
 		// $type == 1: Fetch a single project by just id
 		// $type == 2: Fetch all projects - id could be null or 0 or anything, doesn't matter
 		// $type == 0, null: Fetch a single project by id, safelink or public, creator
 		// 
+		$limit = '';
+		if (isset($this->limiter)) {
+			$limit = sprintf(' ORDER BY id DESC LIMIT %s, %s', $this->start, $this->limiter);
+		} elseif (!isset($this->get_all)) {
+			$limit = sprintf(' LIMIT %s', $configuration['page_limits']);
+		}
+        
+        $filter = isset($this->filter) ? $this->filter : '';
+
 		if ($type == 1) {
 			$sql = sprintf("SELECT * FROM `projects` WHERE `id` = '%s'", $this->db_prepare_input($id));
 		} elseif ($type == 2) {
@@ -2710,7 +3113,7 @@ class databaseCL extends framework {
 				// Count the projects
 				$sql = sprintf("SELECT COUNT(id) AS counter FROM projects WHERE 1%s%s", $next, $creator);
 			} else {
-				$sql = sprintf("SELECT *, id AS pid, (SELECT count(id) FROM stems WHERE `project` = pid AND stems.status = '1') AS count_stems, (SELECT count(id) FROM instrumentals WHERE `project` = pid AND instrumentals.hidden = '0') AS count_instrumentals FROM projects WHERE 1%s%s LIMIT %s", $next, $creator, $configuration['page_limits']);
+				$sql = sprintf("SELECT *, id AS pid, (SELECT count(id) FROM stems WHERE `project` = pid AND stems.status = '1') AS count_stems, (SELECT count(id) FROM instrumentals WHERE `project` = pid AND instrumentals.hidden = '0') AS count_instrumentals FROM projects,users WHERE users.uid = projects.creator_id%s%s%s%s", $next, $creator, $filter, $limit);
 			}
 		} else {
 			$sql = sprintf("SELECT * FROM `projects` WHERE `id` = '%s' OR `safe_link` = '%s' AND (status = '1' OR `creator_id` = '%s')", $this->db_prepare_input($id), $this->db_prepare_input($id), $user['uid']);
@@ -2782,7 +3185,7 @@ class databaseCL extends framework {
 
 	}
 
-	function fetchNotifications($id = null) {
+	function fetchNotifications($id = 0, $type = 0) {
 		global $user, $configuration, $user_role, $admin;	
 		
 		if (isset($this->limiter)) {
@@ -2794,8 +3197,12 @@ class databaseCL extends framework {
 		$status = isset($this->seen) ? ' AND `status` = \''.$this->seen.'\'' : '';
 		$uid = $id ? $id : $user['uid'];
 
-		$sql = sprintf("SELECT * FROM notification WHERE `uid` = '%s'%s%s", $uid, $status, $limit);
-		return $this->dbProcessor($sql, 1);
+		if ($type == 1) {
+			return $this->dbProcessor("UPDATE notification SET `status` = '1' WHERE `uid` = '$uid'", 0, 1);
+		} else {
+			$sql = sprintf("SELECT * FROM notification WHERE `uid` = '%s'%s%s", $uid, $status, $limit);
+			return $this->dbProcessor($sql, 1);
+		}
 	}
 
 	function fetchReleases($type = null, $id = null) {
@@ -2942,6 +3349,54 @@ class databaseCL extends framework {
 			$msg = $post;
 		}	
 		return $msg;	
+	}
+
+	/**
+	 * Do a Search query
+	 */
+	function searchEngine($q=null, $x=0) {
+	    // Search users and contests
+	    $filter = isset($this->filters) ? $this->filters : null;
+	    $results = array(); 
+	    // Show the regular results
+
+	    $limit = isset($this->limiter) ? sprintf(" ORDER BY id DESC LIMIT %s, %s", $this->start, $this->limiter) : '';
+
+        if (isset($this->tags)) {
+            $tags = sprintf("(`tags` LIKE '%s')", '%'.db_prepare_input($q).'%');
+        } else { 
+            $tags = sprintf("(`title` LIKE '%s' OR `genre` LIKE '%s')", '%'.$this->db_prepare_input($q).'%', '%'.$this->db_prepare_input($q).'%');
+        }
+        $title_only = sprintf("(`title` LIKE '%s')", '%'.$this->db_prepare_input($q).'%');
+
+	    if (empty($filter)) {
+	 
+	        if ($x == 0) { 
+	            $users = sprintf("SELECT uid AS id, concat_ws(' ',fname,lname) AS title, username AS safe_link, photo AS art, intro AS description, 1 AS type FROM users WHERE `username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s'", '%'.$q.'%', '%'.$q.'%');
+
+	            $tracks = sprintf("SELECT id, title, safe_link, art, description, 2 AS type FROM tracks WHERE `public` = '1' AND %s", $tags); 
+
+	            $albums = sprintf("SELECT id, title, safe_link, art, description, 3 AS type FROM albums WHERE `public` = '1' AND  %s", $tags); 
+
+	            $projects = sprintf("SELECT id, title, safe_link, cover AS art, details AS description, 4 AS type FROM projects WHERE `status` = '1' AND %s", $tags); 
+
+	            $instrumentals = sprintf("SELECT id, title, file AS safe_links, 'music.png' AS art, tags AS description, 5 AS type FROM instrumentals WHERE `hidden` = '0' AND %s", $tags);  
+
+	            $playlist = sprintf("SELECT id, title, plid AS safe_links, 'playlist.png' AS art, title AS description, 6 AS type FROM playlist WHERE `public` = '1' AND %s", $title_only);  
+
+	            $select =  sprintf("%s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s %s", $users, $tracks, $albums, $projects, $instrumentals, $playlist, $limit);
+	        }
+	    } else {
+			$tracks = "SELECT id, title, safe_link, art, description, 2 AS type FROM tracks WHERE `public` = '1' AND `featured` = '1'"; 
+	    	
+	    	$projects = "SELECT id, title, safe_link, cover AS art, details AS description, 4 AS type FROM projects WHERE `status` = '1' AND  `recommended` = '1'"; 
+
+	        $playlist = "SELECT id, title, plid AS safe_links, 'playlist.png' AS art, title AS description, 6 AS type FROM playlist WHERE `public` = '1' AND `featured` = '1'";  
+
+	        $select =  sprintf("%s UNION ALL %s UNION ALL %s %s", $tracks, $projects, $playlist, $limit);
+	    }
+
+	    return $this->dbProcessor($select,1);
 	}
 
 	/**

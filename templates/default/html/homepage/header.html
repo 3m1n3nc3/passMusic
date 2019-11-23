@@ -11,12 +11,14 @@
         </span>
         
       </div>
-      
-      <div class="search">
-        
-        <input type="text" placeholder="Search" />
-        
-      </div>
+  
+      <form method="post">        
+        <div class="search">
+          
+          <input type="text" autocomplete="off" tabindex="-1" aria-hidden="true" name="search_input" value="{$search_input}" placeholder="Search {$site_title}">
+          
+        </div>   
+      </form>  
       
       {$user_session}
       

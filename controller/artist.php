@@ -50,7 +50,7 @@ function mainContent() {
 		$databaseCL->lname = $artist['lname'];
 		$databaseCL->label = $artist['label'];
 		$PTMPL['related'] = relatedItems(2, $artist['uid']);
-	 
+	 	 
 	    $track_list = $databaseCL->fetchTracks($artist['uid']);
 	    if ($track_list) {
 	    	$track_list = $track_list;

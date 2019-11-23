@@ -24,6 +24,8 @@ function mainContent() {
     $PTMPL['side_links'] .= $user_role > 2 ? '<a href="'.$mod.'" class="btn btn-info btn-block" for="upload_photo">New Release</a>' : '';
     $PTMPL['side_links'] .= $admin ? '<a href="'.$adn.'" class="btn btn-info btn-block" for="upload_photo">Admin</a>' : '';
 
+
+    $full_container = '';
 	if ($user) { 
         $PTMPL['page_title'] = ucfirst($user['username']); 
         $PTMPL['page_titler'] = 'Your profile'; 
@@ -96,16 +98,17 @@ function mainContent() {
                     $PTMPL['notification'] = $framework->updateProfile();
                 }
 
-            } elseif ($_GET['view'] == 'notifications') {
+            } 
+            elseif ($_GET['view'] == 'notifications') {
                 $theme = new themer('account/notifications'); 
 
                 $PTMPL['page_title'] = 'Notifications'; 
 
-                $PTMPL['notification_list'] = showNotifications();
-            } elseif ($_GET['view'] == 'messages') {
-                $theme = new themer('account/messages'); 
+                $PTMPL['notification_list'] = showNotifications(); 
 
-                $PTMPL['page_title'] = 'Messages'; 
+            } 
+            elseif ($_GET['view'] == 'messages') {
+                $theme = new themer('account/messages'); 
 
                 $thread = isset($_GET['thread']) ? $_GET['thread'] : '';
                 $treader = $user['uid'];
@@ -118,27 +121,132 @@ function mainContent() {
                     $message_sender = isset($_GET['user_id']) ? $_GET['user_id'] : $user['uid'];
                 }
 
-                // Fetch the message
-                if (isset($_GET['mid']) || isset($_GET['thread']) || isset($_GET['r_id'])) {
-                    $PTMPL['messages'] = $messaging->messenger_master($message_sender, $message_reciever);
+                if (isset($_SESSION['group_thread'])) {
+                    $project = $databaseCL->fetchProject($message_reciever)[0];
+                    $page_title = $project ? ' | Project ' . $project['title'] : '';
+                } else {
+                    $rcvr = $framework->userData($message_reciever, 1);
+                    $page_title = $rcvr ? ' | '.$framework->realName($rcvr['username'], $rcvr['fname'], $rcvr['lname']) : ''; 
 
-                    // Fetch the followers
-                    // $social->active = $_GET['id'];      
+                }
+
+                $PTMPL['page_title'] = 'Messages' . $page_title; 
+
+                // Fetch the message
+                if (isset($_GET['cid']) || isset($_GET['thread']) || isset($_GET['r_id'])) {
+                    $messaging->thread = isset($_GET['thread']) ? $_GET['thread'] : '';
+                    if (isset($_GET['thread'])) {
+                        str_ireplace('grpc', '', $_GET['thread'], $is_group);
+                        if ($is_group) {
+                            $_SESSION['group_thread'] = $_GET['thread'];
+                        } else {
+                            if (isset($_SESSION['group_thread'])) {
+                                unset($_SESSION['group_thread']);
+                            }                            
+                        }
+                    } else {
+                        if (isset($_SESSION['group_thread'])) {
+                            unset($_SESSION['group_thread']);
+                        }                        
+                    }
+                    $PTMPL['messages'] = $messaging->messenger_master($message_sender, $message_reciever);
                 } else {
                     // Show ads if user id is not set
                     $PTMPL['messages'] = '<div class="mt-3 m-2">Start a chat</div>';
                 }  
                 // $social->onlineTime = $settings['online_time']; 
-                $PTMPL['follows'] = $messaging->activeChats($user['uid'], 0);         
+                $PTMPL['follows'] = $messaging->activeChats($user['uid'], 1);         
+                $PTMPL['recent_chats'] = $messaging->activeChats($user['uid'], 0);         
+            } else {
+                $theme = new themer('account/account'); 
             }
         } else {
             $theme = new themer('account/account'); 
         }
+    } else { 
+        $theme = new themer('account/login');
+        // Set the active landing page_title 
+        $full_container = '-fullpage';
+        $PTMPL['page_title'] = 'Login'; 
 
-        $PTMPL['content'] = $theme->make();
-    }
-	// Set the active landing page_title 
-	$theme = new themer('account/container');
+
+        if (isset($_POST['login']) || isset($_POST['register'])) {
+            $PTMPL['username'] = $username = isset($_POST['username']) ? $framework->db_prepare_input($_POST['username']) : '';
+            $PTMPL['password'] = $password = isset($_POST['password']) ? $framework->db_prepare_input($_POST['password']) : '';
+            $PTMPL['email'] = $email = isset($_POST['email']) ? $framework->db_prepare_input($_POST['email']) : '';
+            if (isset($_POST['remember']) && $_POST['remember'] == 'on') {
+                $PTMPL['remember'] = ' checked';
+                $framework->remember = 1;
+            }
+            if (isset($_POST['newsletter']) && $_POST['newsletter'] == 'on') {
+                $PTMPL['newsletter'] = ' checked';
+                $framework->newsletter = 1;
+            } else {
+                $framework->newsletter = 0;
+            }
+
+            $framework->username = $username;
+            $framework->email = $email;
+            $framework->password = hash('md5', $password); 
+
+            if (isset($_GET['login']) && $_GET['login'] == 'user') {
+                $login = $framework->authenticateUser();
+                $notice = messageNotice($login, 3, 2);
+            } elseif (isset($_GET['login']) && $_GET['login'] == 'register') { 
+                $ver_user = $framework->userData($username, 1);
+                if (mb_strlen($username) < 5) {
+                    $reg = messageNotice($LANG['username_short'], 0, 2);
+                }
+                elseif ($username == $ver_user['username']) {
+                    $reg = messageNotice($LANG['username_used'], 0, 2);
+                }  
+                elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $reg = messageNotice($LANG['invalid_email'], 0, 2);   
+                } 
+                elseif ($email == $framework->checkEmail($email)) {
+                    $reg = messageNotice($LANG['email_used'], 0, 2);
+                } 
+                elseif (mb_strlen($password) < 8) {
+                    $reg = messageNotice($LANG['password_short'], 0, 2);
+                }
+                else {
+                    $reg = $framework->registrationCall();
+                    $framework->redirect(cleanUrls('account'));
+                }
+                $notice = $reg;
+            } else {
+                $login = $framework->administrator(1);
+                $notice = messageNotice($login, 3, 2);
+            }
+            if (isset($login['username']) && $login['username'] == $username) {
+                $notice = messageNotice('Login Successful', 1, 2);
+                if (isset($_GET['login']) && $_GET['login'] == 'user') {
+                    $framework->redirect(cleanUrls('account'));
+                } else {
+                    $framework->redirect(cleanUrls('admin'));
+                }
+            } else {
+                $notice = $notice;
+            }
+            $PTMPL['notification'] = $notice; 
+        }
+
+        if (isset($_GET['view']) && $_GET['view'] == 'access') {
+            if (isset($_GET['login'])) {
+                // Show the login menu
+                if ($_GET['login'] == 'register') {
+                    $theme = new themer('account/register');
+                    $PTMPL['page_title'] = 'Register'; 
+                } else {
+                    $theme = new themer('account/login');
+                }
+            }  
+        }
+    } 
+ 
+    $PTMPL['content'] = $theme->make();
+
+    $theme = new themer('account/container'.$full_container); 
 	return $theme->make();
 }
 // Send notifications from

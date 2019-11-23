@@ -3,6 +3,9 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $configuration, $admin, $user, $user_role, $framework, $databaseCL, $marxTime; 
 
+	$databaseCL->get_all = true;
+	$framework->get_all = true;
+
    	if ($admin || $user_role >= 4) {
    	 	$PTMPL['upload_script'] = $SETT['url'].'/connection/ckuploader.php?action=ckeditor';
 			
@@ -359,7 +362,8 @@ function mainContent() {
 						$PTMPL['notification'] = messageNotice($delete, 3, 7);
 					}
 				}
- 
+ 				
+ 				// Perform a search on the static table
 				if (isset($_POST['search'])) {
 					$q = $framework->urlRequery('&q='.$_POST['q']);
 					$framework->redirect($q, 1); 
@@ -418,7 +422,360 @@ function mainContent() {
 		        $PTMPL['create_static_btn'] = '<a href="'.$create_static_link.'" class="btn btn-primary font-weight-bolder mb-2">Create new static content</a>';
 
 				$theme = new themer('admin/static_content');
-			} elseif ($_GET['view'] == 'create_static') {
+			} 
+			elseif ($_GET['view'] == 'manage_users') {
+				$theme = new themer('admin/manage_users');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Manage Users)';
+
+				// Notification Form
+				$noti_form = new themer('admin/notification_form');
+				$notification_form = $noti_form->make();
+				$PTMPL['notification_form'] = modal('sendMsg', $notification_form, 'Send Notification', 2);
+
+				// Perform a search or filter on the database
+				$filter = '';
+				if (isset($_POST['filter'])) {
+					$filter .= sprintf(" AND `role` = '%s'", $_POST['f']);		
+				}
+				if (isset($_GET['q'])) {
+					$filter .= sprintf(" AND `uid` = '%s' OR `username` LIKE '%s' OR concat_ws(' ', fname, lname) LIKE '%s'", $_GET['q'], '%'.$_GET['q'].'%', '%'.$_GET['q'].'%');
+				} 
+				$framework->filter = $filter;
+			    $framework->all_rows = $framework->userData(0, 0);
+			    $PTMPL['pagination'] = $framework->pagination(); 
+				$user_records = $framework->userData(0, 0);
+
+				// Query to update the users status
+				if (isset($_GET['verify'])) {
+					$set_verify = $framework->dbProcessor(sprintf("UPDATE users SET `verified` = '%s' WHERE `uid` = '%s'", $_GET['verify'], $_GET['user_id']), 0, 1);
+					if ($set_verify == 1) {
+						$ver_state = $_GET['verify'] ? 'verified' : 'unverified';
+						$PTMPL['notification'] = messageNotice('User has been '.$ver_state, 1);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_verify);
+					}
+				}
+
+				// Delete a user and all their records
+				if (isset($_GET['delete'])) {
+					$set_delete = $databaseCL->deleteUser($_GET['delete']);
+					if ($set_delete === TRUE) {
+						$PTMPL['notification'] = messageNotice('User has been deleted', 1);
+					} elseif ($set_delete === FALSE) {
+						$PTMPL['notification'] = messageNotice('<b>Error:</b> User could not be deleted', 3);
+					} else {
+						$PTMPL['notification'] = $set_delete;
+					}
+				}
+
+ 				// Perform a search
+				if (isset($_POST['search'])) {
+					$q = $framework->urlRequery('&q='.$_POST['q']);
+					$framework->redirect($q, 1); 
+				} 
+				$PTMPL['search_str'] = isset($_GET['q']) ? $_GET['q'] : '';
+				if ($user_records) {
+					$table_row_users = ''; $i=0;
+					foreach ($user_records as $users) {
+						$i++; 
+						$delete_link = $framework->urlRequery('&delete='.$users['uid']);
+						$edit_link = cleanUrls($SETT['url'].'/index.php?page=distribution&action=management_tools&update_user='.$users['uid']); 
+						$view_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$users['username']);
+						$fullname = $framework->realName($users['username'], $users['fname'], $users['lname']);
+						$user_role = $framework->userRoles(0, $users['uid']);
+
+						// Show and change the users verification status
+						if ($users['verified']) {
+							$verified = '<i class="fa fa-check-circle text-success"></i>';
+							$verify_link = $framework->urlRequery('&verify=0&user_id='.$users['uid']);
+							$ver_class = 'fa-check-circle-o text-danger';
+						} else {
+							$verified = 'No';
+							$verify_link = $framework->urlRequery('&verify=1&user_id='.$users['uid']);
+							$ver_class = 'fa-check-circle-o text-success';
+						}
+						$reg_date = $marxTime->dateFormat($users['reg_date'], 1); 
+						$message_btn = ' <a class="send_msg_notn" data-receiver="'.$users['uid'].'" data-username="'.$fullname.'" href="#" title="Send Notification"><i class="fa fa-envelope-open text-info hoverable"></i></a>';
+
+						// Generate the table
+						$table_row_users .= '
+						<tr>
+							<th scope="row">'.$i.'</th>
+							<td><a href="'.$view_link.'" title="View User"'.$class.'>'.$fullname.$message_btn.'</a></td>
+							<td>'.$users['label'].'</td>
+							<td class="'.$framework->mdbColors($users['role']).'">'.$user_role.'</td>
+							<td>'.$verified.'</td>
+							<td>'.$reg_date.'</td>
+							<td class="d-flex justify-content-around">
+								<a href="'.$verify_link.'" title="Verify/Unverify User"><i class="fa fa-2x '.$ver_class.' hoverable"></i></a>
+								<a href="'.$edit_link.'" title="Edit User"><i class="fa fa-2x fa-edit text-info hoverable"></i></a>
+								<a href="'.$delete_link.'" title="Delete User"><i class="fa fa-2x fa-trash text-danger hoverable"></i></a> 
+							</td>
+						</tr>';
+					}
+					$PTMPL['users_list'] = $table_row_users;
+				}
+			}
+			elseif ($_GET['view'] == 'manage_tracks') {
+				$theme = new themer('admin/manage_tracks');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Manage Tracks)';
+
+				if (isset($_GET['q'])) {
+					$databaseCL->filter = sprintf(" AND `title` LIKE '%s' OR `tracks`.`label` LIKE '%s'", '%'.$_GET['q'].'%', '%'.$_GET['q'].'%');
+				} 
+				// $framework->limit_records =2;
+			    $framework->all_rows = $databaseCL->fetchTracks(0, 6);
+			    $PTMPL['pagination'] = $framework->pagination(); 
+				$track_list = $databaseCL->fetchTracks(0, 6);
+
+				// Query to update the users status
+				if (isset($_GET['feature'])) {
+					$set_feature = $framework->dbProcessor(sprintf("UPDATE tracks SET `featured` = '%s' WHERE `id` = '%s'", $_GET['feature'], $_GET['track_id']), 0, 1);
+					if ($set_feature == 1) {
+						$feat_state = $_GET['feature'] ? 'added to featured list' : 'removed from featured list';
+						$PTMPL['notification'] = messageNotice('Track has been '.$feat_state, 1);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_feature);
+					}
+				}
+				// Delete a user and all their records
+				if (isset($_GET['delete'])) {
+					$set_delete = $databaseCL->deleteTrack($_GET['delete']);
+					if ($set_delete === TRUE) {
+						$PTMPL['notification'] = messageNotice('Track has been deleted', 1);
+					} elseif ($set_delete === FALSE) {
+						$PTMPL['notification'] = messageNotice('<b>Error:</b> Track could not be deleted', 3);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_delete);
+					}
+				}
+
+ 				// Perform a search
+				if (isset($_POST['search'])) {
+					$q = $framework->urlRequery('&q='.$_POST['q']);
+					$framework->redirect($q, 1); 
+				} 
+				$PTMPL['search_str'] = isset($_GET['q']) ? $_GET['q'] : '';
+
+				if ($track_list) {
+					$table_row_tracks = ''; $i=0;
+					foreach ($track_list as $track) {
+						$i++; 
+						$delete_link = $framework->urlRequery('&delete='.$track['id']);
+						$edit_link = cleanUrls($SETT['url'].'/index.php?page=distribution&action=management_tools&update_track='.$track['id']); 
+						$track_link = cleanUrls($SETT['url'].'/index.php?page=track&track='.$track['safe_link']);
+						$user_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$track['username']);
+						$fullname = $framework->realName($track['username'], $track['fname'], $track['lname']);
+						$views = $databaseCL->fetchStats(1, $track['id'])[0]; 
+
+						// Show and change the users verification status
+						if ($track['featured']) { 
+							$featured_link = $framework->urlRequery('&feature=0&track_id='.$track['id']);
+							$ver_class = 'fa-check-circle-o text-danger';
+						} else { 
+							$featured_link = $framework->urlRequery('&feature=1&track_id='.$track['id']);
+							$ver_class = 'fa-check-circle-o text-success';
+						}
+						$rel_date = $marxTime->dateFormat($track['release_date'], 1); 
+
+						// Generate the table
+						$table_row_tracks .= '
+						<tr>
+							<th scope="row">'.$i.'</th> 
+							<td><a href="'.$track_link.'" title="View Track"'.$class.'>'.$track['title'].'</a></td>
+							<td><a href="'.$user_link.'" title="View Artist"'.$class.'>'.$fullname.'</a></td>
+							<td>'.$track['label'].'</td>
+							<td>'.$views['total'].'</td>
+							<td>'.$rel_date.'</td>
+							<td>'.($track['public'] ? 'Yes' : 'No').'</td>
+							<td>'.($track['featured'] ? 'Yes' : 'No').'</td>
+							<td class="d-flex justify-content-around">
+								<a href="'.$featured_link.'" title="Feature/Unfeature Track"><i class="fa fa-2x '.$ver_class.' hoverable"></i></a>
+								<a href="'.$edit_link.'" title="Edit Track"><i class="fa fa-2x fa-edit text-info hoverable"></i></a>
+								<a href="'.$delete_link.'" title="Delete Track"><i class="fa fa-2x fa-trash text-danger hoverable"></i></a> 
+							</td>
+						</tr>';
+					}
+					$PTMPL['tracks_list'] = $table_row_tracks;
+				}
+			}
+			elseif ($_GET['view'] == 'manage_projects') {
+				$theme = new themer('admin/manage_projects');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Manage Projects)';
+
+				if (isset($_GET['q'])) {
+					$databaseCL->filter = sprintf(" AND `title` LIKE '%s' OR `tags` LIKE '%s'", '%'.$_GET['q'].'%', '%'.$_GET['q'].'%');
+				} 
+ 
+			    $framework->all_rows = $databaseCL->fetchProject(0, 2);
+			    $PTMPL['pagination'] = $framework->pagination(); 
+				$project_list = $databaseCL->fetchProject(0, 2);
+
+				// Query to update the users status
+				if (isset($_GET['recommend'])) {
+					$set_recommend = $framework->dbProcessor(sprintf("UPDATE projects SET `recommended` = '%s' WHERE `id` = '%s'", $_GET['recommend'], $_GET['project_id']), 0, 1);
+					if ($set_recommend == 1) {
+						$rec_state = $_GET['recommend'] ? 'added to recommended list' : 'removed from recommended list';
+						$PTMPL['notification'] = messageNotice('Project has been '.$rec_state, 1);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_recommend);
+					}
+				}
+				// Delete a user and all their records
+				if (isset($_GET['delete'])) {
+					$set_delete = $databaseCL->deleteProject($_GET['delete']);
+					if ($set_delete === TRUE) {
+						$PTMPL['notification'] = messageNotice('Project has been deleted', 1);
+					} elseif ($set_delete === FALSE) {
+						$PTMPL['notification'] = messageNotice('<b>Error:</b> Project could not be deleted', 3);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_delete);
+					}
+				}
+
+ 				// Perform a search
+				if (isset($_POST['search'])) {
+					$q = $framework->urlRequery('&q='.$_POST['q']);
+					$framework->redirect($q, 1); 
+				} 
+				$PTMPL['search_str'] = isset($_GET['q']) ? $_GET['q'] : '';
+
+				if ($project_list) {
+					$table_row_tracks = ''; $i=0;
+					foreach ($project_list as $project) {
+						$i++; 
+						$delete_link = $framework->urlRequery('&delete='.$project['id']);
+						$edit_link = cleanUrls($SETT['url'].'/index.php?page=admin&view=manage_projects&update_project='.$project['id']); 
+						$track_link = cleanUrls($SETT['url'].'/index.php?page=project&project='.$project['safe_link']);
+						$user_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$project['username']);
+						$fullname = $framework->realName($project['username'], $project['fname'], $project['lname']); 
+
+						// Show and change the users verification status
+						if ($project['recommended']) { 
+							$recomend_link = $framework->urlRequery('&recommend=0&project_id='.$project['id']);
+							$ver_class = 'fa-check-circle-o text-danger';
+						} else { 
+							$recomend_link = $framework->urlRequery('&recommend=1&project_id='.$project['id']);
+							$ver_class = 'fa-check-circle-o text-success';
+						}
+						$rel_date = $marxTime->dateFormat($project['time'], 1); 
+
+						// Generate the table
+						$table_row_tracks .= '
+						<tr>
+							<th scope="row">'.$i.'</th> 
+							<td><a href="'.$track_link.'" title="View Project"'.$class.'>'.$project['title'].'</a></td>
+							<td><a href="'.$user_link.'" title="View Creator"'.$class.'>'.$fullname.'</a></td> 
+							<td>'.$project['count_stems'].'</td>
+							<td>'.$project['count_instrumentals'].'</td>
+							<td>'.($project['status'] ? 'Active' : 'Inactive').'</td>
+							<td>'.$rel_date.'</td>
+							<td>'.($project['published'] ? 'Yes' : 'No').'</td>
+							<td>'.($project['recommended'] ? 'Yes' : 'No').'</td>
+							<td class="d-flex justify-content-around">
+								<a href="'.$recomend_link.'" title="Recommend/Unrecommend Track"><i class="fa fa-2x '.$ver_class.' hoverable"></i></a>
+								<a href="'.$edit_link.'" title="Edit Track"><i class="fa fa-2x fa-edit text-info hoverable"></i></a>
+								<a href="'.$delete_link.'" title="Delete Track"><i class="fa fa-2x fa-trash text-danger hoverable"></i></a> 
+							</td>
+						</tr>';
+					}
+					$PTMPL['project_list'] = $table_row_tracks;
+				}
+			}
+			elseif ($_GET['view'] == 'manage_playlists') {
+				$theme = new themer('admin/manage_playlists');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Manage Playlists)';
+
+				if (isset($_GET['q'])) {
+					$databaseCL->filter = sprintf(" AND `title` LIKE '%s'", '%'.$_GET['q'].'%');
+				} 
+ 
+			    $framework->all_rows = $databaseCL->fetchPlaylist(0, 2);
+			    $PTMPL['pagination'] = $framework->pagination(); 
+				$playlists = $databaseCL->fetchPlaylist(0, 2);
+
+				// Query to update the users status
+				if (isset($_GET['feature'])) {
+					$set_feature = $framework->dbProcessor(sprintf("UPDATE playlists SET `featured` = '%s' WHERE `id` = '%s'", $_GET['feature'], $_GET['playlist_id']), 0, 1);
+					if ($set_feature == 1) {
+						$feat_state = $_GET['feature'] ? 'added to recommended list' : 'removed from recommended list';
+						$PTMPL['notification'] = messageNotice('Project has been '.$feat_state, 1);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_feature);
+					}
+				}
+				// Delete a user and all their records
+				if (isset($_GET['delete'])) {
+					$set_delete = $databaseCL->deleteProject($_GET['delete']);
+					if ($set_delete === TRUE) {
+						$PTMPL['notification'] = messageNotice('Project has been deleted', 1);
+					} elseif ($set_delete === FALSE) {
+						$PTMPL['notification'] = messageNotice('<b>Error:</b> Project could not be deleted', 3);
+					} else {
+						$PTMPL['notification'] = messageNotice($set_delete);
+					}
+				}
+
+ 				// Perform a search
+				if (isset($_POST['search'])) {
+					$q = $framework->urlRequery('&q='.$_POST['q']);
+					$framework->redirect($q, 1); 
+				} 
+				$PTMPL['search_str'] = isset($_GET['q']) ? $_GET['q'] : '';
+
+				if ($playlists) {
+					$table_row_tracks = ''; $i=0;
+					foreach ($playlists as $plist) {
+						$i++; 
+						$delete_link = $framework->urlRequery('&delete='.$plist['id']);
+						$edit_link = cleanUrls($SETT['url'].'/index.php?page=admin&view=manage_playlists&update_plist='.$plist['id']); 
+						$track_link = cleanUrls($SETT['url'].'/index.php?page=playlist&playlist='.$plist['plid']);
+						$user_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$plist['username']);
+						$fullname = $framework->realName($plist['username'], $plist['fname'], $plist['lname']); 
+
+						// Show and change the users verification status
+						if ($plist['featured']) { 
+							$recomend_link = $framework->urlRequery('&feature=0&playlist_id='.$plist['id']);
+							$ver_class = 'fa-check-circle-o text-danger';
+						} else { 
+							$recomend_link = $framework->urlRequery('&feature=1&playlist_id='.$plist['id']);
+							$ver_class = 'fa-check-circle-o text-success';
+						} 
+
+						// Generate the table
+						$table_row_tracks .= '
+						<tr>
+							<th scope="row">'.$i.'</th> 
+							<td><a href="'.$track_link.'" title="View Project"'.$class.'>'.$plist['title'].'</a></td>
+							<td><a href="'.$user_link.'" title="View Creator"'.$class.'>'.$fullname.'</a></td> 
+							<td>'.$plist['track_count'].'</td> 
+							<td>'.$plist['subscribers'].'</td> 
+							<td>'.($plist['public'] ? 'Yes' : 'No').'</td> 
+							<td>'.($plist['featured'] ? 'Yes' : 'No').'</td> 
+							<td class="d-flex justify-content-around">
+								<a href="'.$recomend_link.'" title="Recommend/Unrecommend Track"><i class="fa fa-2x '.$ver_class.' hoverable"></i></a>
+								<a href="'.$edit_link.'" title="Edit Track"><i class="fa fa-2x fa-edit text-info hoverable"></i></a>
+								<a href="'.$delete_link.'" title="Delete Track"><i class="fa fa-2x fa-trash text-danger hoverable"></i></a> 
+							</td>
+						</tr>';
+					}
+					$PTMPL['project_list'] = $table_row_tracks;
+				}
+			}
+			elseif ($_GET['view'] == 'create_static') {
+				$theme = new themer('admin/create_static');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Create Static Content)';
+
 				$PTMPL['up_btn'] = $get_statics ? 'Update Content' : 'Create Content';
 				$PTMPL['page_title'] = $get_statics ? 'Update '.$get_statics['title'] : 'Create new Static Content';
 				$PTMPL['banner'] = $get_statics ? '<img src="'.getImage($get_statics['banner'], 1).'" width="auto" height="100px" class="thumbnail"><br>' : '';
@@ -451,9 +808,12 @@ function mainContent() {
 						deleteFile($get_statics['banner'], 1);
 					}
 				}
-
-				$theme = new themer('admin/create_static');
 			} elseif ($_GET['view'] == 'categories') {
+				$theme = new themer('admin/categories');
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(Manage Categories)';
+
 	    		$page = $SETT['url'].$_SERVER['REQUEST_URI'];
 	    		$set_msg = isset($_GET['msg']) ? $_GET['msg'] : '';
 	    		if (isset($_POST['select_category'])) {
@@ -527,8 +887,6 @@ function mainContent() {
 					}
 					$PTMPL['notification'] = $msg;
 				}
-
-				$theme = new themer('admin/categories');
 			} elseif ($_GET['view'] == 'admin') {
 				$this_admin = isset($admin) ? ' ('.$admin['username'].')' : '';
 				$PTMPL['page_title'] = 'Update Admin'.$this_admin; 
@@ -616,7 +974,9 @@ function mainContent() {
 				// Set the active landing page_title 
 				$theme = new themer('admin/admin');
 			} elseif ($_GET['view'] == 'filemanager') {
-				$PTMPL['page_title'] = 'File Manager';
+
+				// Set the page title
+				$PTMPL['page_title'] = $PTMPL['page_title'].'(File Manager)';
 
 				// Set the active landing page_title 
 				$theme = new themer('admin/filemanager');
@@ -626,22 +986,30 @@ function mainContent() {
 			$PTMPL['content'] = $theme->make();
 		} else { 
             $category =  array( 
-            	'releases' 		=> 	'View and manage releases',
-            	'create_static'	=>	'New static content',
-            	'static'		=>	'Manage Static content',
-            	'categories'	=>	'Manage categories',
-            	'config'		=> 	'Site Configuration',
-            	'admin'			=>	'Update Admin Details',
-            	'filemanager'	=>	'File Manager'
+            	'releases' 			=> 	'View and manage releases',
+            	'create_static'		=>	'New static content',
+            	'static'			=>	'Manage Static content',
+            	'categories'		=>	'Manage categories',
+            	'filemanager'		=>	'File Manager',
+            	'admin'				=>	'Update Admin Details',
+            	'manage_users'		=>	'Manage Users',
+            	'manage_tracks'		=>	'Manage Tracks',
+			    'manage_projects'   =>  'Manage Projects',
+			    'manage_playlists'  =>  'Manage Playlists',
+            	'config'			=> 	array('Site Configuration', 'cog')
             ); 
             $categories = '';$i = 280;$ii = 10;
             foreach ($category as $key => $row) {
-                $i++;$ii++; 
+                $i++; $ii++; $icon = $i;
+            	if (is_array($row)) {
+            		$icon = $row[1]; 
+            		$row = $row[0];
+            	}
                 $link = cleanUrls($SETT['url'].'/index.php?page=admin&view='.$key);  
                 $categories .= '
                 <div class="col-md-4 mb-4">
                     <div class="col-1 col-md-2 float-left">
-                        <i class="fa '.icon(3, $i).' fa-2x '.$framework->mdbcolors($ii).'"></i> 
+                        <i class="fa '.icon(3, $icon).' fa-2x '.$framework->mdbcolors($ii).'"></i> 
                     </div> 
                     <div class="col-10 col-md-9 col-lg-10 px-3 float-right"> 
                         <a href="'.$link.'" class="btn '.$framework->mdbcolors($ii, 1).' btn-sm ml-0 p-4 px-0 font-weight-bold" style="min-height:85px; min-width: 150px;">'.$row.'</a>

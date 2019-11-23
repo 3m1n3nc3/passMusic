@@ -17,14 +17,15 @@ $LANG['name'] = 'Passcolabs';
 
 $LANG['intro'] = 'PassTemp Templating Engine allows you to adequately separate your design syntax from your code, allow for better flexibility';
 
-// Forms
+// Registration and Login Forms
 $LANG['invalid_username'] = 'This user has not been registered'; 
 $LANG['invalid_password'] = 'Invalid Password'; 
 $LANG['invalid_email'] = 'Invalid Email'; 
 $LANG['not_found_email'] = 'This Email has not been registered'; 
 $LANG['email_used'] = 'This Email is already in use, please try another'; 
 $LANG['username_used'] = 'This Username is already in use, please try another';
-$LANG['password_short'] = 'Password too short'; 
+$LANG['password_short'] = 'Password should contain at least 8 characters'; 
+$LANG['username_short'] = 'Username should contain at least 5 characters'; 
 $LANG['no_firstname'] = 'Firstname can not be empty';   
 $LANG['login_success'] = 'Login successful, Please wait...';
 $LANG['_user_required'] = 'Username and Password are required';
@@ -37,8 +38,7 @@ $LANG['_city_required'] = 'City is required';
 $LANG['_state_required'] = 'State is required';
 $LANG['_all_required'] = 'All fields are required';
 $LANG['data_unmatch'] = 'The information you provided does not match our records';
-$LANG['password_mismatch'] = 'Password and Confirm Password do not match';
-$LANG['password_short'] = 'The provided password is too short, it should be at least 7 characters';
+$LANG['password_mismatch'] = 'Password and Confirm Password do not match'; 
 $LANG['profile_updated'] = 'Your profile has successfully been updated';
 
 
@@ -49,6 +49,7 @@ $LANG['album'] = 'Album';
 $LANG['liked_notice'] = '<b>%s</b> liked your %s: <b>%s</b>';
 $LANG['comment_notice'] = '<b>%s</b> commented your %s: <b>%s</b>';
 $LANG['follow_notice'] = '<b>%s</b> is now following you';
+$LANG['new_message_from'] = 'New message from <b>%s</b>: %s';
 
 // Messages
 $LANG['messenger'] = 'Messenger';
@@ -73,7 +74,11 @@ $LANG['last_seen'] = 'Last Seen';
 $LANG['cant_reply'] = 'You cannot reply to this chat!';
 $LANG['message_self'] = 'You can\'t send a message to yourself';
 $LANG['user_not_exist'] = 'This user does not exist';
+$LANG['group_not_exist'] = 'This group does not exist';
 $LANG['message_too_long'] = 'The message was too long and could not be posted';
+$LANG['start_a_message'] = 'Start a chat';
+$LANG['project_chat'] = 'Project Chat';
+$LANG['unread_project_chat'] = 'You may have new unread project messages';
 
 // Player controls
 $LANG['prev_track'] = 'Previous Track';

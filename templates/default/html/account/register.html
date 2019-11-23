@@ -1,0 +1,56 @@
+<div class="section">
+
+    <div class="panel panel-default"> 
+      <div class="panel-body">  
+        <div class="row header-summary mt-3">
+            <div class="col-md-12">
+
+                <!-- Default form register -->
+                <h2 class="mb-4">{$page_title}</h2>
+                <hr>
+                <form method="post" action="" class="text-left rounded p-5 mb-4"> 
+                   {$notification} 
+
+                    <!-- Username -->
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-control" name="username" placeholder="Username" value="{$username}" onkeyup="validateInput(event, 1, this)">
+                    <div class="mb-4">
+                        <small id="user_username_url" class="form-text text-muted mb-4">{$user_username_url} </small>
+                        <span id="username_check"></span>
+                    </div>
+
+                    <!-- E-mail -->
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" class="form-control" name="email" placeholder="Email Address" value="{$email}" onkeyup="validateInput(event, 2, this)">
+                    <div id="email_check" class="mb-4"></div>
+
+                    <!-- Password -->
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" placeholder="Password" onkeyup="validateInput(event, 3, this)">
+                    <div class="mb-4">
+                        <small id="password_helper" class="form-text text-muted">At least 8 characters and 1 digit </small>
+                        <span id="password_check" class="mb-4"></span>
+                    </div> 
+
+                    <!-- Newsletter -->
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input" id="newsletter" name="newsletter"{$newsletter}>
+                        <label class="custom-control-label" for="newsletter">Subscribe to our Newsletter</label>
+                    </div>
+                    <!-- Sign up button -->
+                    <button class="btn btn-info my-4" type="submit" name="register">Register</button>  
+
+                    <hr>
+                    <!-- Terms of service -->
+                    <p>By 
+                        <em>Registering</em> you agree to our
+                        <a href="" target="_blank">terms of service</a></p>
+                </form>
+
+            </div>  
+        </div>
+      </div>     
+    </div>
+    
+    {$upload_photo_modal}
+</div>

@@ -1,7 +1,8 @@
 <?php
-
+ 
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL, $marxTime; 
+    $messaging = new social;
 
 	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
@@ -41,8 +42,28 @@ function mainContent() {
 	$PTMPL['project_details'] = $project['details'];
 	$PTMPL['project_title'] = $project['title'];
 
+    $messaging->preserve = 1;
+    $project_thread = $messaging->fetchGroupMessages(6, $project['id'])['thread'];
+    if (!$project_thread) {
+        $project_thread = 'grpc_'.$framework->generateToken(10);
+    }
+    $messaging->thread = $project_thread;
+    if ($messaging->fetchGroupMessages(1)) {
+        $prj_message_title = $LANG['unread_project_chat'];
+        $pmc = 'text-success';
+    } else {
+        $prj_message_title = $LANG['project_chat'];
+        $pmc = 'text-warning';
+    }
+    $project_chat_link = cleanUrls($SETT['url'].'/index.php?page=account&view=messages&r_id='.$project['id'].'&thread='.$project_thread);
+
+    $project_chat_btn = ' 
+    <a href="'.$project_chat_link.'" class="'.$pmc.'" data-toggle="tooltip" title="'.$prj_message_title.'" data-placement="top">
+        <i class="fa fa-envelope fa-2x"></i> 
+    </a>'; 
+
     if ($project['status']) {
-        $PTMPL['project_request_entry'] = clickApprove($project['id'], $user['uid'], 1);
+        $PTMPL['project_request_entry'] = clickApprove($project['id'], $user['uid'], 1).$project_chat_btn;
         $PTMPL['project_status_1'] = ' checked';
     } else {
         $PTMPL['project_status_x'] = ' checked';

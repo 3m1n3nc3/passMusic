@@ -4,10 +4,10 @@ $status = $msg = $option = $response = '';
 
 $data = $_POST['data'];
 if (is_array($data)) {
-  $data = $data;
+  $data = $data; 
 } else {
   $data = json_decode($data);
-}
+} 
 
 if ($data['action'] == 'pl_entry') {
   // Remove track from playlist 
@@ -44,6 +44,12 @@ if ($data['action'] == 'pl_entry') {
       $response = 'An Error occurred: Unable to delete user';
       $msg = messageNotice($response, 3);
     } 
+} elseif ($data['action'] == 'message') {
+  $sql = sprintf("DELETE FROM messenger WHERE `cid` = '%s'", $data['id']); 
+  $status = $framework->dbProcessor($sql, 0, 1);  
+} elseif ($data['action'] == 'notification') {
+  $sql = sprintf("DELETE FROM notification WHERE `id` = '%s'", $data['id']); 
+  $status = $framework->dbProcessor($sql, 0, 1);  
 }
 
 $data = array('status' => $status, 'msg' => $msg, 'option' => $option, 'resp' => $response);

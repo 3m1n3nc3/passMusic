@@ -339,7 +339,7 @@ CREATE TABLE `projects` (
   `max_users` int(11) DEFAULT NULL,
   `status` enum('0','1') NOT NULL DEFAULT '0',
   `published` enum('0','1','2') NOT NULL DEFAULT '0',
-  `recomended` enum('0','1') NOT NULL DEFAULT '0',
+  `recommended` enum('0','1') NOT NULL DEFAULT '0',
   `safe_link` varchar(128) DEFAULT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -348,7 +348,7 @@ CREATE TABLE `projects` (
 -- Dumping data for table `projects`
 --
 
-INSERT INTO `projects` (`id`, `creator_id`, `title`, `cover`, `details`, `instrumental`, `datafile`, `genre`, `tags`, `max_users`, `status`, `published`, `recomended`, `safe_link`, `time`) VALUES
+INSERT INTO `projects` (`id`, `creator_id`, `title`, `cover`, `details`, `instrumental`, `datafile`, `genre`, `tags`, `max_users`, `status`, `published`, `recommended`, `safe_link`, `time`) VALUES
 (1, 1, 'Grateful', 'mon.jpg', 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vitae dignissimos temporibus, animi soluta neque assumenda dolorum inventore numquam eveniet alias distinctio, sed iure obcaecati error esse dolores excepturi totam, ut. ipsum dolor sit amet, consectetur adipisicing elit. Quam minus optio repellat provident nam. Nobis porro obcaecati odit, ipsa vitae recusandae, repellat eaque, quas aliquid explicabo a magni harum tenetur? ipsum dolor sit amet, consectetur adipisicing elit. Earum doloribus optio ut iste deserunt est dolor suscipit expedita pariatur eos dolores saepe ratione eaque distinctio totam, tempore voluptatem laboriosam explicabo.', 'PCAUD-GZECLPS865527-VWR.mp3', 'grateful.zip', 'trap', 'hip-hop, rap, trap', 12, '1', '1', '0', 'greatful', '2019-09-03 22:20:56'),
 (2, 1, 'Rebranding', '5.jpg', 'Nobis porro obcaecati odit, ipsa vitae recusandae, repellat eaque, quas aliquid explicabo a magni harum tenetur? ipsum dolor sit amet, consectetur adipisicing elit. Earum doloribus optio ut iste deserunt est dolor suscipit expedita pariatur eos dolores saepe ratione eaque distinctio totam, tempore voluptatem laboriosam explicabo. Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vitae dignissimos temporibus, animi soluta neque assumenda dolorum inventore numquam eveniet alias distinctio, sed iure obcaecati error esse dolores excepturi totam, ut. ipsum dolor sit amet, consectetur adipisicing elit. Quam minus optio repellat provident nam. ', 'PCAUD-IBAUCNZ869688-SHO.mp3', 'rebrand.zip', 'gospel', 'blues,western,vast', 2, '1', '0', '0', 'rebranding', '2019-09-01 13:50:50'),
 (3, 2, 'Definition', 'jcole.jpg', 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Vitae dignissimos temporibus, animi soluta neque assumenda dolorum inventore numquam eveniet alias distinctio, sed iure obcaecati error esse dolores excepturi totam, ut. ipsum dolor sit amet, consectetur adipisicing elit. Quam minus optio repellat provident nam. ', 'PCAUD-IBAUCNZ869688-SHO.mp3', 'PCAUD-RGBOEKJ446689-RUO.zip', 'trap', 'trap,western,vast', 12, '1', '0', '0', 'definition', '2019-10-01 12:53:21');

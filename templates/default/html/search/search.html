@@ -1,0 +1,44 @@
+<section class="content">
+  <!-- Side bar has to go in here -->
+  {$sidebar}
+
+  <div class="content__middle"> 
+    <div class="artist"> 
+      {$secondary_navigation}
+      
+      <div class="artist__content"> 
+        <div class="overview">
+          <div class="overview__artist">
+            <div class="section-title">{$page_title}</div>
+              <!-- Following followers -->    
+              <form method="post">   
+                <div class="my-5 main-search-box">
+                  <i class="ion-ios-search" id="main-search-box-icon"></i>
+                    <input type="text" autocomplete="off" tabindex="-1" aria-hidden="true" name="search_input" value="{$search_input}" placeholder="{$page_title}">
+                    <button type="submit" name="search">Search</button>
+                </div>  
+              </form>  
+              <div class="media-cards more-container">
+                {$search_cards}   
+              </div> 
+              <div class="text-center">{$pagination}</div>  
+          </div>
+
+          <!-- related items section -->
+          <div class="overview__related">
+            
+            {$sidebar_suggested_users}
+
+          </div>
+
+        </div>
+      </div>     
+    </div>   
+  </div>
+
+  {$right_sidebar}
+ 
+</section>
+
+
+{$player}

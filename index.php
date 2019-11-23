@@ -10,6 +10,8 @@
 	require_once("controller/{$page_name}.php");  
 
 	$PTMPL['site_title'] = $configuration['site_name']; 
+	$PTMPL['page_name'] = getPage($page_name); 
+	$PTMPL['timeout_intval'] = $configuration['timeout_intval']; 
 	$PTMPL['site_url'] = $SETT['url'];
 	$PTMPL['template_url'] = $PTMPL['template_url'];
 	$PTMPL['site_logo'] = getImage($configuration['intro_logo'], 1);
@@ -17,23 +19,31 @@
 
 	$captcha_url = '/includes/vendor/goCaptcha/goCaptcha.php?gocache='.strtotime('now');
 	$PTMPL['captcha_url'] = $SETT['url'].$captcha_url;
+	$PTMPL['login_url'] = cleanUrls($SETT['url'].'/index.php?page=account&view=access&login=register');
 
 	//$PTMPL['token'] = $_SESSION['token_id'];  
 	  
 	$PTMPL['language'] = isset($_COOKIE['lang']) ? $_COOKIE['lang'] : ''; 
 
 	// Show the list of playlists
-	$PTMPL['show_playlists'] = showPlaylist($user['uid']);
+	$PTMPL['show_playlists'] = showPlaylist(isset($user['uid']) ? $user['uid'] : null);
 
 	// Set global links
 	$PTMPL['new_release_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
 	$PTMPL['all_releases_link'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=releases');
 
-
 	$PTMPL['site_copy'] = '&copy; Copyright '.date('Y').' <strong><a href="'.$PTMPL['site_url'].'">'.$configuration['site_name'].'</a><strong>. All Rights Reserved';  
 	$PTMPL['site_address'] = $configuration['site_office'];
 	$PTMPL['site_email'] = $configuration['email'];
 	$PTMPL['site_phone'] = $configuration['site_phone'];
+
+    if (isset($_GET['q']) && $_GET['q'] !== '' && strlen($_GET['q']) >= 3) {
+        $PTMPL['search_input'] = $_GET['q'];
+    }
+    if (isset($_POST['search_input'])) {
+        $q = $framework->urlRequery('&q='.$_POST['search_input']);
+        $framework->redirect($q, 1); 
+    }
 
 	// Dynamically included pages
 	if (getPage($page_name) == 'distribution' || getPage($page_name) == 'static') {

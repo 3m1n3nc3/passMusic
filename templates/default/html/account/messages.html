@@ -8,21 +8,20 @@
        {$notification}
 
         <div class="row inbox_msg">
-            <div class="col-md-8 mb-5 border-right py-5">
+            <div class="col-md-8 border-right py-5">
                 {$messages}
             </div>
-            <div class="col-md-4 mb-5">
+            <div class="col-md-4 small-padding">
                 <div class="headind_srch">
                     <div class="recent_heading">
                         <h4>Active {$lang->chat}</h4>
                     </div> 
                 </div> 
                 <div class="inbox_chat">
-                    {$follows}
+                    {$recent_chats}
                 </div>
-            </div>
-            <div class="col-md-4 my-5">
-                <div class="headind_srch">
+
+                <div class="headind_srch mt-5">
                     <div class="recent_heading">
                         <h4>Followers</h4>
                     </div>
@@ -33,7 +32,7 @@
                     </div>
                 </div>
                 <div id="search-loader"></div>
-                <div class="inbox_chat">
+                <div class="inbox_chat" id="followers_chat">
                     {$follows}
                 </div>
             </div>

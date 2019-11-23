@@ -1,0 +1,51 @@
+                
+                <div id="response"></div>
+                <div class="border border-info rounded mb-1 p-1">
+                  <small class="text-info">
+                    You can use these templates to auto generate content: <br>
+                    <b>Receivers username:</b> {$eml->username} | 
+                    <b>Receivers firstname:</b> {$eml->firstname} | 
+                    <b>Receivers lastname:</b> | {$eml->lastname}
+                    <b>Receivers fullname:</b> {$eml->fullname} <br>
+                    To add sender data just append "sender_" to the $eml->value
+                  </small>
+                </div>
+                <form style="color: #757575;" id="notification_form" method="post" action="" class="needs-validation border px-4 py-2" novalidate>
+                  <input type="hidden" name="recipient" value="" id="recipient_id">
+                  <div class="m-2"><span class="font-weight-bold">Recipient: </span><span id="recipient_name">All Users</span></div>
+                  <div class="mb-4 mx-0">
+                    <label for="subject">Subject</label>   
+                    <input type="text" id="subject" class="form-control" placeholder="Subject" required>   
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid Subject.
+                    </div>
+                  </div>  
+                  
+                  <div class="mb-4 mx-0">
+                    <label for="subject">Message</label>
+                    <textarea id="message" class="form-control" placeholder="Message"></textarea> 
+                    <div class="mt-0 invalid-feedback">
+                      Please provide a valid Subject.
+                    </div>
+                  </div>    
+
+                  <div class="custom-control custom-radio">
+                    <input type="radio" class="custom-control-input" id="email_notification" name="message_type" value="1">
+                    <label class="custom-control-label" for="email_notification">Email Message</label>
+                  </div>  
+                  
+                  <div class="custom-control custom-radio">
+                    <input type="radio" class="custom-control-input" id="site_notification" name="message_type" value="2">
+                    <label class="custom-control-label" for="site_notification">Site Notification</label>
+                  </div>
+                  
+                  <div class="custom-control custom-radio">
+                    <input type="radio" class="custom-control-input" id="both" name="message_type" value="3"checked>
+                    <label class="custom-control-label" for="both">Both</label>
+                  </div>
+
+                  <div class="d-flex">
+                    <a href="{$return_btn}" class="btn btn-warning my-4 btn-block"><i class="fa fa-chevron-left"></i> Return</a>
+                    <button class="btn btn-info my-4 btn-block" type="button" onclick="sendNotificationMsg()">Send Notification</button>
+                  </div>
+                </form>

@@ -19,10 +19,18 @@ function messageNotice($str, $type = null, $size = '3', $iS = '2') {
             $i = 'times-circle';
             break;
 
+        case 4:
+            $alert = null;
+            $i = 'times-circle';
+            break;
+
         default:
             $alert = 'info';
             $i = 'exclamation-circle';
             break;
+    }
+    if ($alert === null) {
+        return '<div class="p-2 mx-1">' . $str . '</div>';
     }
     $string = '
     <div class="p-2 mx-1 alert alert-' . $alert . '"> 
@@ -51,10 +59,18 @@ function bigNotice($str, $type = null, $alt = null) {
             $i = 'times-circle';
             break;
 
+        case 4:
+            $alert = null;
+            $i = 'times-circle';
+            break;
+
         default:
             $alert = 'info';
             $i = 'exclamation-circle';
             break;
+    }
+    if ($alert === null) {
+        return '<div class="p-2 mx-1">' . $str . '</div>';
     }
     if ($alt) {
         $extra = $alt;
@@ -631,7 +647,33 @@ function restrictedContent($content, $tab = null) {
 
 function userNavContent() {
     global $LANG, $SETT, $PTMPL, $configuration, $framework, $admin, $user, $user_role;
+
+    $set_link = '';
+    $theme = new themer('homepage/user_menu'); $section = '';
+    $user_dropdown = '   
+    <div class="user">
+        <div class="user__actions">
+            <div class="dropdown">
+                <button class="dropdown-toggle" type="button" id="dropdownMenu1" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
+                <i class="ion-ios-arrow-down"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenu1">
+                    %s
+                </ul>
+            </div>
+        </div>
+    </div>';
+    $about = '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=static&view=about').'">About Us</a></li>'; 
     if ($user || $admin) {
+        if ($user) {
+            $PTMPL['user_photo'] = getImage($user['photo'], 1);
+            $PTMPL['user_name'] = ucfirst($user['username']);
+            $PTMPL['all_notifications_link'] = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications'); 
+
+            $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['username']).'">Profile</a></li>'; 
+            $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=account').'">My Account</a></li>'; 
+            $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=user').'">Log Out</a></li>'; 
+        }
         if ($admin) {
             $theme = new themer('homepage/user_menu'); $section = '';
             $admin_user = $framework->userData($admin['admin_user'], 1);
@@ -639,28 +681,25 @@ function userNavContent() {
             $PTMPL['user_photo'] = getImage($admin_user['photo'], 1);
             $PTMPL['user_name'] = ucfirst($admin_user['username']);
 
-            $PTMPL['logout_admin'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=admin'); 
-            $PTMPL['admin_link'] = cleanUrls($SETT['url'] . '/index.php?page=admin'); 
+            $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=admin').'">Admin</a></li>'; 
+            $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=admin').'">Admin Log Out</a></li>'; 
         }
-        if ($user) {
-            $theme = new themer('homepage/user_menu'); $section = '';
-            $PTMPL['user_photo'] = getImage($user['photo'], 1);
-            $PTMPL['user_name'] = ucfirst($user['username']); 
-            $PTMPL['user_notification'] = showNotifications(1);
-            $PTMPL['all_notifications_link'] = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications'); 
+        $set_link .= $about; 
 
-            $PTMPL['logout_user'] = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=user'); 
-            $PTMPL['profile_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['username']);
-            $PTMPL['account_link'] = cleanUrls($SETT['url'] . '/index.php?page=account'); 
-        }
-
+        $PTMPL['user_links'] = $set_link;
         $section = $theme->make();
-        return $section;
-    } 
+    } else {
+        $set_link .= $about; 
+        $set_link .= '<li><a href="'.cleanUrls($SETT['url'] . '/index.php?page=account&view=access&login=user').'">Login</a></li>'; 
+        $section = sprintf($user_dropdown, $set_link);
+    }
+    return $section;
 }
 
 function globalTemplate($type) {
     global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $user, $user_role;
+    $messaging = new social;
+
     if ($type == 1) {
         $theme = new themer('homepage/header'); $section = '';
     } elseif ($type == 2) {
@@ -683,6 +722,7 @@ function globalTemplate($type) {
       $management = cleanUrls($SETT['url'] . '/index.php?page=management');
       $PTMPL['management'] = simpleButtons("bordered background_green2", 'Manage Site <i class="fa fa-cog"></i>', $management);
     }
+    $PTMPL['site_friends'] = $messaging->friendship($user['uid']);
 
     $avatar_division = '
       <div class="top_avatar">
@@ -713,12 +753,16 @@ function admin_sidebar() {
     $PTMPL['admin_url'] = cleanUrls($SETT['url'] . '/index.php?page=admin'); 
 
     $sidebar_links = array(
-        'start'         => 'Start',
-        'static'        => 'Static Content',
-        'releases'      => 'Manage Releases',
-        'admin'    => 'Admin Details',
-        'config'        => 'Site Configuration',
-        'filemanager'   => 'File Manager'
+        'start'                 => 'Start',
+        'static'                => 'Static Content',
+        'releases'              => 'Manage Releases',
+        'admin'                 => 'Admin Details',
+        'config'                => 'Site Configuration',
+        'manage_users'          => 'Manage Users',
+        'manage_tracks'         => 'Manage Tracks',
+        'manage_projects'       => 'Manage Projects',
+        'manage_playlists'      => 'Manage Playlists',
+        'filemanager'           => 'File Manager'
     );
 
     $bar_links = '';
@@ -767,6 +811,8 @@ function superGlobalTemplate($type = null) {
 
     $foot_list .= '<li><a href="'.$PTMPL['contact_page_url'].'">About Us</a></li>';
     $foot_list_var .= '<li><a href="'.$PTMPL['contact_page_url'].'">Contact Us</a></li>';
+    $nav_list .= $configuration['blog_url'] ? '<a class="dropdown-item font-weight-bold" href="'.$configuration['blog_url'].'">Community</a>' : ''; 
+
     if ($navis) {
         $i = 1;
         foreach ($navis as $link) {
@@ -793,7 +839,7 @@ function superGlobalTemplate($type = null) {
             <a class="nav-link dropdown-toggle waves-effect waves-light font-weight-bold"
             id="contentMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"> COMMUNITY AND SUPPORT </a>
             <div class="dropdown-menu dropdown-primary dropdown-menu-right" aria-labelledby="contentMenuLink">
-                 '.$nav_list.'
+                 '.$nav_list.' 
             </div>
         </li>' : '';  
 
@@ -1354,15 +1400,15 @@ function relatedItems($type, $id) {
     } elseif ($type == 3) {
         // Fetch similar tracks
         $databaseCL->track = $id;
-        $track = $databaseCL->fetchTracks(null, 2)[0];
+        $_track = $databaseCL->fetchTracks(null, 2)[0];
 
-        $databaseCL->title = $track['title'];
-        $databaseCL->artist_id = $track['artist_id'];
-        $databaseCL->label = $track['label'];
-        $databaseCL->pline = $track['pline'];
-        $databaseCL->cline = $track['cline'];
-        $databaseCL->genre = $track['genre'];
-        $databaseCL->tags = $track['tags'];     
+        $databaseCL->title = $_track['title'];
+        $databaseCL->artist_id = $_track['artist_id'];
+        $databaseCL->label = $_track['label'];
+        $databaseCL->pline = $_track['pline'];
+        $databaseCL->cline = $_track['cline'];
+        $databaseCL->genre = $_track['genre'];
+        $databaseCL->tags = $_track['tags'];     
     } elseif ($type == 4) {
         // Fetch similar playlists
         $databaseCL->type = 2;
@@ -1493,6 +1539,38 @@ function followCards($rows) {
             <a  href="%s" class="media-card__footer">%s %s</a>
         </div>';
     return sprintf($carder, $link, getImage($rows['photo'], 1), $link, $rows['fname'], $rows['lname']);
+}
+
+function printSearch($rows) {
+    global $SETT, $user, $configuration, $databaseCL, $framework;
+    // $type = 1: Show Followers
+    // $type = 0 or NULL: Show Followings 
+
+    $description = ' data-toggle="tooltip" title="'.$framework->myTruncate($rows['description'], 150).'" data-placement="auto"';
+    $type = $rows['type'];
+    if ($type == 1) {
+        $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['safe_link']);    
+    } elseif ($type == 2) {
+        $link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rows['safe_link'].'&id='.$rows['id']);    
+    } elseif ($type == 3) {
+        $link = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$rows['safe_link']);    
+    } elseif ($type == 4) {
+        $link = cleanUrls($SETT['url'] . '/index.php?page=project&project='.$rows['safe_link']);    
+    } elseif ($type == 5) {
+        $link = '#download_'.$rows['safe_link'];    
+    } else {
+        $link = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$rows['safe_link']);  
+    }
+    $carder = '
+        <div class="media-card" '.$description.'>
+            <a href="%s">
+                <div class="media-card__image" style="background-image: url(&quot;%s&quot;);">
+                    <i class="ion-ios-open"></i>
+                </div>
+            </a>
+            <a  href="%s" class="media-card__footer">%s</a>
+        </div>';
+    return sprintf($carder, $link, getImage($rows['art'], 1), $link, $rows['title']);
 }
 
 function showTags($str) {
@@ -1689,25 +1767,21 @@ function getPage($page = null) {
     if ($page == 'artist') {
         $page = 'profile';
     } elseif ($page == 'listen') {
-        if ($_GET['to'] == 'albums') {
-            $page = 'albums';
-        } elseif ($_GET['to'] == 'tracks') {
-            $page = 'tracks';
-        }
+        if (isset($_GET['to'])) {
+            $page = $_GET['to'];
+        } 
     } elseif ($page == 'playlist') { 
         $page = 'playlist';
     } elseif ($page == 'view_artists') { 
         $page = 'artists';
     } elseif ($page == 'follow') { 
-        if ($_GET['get'] == 'followers') {
-            $page = 'followers';
-        } elseif ($_GET['get'] == 'following') {
-            $page = 'following';
+        if (isset($_GET['get'])) {
+            $page = $_GET['get'];
         } 
-    } elseif ($page == 'project') { 
-        $page = 'projects'; 
-    } elseif ($page == 'homepage') { 
-        $page = 'homepage'; 
+    } elseif ($page == 'account') { 
+        if (isset($_GET['view'])) {
+            $page = $_GET['view'];
+        }
     } else {
         $page = $page;
     }
@@ -2721,65 +2795,92 @@ function projectsCard($rows, $artist_id = null) {
     return $cards;
 }    
 
-function showNotifications($type = null) {        
+function showNotifications($type = null, $msgs = null, $only_paging = null) {        
     global $PTMPL, $LANG, $SETT, $configuration, $admin, $user, $user_role, $framework, $databaseCL, $marxTime; 
 
-    $framework->all_rows = $databaseCL->fetchNotifications();
-    $PTMPL['pagination'] = $framework->pagination();
-    $notifications = $databaseCL->fetchNotifications();
+    if ($msgs) {
+        $messaging = new social; 
+        $messaging->seen = 0;
+        $messaging->limit = $configuration['notification_limit'];
+        $notifications = $messaging->fetchMessages(6);
+    } else {
+        $framework->all_rows = $databaseCL->fetchNotifications();
+        $PTMPL['pagination'] = $pagination = $framework->pagination();
+        $notifications = $databaseCL->fetchNotifications();
+    }
 
     if ($notifications) {
         $notification_list = '';
         foreach ($notifications as $new) {
-            $databaseCL->track = $new['object'];
 
-            if ($new['type'] == 1 || $new['type'] == 3) {
-                // Show track links
-                $track = $databaseCL->fetchTracks(null, 2)[0];
-                $track_title = ucfirst($track['title']);
-                $track_url = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
-                $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
+            if ($msgs) {
+                $new = $framework->dbProcessor(sprintf("
+                    SELECT * FROM messenger, users WHERE `sender` = '%s'
+                    AND `messenger`.`sender` = `users`.`uid`", $new['sender']
+                ), 1)[0]; 
+                $identifier = 'message_';
+                $icon = 'envelope';
+                $icon_color = ' text-primary';
+                $by = $framework->userData($new['uid'], 1);
+                $by_url = $by_profile = ''; 
+                $msg_query = $new['thread'] ? '&cid='.$new['cid'].'&r_id='.$new['sender'].'&thread='.$new['thread'] : '&r_id='.$new['sender'];
+                $action_var_url  = cleanUrls($SETT['url'] . '/index.php?page=account&view=messages'.$msg_query.'#'.$identifier.$new['cid']); 
+                $msg = $framework->myTruncate($framework->rip_tags($new['message']), 80);
+                $action = $action_var = sprintf($LANG['new_message_from'], ucfirst($by['username']), $msg);
+                $_state = $new['seen'] ? 'span' : 'b';   
+                $new['id'] = $new['cid'];        
             } else {
-                // Show album links
-                $album = $databaseCL->fetchAlbum($new['object'])[0];
-                $track_title = ucfirst($album['title']);
-                $track_url = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$album['safe_link']);
-                $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
-            } 
-            $_state = $new['status'] ? 'span' : 'b';
+                $identifier = 'notification_';
+                $databaseCL->track = $new['object'];
 
-            $by = $framework->userData($new['by'], 1);
-            $by_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$by['username']);
-            $by_profile = '<a href="'.$by_url.'">'.ucfirst($by['username']).'</a>';
-            $action_var_url = $track_url;
-            if ($new['type'] == 0) {
-                $icon = 'users';
-                $icon_color = ' text-info';
-                $action = sprintf($LANG['follow_notice'], $by_profile);
-                $action_var = sprintf($LANG['follow_notice'], ucfirst($by['username']));
-                $action_var_url = $by_url;
-            } elseif ($new['type'] == 1 || $new['type'] == 2) {
-                $icon = 'heart';
-                $icon_color = ' text-danger';
-                $sub = $new['type'] == 1 ? $LANG['track'] : $LANG['album'];
-                $action = sprintf($LANG['liked_notice'], $by_profile, $sub, $track_link);
-                $action_var = sprintf($LANG['liked_notice'], ucfirst($by['username']), $sub, $track_title);
-            } elseif ($new['type'] == 3 || $new['type'] == 4) {
-                $icon = 'comment';
-                $icon_color = ' text-success';
-                $sub = $new['type'] == 3 ? $LANG['track'] : $LANG['album'];
-                $action = sprintf($LANG['comment_notice'], $by_profile, $sub, $track_link);
-                $action_var = sprintf($LANG['comment_notice'], ucfirst($by['username']), $sub, $track_title);
-            } else {
-                $icon = 'bullhorn';
-                $icon_color = ' text-warning';
-                $action_var_url = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications#notification_'.$new['id']);
-                $action = $action_var = $new['content'];
+                if ($new['type'] == 1 || $new['type'] == 3) {
+                    // Show track links
+                    $track = $databaseCL->fetchTracks(null, 2)[0];
+                    $track_title = ucfirst($track['title']);
+                    $track_url = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
+                    $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
+                } else {
+                    // Show album links
+                    $album = $databaseCL->fetchAlbum($new['object'])[0];
+                    $track_title = ucfirst($album['title']);
+                    $track_url = cleanUrls($SETT['url'] . '/index.php?page=album&album='.$album['safe_link']);
+                    $track_link = '<a href="'.$track_url.'#comments">'.ucfirst($track_title).'</a>';
+                } 
+                $_state = $new['status'] ? 'span' : 'b';
+
+                $by = $framework->userData($new['by'], 1);
+                $by_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$by['username']);
+                $by_profile = '<a href="'.$by_url.'">'.ucfirst($by['username']).'</a>';
+                $action_var_url = $track_url;
+                if ($new['type'] == 0) {
+                    $icon = 'users';
+                    $icon_color = ' text-info';
+                    $action = sprintf($LANG['follow_notice'], $by_profile);
+                    $action_var = sprintf($LANG['follow_notice'], ucfirst($by['username']));
+                    $action_var_url = $by_url;
+                } elseif ($new['type'] == 1 || $new['type'] == 2) {
+                    $icon = 'heart';
+                    $icon_color = ' text-danger';
+                    $sub = $new['type'] == 1 ? $LANG['track'] : $LANG['album'];
+                    $action = sprintf($LANG['liked_notice'], $by_profile, $sub, $track_link);
+                    $action_var = sprintf($LANG['liked_notice'], ucfirst($by['username']), $sub, $track_title);
+                } elseif ($new['type'] == 3 || $new['type'] == 4) {
+                    $icon = 'comment';
+                    $icon_color = ' text-success';
+                    $sub = $new['type'] == 3 ? $LANG['track'] : $LANG['album'];
+                    $action = sprintf($LANG['comment_notice'], $by_profile, $sub, $track_link);
+                    $action_var = sprintf($LANG['comment_notice'], ucfirst($by['username']), $sub, $track_title);
+                } else {
+                    $icon = 'bullhorn';
+                    $icon_color = ' text-warning';
+                    $action_var_url = cleanUrls($SETT['url'] . '/index.php?page=account&view=notifications#'.$identifier.$new['id']);
+                    $action = $action_var = $new['content'];
+                }
             }
 
             if ($type == 1) {
                 $notification_list .= '
-                <a href="'.$action_var_url.'" id="nav_notification_'.$new['id'].'">
+                <a href="'.$action_var_url.'" id="nav_'.$identifier.$new['id'].'">
                     <li>
                         <div class="mx-2">
                             '.$action_var.'
@@ -2790,13 +2891,17 @@ function showNotifications($type = null) {
             } else {
                 $notification_list .= '
                 <div class="project_details mb-3" id="notification_'.$new['id'].'">
-                    <div class="project_details__text text-justify">
-                        '.$action.'
-                        <br><i class="fa '.icon(3, $icon).$icon_color.'"></i> <'.$_state.'>'.$marxTime->timeAgo($new['date']).'</'.$_state.'> 
+                    <div class="d-flex justify-content-between">
+                        <div class="project_details__text text-justify">
+                            '.$action.'
+                            <br><i class="fa '.icon(3, $icon).$icon_color.'"></i> <'.$_state.'>'.$marxTime->timeAgo($new['date']).'</'.$_state.'> 
+                        </div>
+                        <a class="pointer ml-4 text-danger" data-toggle="tooltip" title="Delete this notification" data-placement="left" onclick="firstDelete({type: 1, action: \'notification\', id: '.$new['id'].'})"><i class="fa fa-times-circle fa-2x"></i></a>
                     </div>
                 </div>';
             }
         }
+
         return $notification_list;
     }
 }
