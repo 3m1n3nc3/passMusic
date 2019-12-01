@@ -12,10 +12,8 @@
           <div class="artist__info__meta">
             <div class="artist__info__type">{$user_role}</div>
             <div class="artist__info__name">{$fullname}</div>
-            <div class="artist__info__actions"> 
-              <button id="follow_btn" data-folow-id="{$user_id}" class="button-dark">
-                <i class="ion-ios-person-add"></i> FOLLOW
-              </button> 
+            <div class="artist__info__actions">  
+              {$follow_btn}
             </div>
           </div>
         </div>
@@ -58,20 +56,9 @@
               <!-- related Artists section -->
               <div class="overview__related">
                 
-                {$sidebar_statistics}
+                {$sidebar_statistics} 
 
-                <div class="section-title">Social Links</div>
-                <div class="related__social">
-                  <div class="social__link">
-                    <a href="http://facebook.com/"><i class="fa fa-facebook-square"></i> Facebook</a>
-                  </div>
-                  <div class="social__link">
-                    <a href="http://twitter.com/"><i class="fa fa-twitter-square"></i> Twitter</a>
-                  </div>
-                  <div class="social__link">
-                    <a href="http://instagram.com/"><i class="fa fa-instagram"></i> Instagram</a>
-                  </div>
-                </div>
+                {$social_links} 
  
                 {$followers} 
                 {$following} 

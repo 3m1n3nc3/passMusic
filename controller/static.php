@@ -4,6 +4,7 @@ function mainContent() {
 	global $PTMPL, $LANG, $SETT, $configuration, $framework, $databaseCL, $marxTime;  
 	
 	$PTMPL['site_url'] = $SETT['url']; 
+	$banner = $PTMPL['page_title'] = $description = '';
 
 	$PTMPL['skin'] = ' class="black-skin"'; 
 
@@ -29,12 +30,12 @@ function mainContent() {
 				$databaseCL->priority = 3;
 				$main_about =  $databaseCL->fetchStatic(null, 1)[0]; 
 				if ($main_about) { 
-					$PTMPL['page_title'] = 'About '.$configuration['site_name'];	
-					// $PTMPL['seo_meta'] = seo_plugin(getImage($main_about['banner'], 1), $main_about['content'], $main_about['title']);
+					$PTMPL['page_title'] = 'About Us';	 
 
 					$PTMPL['main_title'] = '<h3>'.$main_about['title'].'</h3>';
-					$PTMPL['main_content'] = '<div class="text-center grey-text mb-5 mx-auto w-responsive lead">'.$main_about['content'].'</div>';
+					$PTMPL['main_content'] = $description = '<div class="text-center grey-text mb-5 mx-auto w-responsive lead">'.$main_about['content'].'</div>';
 					$PTMPL['big_banner'] = $main_about['banner'] ? bigBanner($main_about['banner'], 1, $main_about['title'], $main_about['button_links']) : '<br>'; 
+					$banner = $main_about['banner'];
 				}
 
  				$databaseCL->priority = '2';
@@ -113,18 +114,18 @@ function mainContent() {
 				$databaseCL->priority = '3';
 				$intro =  $databaseCL->fetchStatic(null, 1)[0];  
 
-				$PTMPL['page_title'] = 'Contact '.$configuration['site_name'];	
-				// $PTMPL['seo_meta'] = seo_plugin(getImage($intro['banner'], 1), $intro['content'], $intro['title']);
+				$PTMPL['page_title'] = 'Contact '.$configuration['site_name'];	 
 
 				$PTMPL['big_banner'] = $intro['banner'] ? bigBanner($intro['banner'], 1, $intro['title'], $intro['button_links']) : '<br>'; 
 
 				$PTMPL['main_title'] = $intro['title'];
-				$PTMPL['main_content'] = $intro['content'];
+				$PTMPL['main_content'] = $description = $intro['content'];
 				$PTMPL['banner'] = $intro['banner'] ? banner($intro['banner']) : '';
 				$PTMPL['main_address'] = $configuration['site_office'];
 				$PTMPL['main_email'] = $configuration['email'];
 				$PTMPL['main_phone'] = $configuration['site_phone'];
 				$PTMPL['map_embed_url'] = $configuration['map_embed_url']; 
+				$banner = $intro['banner'];
 			}
 			$theme = new themer('static/'.$_GET['view']);
 			$PTMPL['page_content'] = $theme->make();
@@ -132,24 +133,27 @@ function mainContent() {
 			$more_info = $databaseCL->fetchStatic($_GET['view'])[0];   
 			if ($more_info) {
 
-				$PTMPL['page_title'] = $more_info['title'];	
-				// $PTMPL['seo_meta'] = seo_plugin(getImage($more_info['banner'], 1), $more_info['content'], $more_info['title']); 
+				$PTMPL['page_title'] = $more_info['title'];	 
 				// 
 				$PTMPL['more_info'] = '  
 					<section id="info-'.$more_info['id'].'" class="section wow fadeIn" data-wow-delay="0.3s"> 
 						<h1 class="font-weight-bold text-center h1">'.$more_info['title'].'</h1> 
-						<div class="text-center grey-text mb-5 mx-auto w-responsive">'.$more_info['content'].'</div> 
+						<div class="grey-text mb-5 mx-auto w-responsive ck-content">'.$more_info['content'].'</div> 
 					</section>'; 
-
+				$description = $more_info['content'];
+				$banner = $more_info['banner'];
 				$PTMPL['big_banner'] = $more_info['banner'] ? bigBanner($more_info['banner'], 1, $more_info['title'], $more_info['button_links']) : '<br>'; 
 			} else {
-				$PTMPL['more_info'] = '<div class="m-5">'.notAvailable('', '', 403).'</div>';
+				$PTMPL['more_info'] = '<div class="m-5">'.notAvailable('', '', 404).'</div>';
 			}
 				
 			$theme = new themer('static/main');
 
 			$PTMPL['page_content'] = $theme->make();
 		}
+
+	    // Set the seo tags
+	   $PTMPL['seo_meta_plugin'] = seo_plugin($banner, $PTMPL['page_title'], $description);
 	} 
  
 	// $PTMPL['page_sidebar'] = site_sidebar();

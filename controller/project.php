@@ -2,9 +2,7 @@
  
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL, $marxTime; 
-    $messaging = new social;
-
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+    $messaging = new social;    
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
@@ -12,6 +10,9 @@ function mainContent() {
 
     $databaseCL->user_id = $user['uid'];
     $project = $databaseCL->fetchProject($pid)[0];
+
+    // Set the page title
+    $PTMPL['page_title'] = $project['title'].' '.$LANG['project']; 
 
     $databaseCL->project_title = $project['title'];
     $databaseCL->project_genre = $project['genre'];
@@ -57,10 +58,10 @@ function mainContent() {
     }
     $project_chat_link = cleanUrls($SETT['url'].'/index.php?page=account&view=messages&r_id='.$project['id'].'&thread='.$project_thread);
 
-    $project_chat_btn = ' 
-    <a href="'.$project_chat_link.'" class="'.$pmc.'" data-toggle="tooltip" title="'.$prj_message_title.'" data-placement="top">
-        <i class="fa fa-envelope fa-2x"></i> 
-    </a>'; 
+    $project_chat_btn = ($user ? ' 
+        <a href="'.$project_chat_link.'" class="'.$pmc.'" data-toggle="tooltip" title="'.$prj_message_title.'" data-placement="top">
+            <i class="fa fa-envelope fa-2x"></i> 
+        </a>' : ''); 
 
     if ($project['status']) {
         $PTMPL['project_request_entry'] = clickApprove($project['id'], $user['uid'], 1).$project_chat_btn;
@@ -169,7 +170,10 @@ function mainContent() {
     if (isset($_GET['project']) || isset($_GET['id'])) {
         $theme = new themer('project/content');
     } else {
-        $PTMPL['content_title'] = isset($author) ? '<div class="section-title">'.$author['fname'].' '.$author['lname'].'\'s Projects</div>' : '<div class="section-title">Public Projects</div>';    
+        $PTMPL['content_title'] = isset($author) ? '<div class="section-title">'.$framework->realName($author['username'], $author['fname'], $author['lname']).'\'s Projects</div>' : '<div class="section-title">Public Projects</div>';    
+
+        // Set the page title
+        $PTMPL['page_title'] = strip_tags($PTMPL['content_title']); 
         
         $projects = $databaseCL->fetchProject(0, 2);
         $show_projects = '';
@@ -192,6 +196,9 @@ function mainContent() {
         }
         $theme = new themer('artists/view_artists');
     }
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin($project['cover'], $PTMPL['page_title'], $LANG['explore'].' '.$PTMPL['page_title']);
 	
 	return $theme->make();
 } 

@@ -1,0 +1,74 @@
+RewriteEngine on
+
+RewriteCond %{request_filename} -f
+
+RewriteRule ^(.*) 													$1															[L]
+RewriteRule ^(([^/]*)+)?$											index.php?page=$1											[L] 
+
+RewriteRule ^explore/?$												index.php?page=explore										[NC] 
+RewriteRule ^explore/sets/([^/]+)/?$								index.php?page=explore&sets=$1								[NC] 
+RewriteRule ^explore/sets/([^/]+)/([^/]+)?$							index.php?page=explore&sets=$1&go=$2						[NC]  
+RewriteRule ^explore/pagination/([^/]+)?$							index.php?page=explore&pagination=$1						[NC]  
+
+RewriteRule ^homepage/?$											index.php?page=homepage										[NC] 
+RewriteRule ^homepage/logout/([^/]+)?$								index.php?page=homepage&logout=$1							[NC] 
+
+RewriteRule ^artists?$												index.php?page=view_artists									[NC] 
+RewriteRule ^view_artists/([^/]+)/?$								index.php?page=view_artists&artist=$1						[NC] 
+RewriteRule ^view_artists/([^/]+)/([^/]+)?$							index.php?page=view_artists&artist=$1&id=$2					[NC] 
+RewriteRule ^artists/([^/]+)/?$										index.php?page=view_artists&artist=$1						[NC] 
+RewriteRule ^artists/([^/]+)/([^/]+)?$								index.php?page=view_artists&artist=$1&id=$2					[NC] 
+
+RewriteRule ^playlist/([^/]+)/?$									index.php?page=playlist&playlist=$1							[NC] 
+RewriteRule ^playlist/([^/]+)/([^/]+)?$								index.php?page=playlist&playlist=$1&creator=$2				[NC] 
+
+RewriteRule ^listen/([^/]+)/?$										index.php?page=listen&to=$1									[NC] 
+RewriteRule ^listen/([^/]+)/artist/([^/]+)?$						index.php?page=listen&to=$1&artist=$2						[NC] 
+
+RewriteRule ^track/([^/]+)/?$										index.php?page=track&track=$1								[NC] 
+RewriteRule ^track/([^/]+)/?$										index.php?page=track&id=$1								    [NC] 
+RewriteRule ^track/([^/]+)/([^/]+)?$								index.php?page=track&track=$1&id=$2							[NC] 
+RewriteRule ^track/([^/]+)/likes/([^/]+)?$							index.php?page=track&track=$1&likes=$2						[NC] 
+
+RewriteRule ^artist/([^/]+)/?$										index.php?page=artist&artist=$1								[NC] 
+
+RewriteRule ^project/([^/]+)/?$										index.php?page=project&project=$1							[NC] 
+RewriteRule ^project/creator/([^/]+)/?$								index.php?page=project&creator=$1							[NC] 
+
+RewriteRule ^follow/([^/]+)?$										index.php?page=follow&follow=$1								[NC] 
+RewriteRule ^follow/([^/]+)/artist/([^/]+)?$						index.php?page=follow&get=$1&artist=$2						[NC] 
+
+RewriteRule ^account/([^/]+)/?$										index.php?page=account&view=$1								[NC]
+RewriteRule ^account/([^/]+)/([^/]+)?$								index.php?page=account&view=$1&cid=$2						[NC]
+RewriteRule ^account/([^/]+)/receiver/([^/]+)?$						index.php?page=account&view=$1&r_id=$2						[NC]
+RewriteRule ^account/([^/]+)/([^/]+)/receiver/([^/]+)?$				index.php?page=account&view=$1&cid=$2&r_id=$3				[NC]
+RewriteRule ^account/([^/]+)/([^/]+)/receiver/([^/]+)/([^/]+)?$		index.php?page=account&view=$1&cid=$2&r_id=$3&thread=$4		[NC]
+RewriteRule ^account/login/([^/]+)?$								index.php?page=account&view=access&login=$1					[NC]
+RewriteRule ^account/login/([^/]+)/referrer/([^/]+)?$				index.php?page=account&view=access&login=$1&referrer=$2		[NC]
+RewriteRule ^account/([^/]+)/([^/]+)/referrer/([^/]+)?$				index.php?page=account&view=$1&login=$2&referrer=$3			[NC]
+
+RewriteRule ^album/([^/]+)?$										index.php?page=album&album=$1								[NC] 
+
+RewriteRule ^static/?$												index.php?page=static										[NC] 
+RewriteRule ^static/([^/]+)/?$										index.php?page=static&view=$1								[NC] 
+RewriteRule ^static/([^/]+)/page/([^/]+)?$							index.php?page=static&view=$1&pagination					[NC] 
+
+RewriteRule ^admin/([^/]+)/?$										index.php?page=admin&view=$1								[NC]   
+RewriteRule ^admin/([^/]+)/([^/]+)?$								index.php?page=admin&view=$1&post_id=$2						[NC] 
+RewriteRule ^admin/([^/]+)/page/([^/]+)?$							index.php?page=admin&view=$1&pagination=$2					[NC]  
+RewriteRule ^uploader/([^/]+)?$						                connection/uploader.php?action=$1				            [NC]  
+
+RewriteRule ^distribution/([^/]+)/?$								index.php?page=distribution&action=$1						[NC] 
+RewriteRule ^distribution/([^/]+)/([^/]+)/?$						index.php?page=distribution&action=$1&rel_id=$2				[NC] 
+RewriteRule ^distribution/([^/]+)/([^/]+)/?$						index.php?page=distribution&action=$1&rel_id=$2				[NC] 
+RewriteRule ^distribution/([^/]+)/([^/]+)/([^/]+)/?$				index.php?page=distribution&action=$1&modify=$2&rel_id=$3	[NC] 
+RewriteRule ^distribution/([^/]+)/set/([^/]+)/([^/]+)/?$			index.php?page=distribution&action=$1&set=$2&rel_id=$3		[NC] 
+RewriteRule ^distribution/([^/]+)/set/([^/]+)/([^/]+)/([^/]+)/?$	index.php?page=distribution&action=$1&set=$2&pay=$3&rel_id=$4		[NC] 
+RewriteRule ^distribution/([^/]+)/([^/]+)/?$						index.php?page=distribution&action=$1&rel=$2				[NC] 
+RewriteRule ^distribution/([^/]+)/([^/]+)/([^/]+)/?$				index.php?page=distribution&action=$1&rel=$2&artist=$3		[NC] 
+
+RewriteRule ^search/([^/]+)/?$										index.php?page=search&q=$1									[NC]  
+RewriteRule ^search/rel/([^/]+)?$									index.php?page=search&rel=$1								[NC]  
+RewriteRule ^search/([^/]+)/rel/([^/]+)?$							index.php?page=search&q=$1&rel=$2							[NC]  
+
+RewriteRule ^offline/?$												index.php?page=offline										[NC] 

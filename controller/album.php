@@ -3,16 +3,17 @@
 function mainContent() {
 	global $PTMPL, $user, $LANG, $SETT, $user, $framework, $databaseCL; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	$PTMPL['page_title'] = $LANG['album'];	 
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
 	$get_album_id = isset($_GET['album']) ? $_GET['album'] : (isset($_GET['id']) ? $_GET['id'] : '');
+	$databaseCL->user_id = $user['uid'];
 	$fetch_album = $databaseCL->fetchAlbum($get_album_id)[0];
 
 	$PTMPL['album_title'] = $fetch_album['title'];
-	$PTMPL['album_author'] = $fetch_album['fname'].' '.$fetch_album['lname'];
-	$PTMPL['album_art'] = $PTMPL['cover_photo'] = getImage($fetch_album['art'], 1, 1);
+	$PTMPL['album_author'] = $framework->realName($fetch_album['username'], $fetch_album['fname'], $fetch_album['lname']);
+	$PTMPL['album_art'] = $PTMPL['cover_photo'] = getImage($fetch_album['art'], 1);
 	$PTMPL['album_desc'] = $fetch_album['description'];
 	$PTMPL['album_pline'] = $fetch_album['pline'];
 	$PTMPL['album_cline'] = $fetch_album['cline'];
@@ -23,8 +24,9 @@ function mainContent() {
 	// Get the count of likes for this album
 	$PTMPL['like_id'] = $fetch_album['id'];
 	$databaseCL->like_type = 1;
-	$PTMPL['like_display'] = display_likes_follows(3, $fetch_album['id']);
+	$PTMPL['more_button'] = showMore_button(2, $fetch_album['id'], 'More', 1);
 	$PTMPL['like_button'] = clickLike(1, $fetch_album['id'], $user['uid']);
+	$PTMPL['like_display'] = display_likes_follows(3, $fetch_album['id']);
 
 	// Check if user likes this album
 	$databaseCL->like = 'single';
@@ -67,6 +69,8 @@ function mainContent() {
 
     $PTMPL['artist_card'] = artistCard($fetch_album['by']);
 
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin($fetch_album['art'], $PTMPL['page_title'], $PTMPL['album_desc']);
 
 	// Set the active landing page_title 
 	$theme = new themer('music/album');

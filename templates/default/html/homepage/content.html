@@ -1,45 +1,258 @@
-<div class="pc-card__div">
-    <a class="pc-card__bg pc-card__block"></a>
+<!-- 
+We did not build this homepage
+we were too busy perfecting what you 
+see when you leave this here 
+-->
+<!--
+Author: W3layouts
+Author URL: http://w3layouts.com
+License: Creative Commons Attribution 3.0 Unported
+License URL: http://creativecommons.org/licenses/by/3.0/
+-->
+<!DOCTYPE HTML>
+<html lang="en">
 
-	<div>
-		<div class="pc-card__button">
-            <button>Follow</button> 
-		</div>
+<head>
+	<title>{$page_title} - {$site_title}</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta charset="utf-8">
+	{$seo_meta_plugin}
+	<script>
+		addEventListener("load", function () {
+			setTimeout(hideURLbar, 0);
+		}, false);
 
-		<a title="Mert S. Kaplan" href="https://twitter.com/mertskaplan" class="pc-card__avatarLink">
-			<img alt="Mert S. Kaplan" src="https://mertskaplan.com/wp-content/plugins/msk-twprofilecard/img/mertskaplan.jpg" class="pc-card__avatarImg">
-		</a>
+		function hideURLbar() {
+			window.scrollTo(0, 1);
+		}
+	</script>
 
-		<div class="pc-card__divUser">
-			<div class="pc-card__divName">
-				<a href="https://twitter.com/mertskaplan">Mert S. Kaplan</a>
+	<!-- Bootstrap Core CSS -->
+	<link href="{$full_template_url}/super/css/bootstrap.min.css" rel="stylesheet" type="text/css">
+	<!-- Custom CSS -->
+	<link href="{$full_template_url}/css/home.style.css" rel="stylesheet" type="text/css">
+	<!-- font-awesome icons --> 
+	<link href="{$full_template_url}/css/fontawesome-all.min.css" rel="stylesheet" type="text/css">
+    <link href="{$full_template_url}/css/font-awesome.css" rel="stylesheet" type="text/css">
+	<!-- //Custom Theme files -->
+	<!--webfonts-->
+	<link href="//fonts.googleapis.com/css?family=Ubuntu:300,300i,400,400i,500,500i,700,700i" rel="stylesheet">
+	<!--//webfonts-->
+    <link rel="shortcut icon" href="{$favicon}"> 
+
+	<style type="text/css">
+		.banner {
+		    background: url({$banner_background_image})no-repeat;
+		    -webkit-background-size: cover;
+		    -moz-background-size: cover;
+		    -o-background-size: cover;
+		    -ms-background-size: cover;
+		    background-size: cover;
+		    position: relative;
+		    z-index: 0;
+		}
+		.contact-top {
+		    background: url({$contact_top_image})no-repeat;
+		    -webkit-background-size: cover;
+		    -moz-background-size: cover;
+		    -o-background-size: cover;
+		    -ms-background-size: cover;
+		    background-size: cover;
+		    position: relative;
+		    z-index: 0;
+		}
+	</style>
+
+</head>
+
+<body>
+	{$super_header}
+
+	<!-- banner -->
+	<div class="banner" id="home">
+		<div class="container">
+			<div class="banner-text">
+				<div class="slider-info text-right">
+					{$homepage_banner}
+				</div>
 			</div>
-			<span>
-				<a href="https://twitter.com/mertskaplan">@<span>mertskaplan</span></a>
-			</span>
-		</div>
-
-		<div class="pc-card__divStats">
-			<ul class="pc-card__Arrange">
-				<li class="pc-card__ArrangeSizeFit">
-					<a href="https://twitter.com/mertskaplan" title="9.840 Tweet">
-						<span class="pc-card__StatLabel pc-card__block">Tweets</span>
-						<span class="pc-card__StatValue">9.840</span>
-					</a>
-				</li>
-				<li class="pc-card__ArrangeSizeFit">
-					<a href="https://twitter.com/mertskaplan/following" title="885 Following">
-						<span class="pc-card__StatLabel pc-card__block">Following</span>
-						<span class="pc-card__StatValue">885</span>
-					</a>
-				</li>
-				<li class="pc-card__ArrangeSizeFit">
-					<a href="https://twitter.com/mertskaplan/followers" title="1.810 Followers">
-						<span class="pc-card__StatLabel pc-card__block">Followers</span>
-						<span class="pc-card__StatValue">1.810</span>
-					</a>
-				</li>
-			</ul>
 		</div>
 	</div>
-</div> 
+	<!-- //banner -->
+	<!-- about-->
+	<section class="wthree-row" id="about">
+		<div class="row justify-content-center align-items-center no-gutters abbot-main">
+			<div class="col-lg-6 p-0">
+				<img src="{$buzz_image}" class="img-fluid" alt="Buzz Art" />
+			</div>
+			<div class="col-lg-6 abbot-right px-md-5  py-lg-0 py-3">
+				<div class="card">
+					<div class="card-body px-lg-5">
+						<h3 class="stat-title card-title align-self-center mb-sm-5 mb-3">{$buzz_title}</h3>
+						<span class="w3-line"></span>
+						{$buzz_content}
+						{$buzz_button}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- //about -->
+	<!-- why chosse us -->
+	<div class="agileits-services py-5" id="choose">
+		<div class="agileits-services-row row no-gutters py-md-3">
+			<div class="offset-lg-1">
+			</div>
+			<div class="col-lg-2 col-md-6 pl-lg-0 pl-3 wthree-title services-head">
+				<h3 class="stat-title pb-sm-5 pb-3 text-dark">{$why_title}</h3>
+				{$why_button}
+			</div> 
+			{$home_choose}
+		</div>
+	</div>
+	<!-- //why choose us -->
+ 
+	<!-- slide -->
+	<div class="slide-wthree">
+		<div class="container">
+			<div class="slide-img">
+				<img src="{$why_image}" alt="" class="img-fluid">
+			</div>
+			<h3 class="stat-title text-lg-right text-center">{$why_content}</h3>
+
+		</div>
+	</div>
+	<!-- //slide -->
+ 
+	<section class="blog_w3ls">
+		<div class="row">
+			<div class="offset-lg-1"></div>
+			<div class="col-lg-5 p-5">
+				<div class="row">
+					{$featured_list} 
+				</div>
+			</div>
+			<div class="col-lg-6 sec-5 sec-5-right p-sm-5 p-3">
+				<div class="card pt-lg-5">
+					<div class="card-body px-sm-5">
+						<h3 class="stat-title card-title align-self-center mb-sm-5 mb-3">{$adicted_title}</h3>
+						<span class="w3-line"></span>
+						{$adicted_content}
+						{$adicted_button}
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!-- //more -->
+	<!-- contact top -->
+	<div class="contact-top text-center">
+		<div class="content-contact-top">
+			<h3 class="stat-title text-white">{$contact_top_title}</h3>
+			<h2 class="stat-title text-white">{$contact_top_middle}</h2>
+			{$contact_top_content} 
+		</div>
+	</div>
+	<!-- //contact top -->
+	<!-- contact -->
+	<div class="w3-contact py-5" id="contact">
+		<div class="container">
+			<div class="row contact-form pt-md-5">
+				<!-- contact details -->
+				<div class="col-lg-6 contact-bottom d-flex flex-column contact-right-w3ls">
+					<h5>contact us</h5>
+					{$fetch_social} 
+				</div>
+				<div class="col-lg-6 wthree-form-left my-lg-0 mt-5">
+					<h5>quick inquiry</h5>
+					<!-- contact form grid -->
+					<div class="contact-top1">
+						<form action="#" method="get" class="contact-wthree">
+							<div class="form-group d-flex">
+								<label>
+									Name
+								</label>
+								<input class="form-control" type="text" placeholder="johnson" name="email" required="">
+							</div>
+							<div class="form-group d-flex">
+								<label>
+									Email
+								</label>
+								<input class="form-control" type="email" placeholder="example@email.com" name="email" required="">
+							</div>
+							<div class="form-group d-flex">
+								<label>
+									Phone
+								</label>
+								<input class="form-control" type="text" placeholder="XXXX XXXX XX" name="email" required="">
+							</div>
+							<div class="form-group d-flex">
+								<label>
+									Message
+								</label>
+								<textarea class="form-control" rows="5" id="contactcomment" placeholder="Your message" required></textarea>
+							</div>
+							<div class="d-flex  justify-content-end">
+								<button type="button" class="btn btn-agile btn-block w-50">Submit</button>
+							</div>
+						</form>
+					</div>
+					<!--  //contact form grid ends here -->
+				</div>
+
+			</div>
+			<!-- //contact details container -->
+		</div>
+	</div>
+	<!-- //contact -->
+	<!-- copyright -->
+	<div class="cpy-right text-center">
+		<p>
+			{$site_copy}
+		</p>
+	</div>
+	<!-- //copyright -->
+	<!-- js-->
+	<script type="text/javascript" src="{$full_template_url}/js/jquery.js"></script>
+	<!-- js-->
+	<!-- start-smooth-scrolling -->
+	<script type="text/javascript" src="{$full_template_url}/js/move-top.js "></script> 
+	<script type="text/javascript" src="{$full_template_url}/js/easing.js "></script>  
+	<script>
+		jQuery(document).ready(function ($) {
+			$(".scroll ").click(function (event) {
+				event.preventDefault();
+
+				$('html,body').animate({
+					scrollTop: $(this.hash).offset().top
+				}, 1000);
+			});
+		});
+	</script>
+	<!-- //end-smooth-scrolling -->
+	<!-- smooth-scrolling-of-move-up -->
+	<script>
+		$(document).ready(function () {
+			
+			 var defaults = {
+				 containerID: 'toTop', // fading element id
+				 containerHoverID: 'toTopHover', // fading element hover id
+				 scrollSpeed: 1200,
+				 easingType: 'linear' 
+			 };
+			 
+
+			$().UItoTop({
+				easingType: 'easeOutQuart'
+			});
+
+		});
+	</script>
+	<!-- <script src="{$full_template_url}/js/SmoothScroll.min.js "></script>  -->
+	<!-- //smooth-scrolling-of-move-up -->
+	<!-- Bootstrap Core JavaScript -->
+	<script type="text/javascript" src="{$full_template_url}/super/js/bootstrap-4.3.1.min.js"></script>
+	<!-- //Bootstrap Core JavaScript -->
+</body>
+
+</html>

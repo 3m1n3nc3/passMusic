@@ -1,17 +1,19 @@
 <?php
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL; 
-
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL;   
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
 	$get_playlist = isset($_GET['playlist']) ? $_GET['playlist'] : (isset($_GET['id']) ? $_GET['id'] : null);
 	$fetch_playlist = $databaseCL->fetchPlaylist($get_playlist)[0];
+
+	// Set the page title
+	$PTMPL['page_title'] = ucfirst($fetch_playlist['title']) . ' ' . $LANG['playlist'];	
+
 	$author = $framework->userData($fetch_playlist['uid'], 1);
 
-	$PTMPL['playlist_title'] = $fetch_playlist['title'];
-	$PTMPL['playlist_author'] = $author['fname'].' '.$author['lname'];  
+	$PTMPL['playlist_title'] = ucfirst($fetch_playlist['title']);
+	$PTMPL['playlist_author'] = $framework->realName($author['username'], $author['fname'], $author['lname']);  
 	$PTMPL['playlist_link'] = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$fetch_playlist['plid']);
 	$PTMPL['like_id'] = $fetch_playlist['id'];
 
@@ -23,6 +25,7 @@ function mainContent() {
 	$PTMPL['liked'] = $likes ? ' text-danger' : '';
 	$PTMPL['subscribers_counter'] = display_likes_follows(4, $fetch_playlist['id']);
 	$PTMPL['subscribe_btn'] = clickSubscribe($fetch_playlist['id'], $user['uid']);
+	$PTMPL['show_more_btn'] = showMore_button(3, $fetch_playlist['plid'], 'More', 1);
 
 	$databaseCL->user_id = $user['uid']; 
 	$get_playlist = $databaseCL->playlistEntry($fetch_playlist['id']); 
@@ -32,7 +35,7 @@ function mainContent() {
 	$play_playlist = getTrack($featured, $play_class);
 
 	$PTMPL['play_playlist'] = $featured ? $play_playlist : $play_class;
-	$PTMPL['playlist_art'] = $PTMPL['cover_photo'] = getImage($featured['art'], 1, 1);
+	$PTMPL['playlist_art'] = $PTMPL['cover_photo'] = getImage($featured['art'], 1);
 
 	$n = 0;
 	if ($get_playlist) {
@@ -61,14 +64,22 @@ function mainContent() {
     $sidebar = new themer('artists/small_right_sidebar');
     $PTMPL['small_right_sidebar'] = $sidebar->make();
 
+    // Set the seo tags
+	$PTMPL['seo_meta_plugin'] = seo_plugin($featured['art'], $PTMPL['page_title'], $LANG['listen_to'].$PTMPL['page_title']);
+
     if (isset($_GET['playlist']) && $_GET['playlist'] == 'list') {
     	$creator_id = isset($_GET['creator']) ? $_GET['creator'] : (isset($user['uid']) ? $user['uid'] : null);
 		$author = $framework->userData($creator_id, 1);
+		$PTMPL['page_title'] = ucfirst($author['username']) . '\'s ' . $LANG['playlists'];	
 
-		$PTMPL['content_title'] = '<div class="section-title">Playlists created by '.$author['fname'].' '.$author['lname'].'</div>';
+		$PTMPL['content_title'] = '<div class="section-title">Playlists created by '.$framework->realName($author['username'], $author['fname'], $author['lname']).'</div>';
     	$PTMPL['artist_card'] = playlistCard($creator_id);
     	$PTMPL['secondary_navigation'] = secondaryNavigation($creator_id);
     	$PTMPL['sidebar_statistics'] = sidebar_userSuggestions($creator_id);
+    	$PTMPL['sidebar_statistics_mod'] = '
+        <div class="overview__related">
+			'.$PTMPL['sidebar_statistics'].'
+        </div>';
 
 		$theme = new themer('artists/view_artists');
     } else {

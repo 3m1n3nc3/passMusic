@@ -8,6 +8,7 @@
 			<hr>
 			<div class="font-weight-bold">I have read through, understood and accepted Passcolabs <a href="#">Terms and Conditions</a> and <a href="#">Artists/Labels Agreement</a></div>
 			<form method="post" action="{$release_home}">
+				<input type="hidden" name="publish">
 				<div class="row p-4">
 						<div class="col-lg-6 p-3 border bg-light text-center">
 							<div class="d-flex m-2"> 
@@ -17,11 +18,11 @@
 						</div>
 						<div class="col-lg-6 p-3 border bg-light text-center">
 							<div class="d-flex m-2">
-								<a href="{$release_artwork_update}" class="btn btn-success flex-grow-1"><strong>Premium Distribution</strong></a>
+								<a role="button" href="{$premium_distribution}" class="btn btn-success flex-grow-1"><strong>Premium Distribution</strong></a>
 							</div>
-							<strong>Premium</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management and other sharing sites and blogs, inclusion in our featured playlists and reviews on various blogs (In the future this would also allow you to put your music in stores, allowing you to make money from your music).
+							{$lang->premium_details}
 							<div class="font-weight-bold">
-								$15 - Singles, $25 - EP, $35 - Albums, $40 - Ext. Albums, the $5 Annually.
+								{$premium_cost}
 							</div>
 						</div>
 				</div>

@@ -2,14 +2,18 @@
 
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime; 
-
-	$PTMPL['page_title'] = $LANG['homepage'];	 
 	
 	$PTMPL['site_url'] = $SETT['url'];
 
 	$databaseCL->track = isset($_GET['track']) ? $_GET['track'] : (isset($_GET['id']) ? $_GET['id'] : '');
 	$track = $databaseCL->fetchTracks(null, 2)[0];
 
+	// Set the page title
+	$PTMPL['page_title'] = ucfirst($track['title']);	 
+
+	$PTMPL['like_btn'] = clickLike(2, $track['id'], $user['uid']);
+	$PTMPL['more_button'] = showMore_button(1, $track['id'], 'More', 1);
+	
 	// Fetch similar tracks
 	$PTMPL['related_tracks'] = relatedItems(3, $track['id']);
 
@@ -24,8 +28,8 @@ function mainContent() {
 	$PTMPL['track_author_link'] = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$track['username']);
 	$PTMPL['track_art'] = $PTMPL['cover_photo'] = getImage($track['art'], 1, 1); 
  
-	$PTMPL['track_title'] = $track['title'];
-	$PTMPL['track_author'] = $track['fname'].' '.$track['lname'];
+	$PTMPL['track_title'] = ucfirst($track['title']);
+	$PTMPL['track_author'] = $framework->realName($track['username'], $track['fname'], $track['lname']);
 	$PTMPL['track_desc'] = $track['description'];
 	$PTMPL['track_pline'] = $track['pline'];
 	$PTMPL['track_cline'] = $track['cline'];
@@ -39,9 +43,6 @@ function mainContent() {
 	$PTMPL['like_id'] = $track['id'];
 	$PTMPL['track_audio'] = getAudio($track['audio']);
 	$PTMPL['format'] = strtolower(pathinfo($track['audio'], PATHINFO_EXTENSION));
- 
-	$PTMPL['like_button'] = clickLike(2, $track['id'], $user['uid']);
-	$PTMPL['more_button'] = showMore_button(1, $track['id']);
 
 	$PTMPL['blur_filter'] = '
 		filter: blur(18px);
@@ -61,7 +62,7 @@ function mainContent() {
     $PTMPL['small_right_sidebar'] = $sidebar->make();
 	// Show likes for this track
 	if (isset($_GET['likes'])) {
-		$PTMPL['content_title'] = '<div class="section-title">Users who like '.$track['title'].'</div>';
+		$PTMPL['content_title'] = '<div class="section-title">Users who like '.ucfirst($track['title']).'</div>';
 		$item_id = $track['id'];
 		$databaseCL->type = 2;
 		$databaseCL->limit = false;
@@ -83,6 +84,9 @@ function mainContent() {
 	} else {
 		$theme = new themer('music/track');
 	}
+	
+    // Set the seo tags
+	$PTMPL['seo_meta_plugin'] = seo_plugin($track['art'], $PTMPL['page_title'], $track['description']);
 	return $theme->make();
 }
 ?>

@@ -44,23 +44,34 @@ if ($type == 1) {
 	} elseif ($data['action'] == 'a2list') {
 		// Show the Add a track to playlist form
 		$option = playlistManager(3, $data['track']);
-	} elseif ($data['action'] == 'create') {
-		// Create a new playlist
+	} elseif ($data['action'] == 'edlist') {
+		// Show the Add a track to playlist form
+		$option = playlistManager(4, $data['track']);
+	} elseif ($data['action'] == 'create' || $data['action'] == 'edit') {
+		// Create a new or update playlist
+		
+		$act = ($data['action'] == 'create' ? 1 : 0);
 		$databaseCL->extra = true;
 		$pl = $databaseCL->fetchPlaylist($data['title'])[0];
 		if ($data['title'] == '') {
 			$errors[] = 'Title can not be empty';
-		} elseif ($pl) {
+		} elseif ($pl && $act) {
 			$errors[] = 'You already have a playlist named "'.$data['title'].'"';
 		}
 		if (empty($errors) === true) {
 			$plid = $framework->token_generator($length = 10);
 			
-			$sql = sprintf("INSERT INTO playlist (`by`, `title`, `public`, `plid`) VALUES ('%s', '%s', '%s', %s)", $user['uid'], $data['title'], $data['public'], $plid);
+			if ($act) {
+				$sql = sprintf("INSERT INTO playlist (`by`, `title`, `public`, `plid`) VALUES ('%s', '%s', '%s', %s)", $user['uid'], $data['title'], $data['public'], $plid);
+				$done = ' created';
+			} else {
+				$sql = sprintf("UPDATE playlist SET `title` = '%s', `public` = '%s' WHERE `plid` = '%s'", $data['title'], $data['public'], $data['id']);
+				$done = ' updated';
+			}
   			$do = $framework->dbProcessor($sql, 0, 1);
  
       		if ($do == 1) {
-      			$option = messageNotice('Playlist "'.$data['title'].'" Successfully created', 1);
+      			$option = messageNotice('Playlist "'.$data['title'].'" Successfully'.$done, 1);
       		} else {
       			$option = $do;
       		}
@@ -68,7 +79,8 @@ if ($type == 1) {
 			$option = messageNotice($errors[0], 3);
 		}
 	} elseif ($data['action'] == 'add') { 
-        $al = strpos($data['track'], ',');
+
+        str_ireplace(',', '', $data['track'], $al);
         if ($al) {
 			// Add album to playlist
         	$list_tracks = explode(',', $data['track']);

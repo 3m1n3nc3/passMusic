@@ -3,22 +3,36 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $framework, $databaseCL, $marxTime; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	$PTMPL['page_title'] = $LANG['artist'];	 
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
 	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($_GET['id']) ? $_GET['id'] : '');
     $artist = $framework->userData($artist_id, 1);
 
-    if ($artist) {
+    if ($artist) { 
+
+    	// Set the page title
+		$PTMPL['page_title'] = $LANG['artist'];	 
 
 		$PTMPL['user_id'] = $artist['uid'];
-		$PTMPL['profile_photo'] = getImage($artist['photo'], 1, 1);
+		$PTMPL['profile_photo'] = getImage($artist['photo'], 1);
 		$PTMPL['cover_photo'] = (($artist['cover']) && ($artist['photo'])) ? getImage($artist['cover'], 1, 1) : getImage($artist['photo'], 1, 1);
 		$PTMPL['introduction'] = $artist['intro'] ? $artist['intro'] : 'New User';
 		$PTMPL['user_role'] = $role = $framework->userRoles($artist['role']);
-		$PTMPL['fullname'] = $artist['fname'].' '.$artist['lname'];
+		$PTMPL['fullname'] = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
 		$PTMPL['verified'] = $artist['verified'] ? ' is-verified' : '';
+
+    	// Set the page title
+		$PTMPL['page_title'] = $PTMPL['fullname'];	
+	
+		$social_links = fetchSocialInfo($artist, 3);
+		$PTMPL['social_links'] = $social_links ? '
+		<div class="section-title">Social Links</div>
+		<div class="related__social">
+			'.$social_links.'
+		</div>' : '';
+		
 	    $PTMPL['secondary_navigation'] = secondaryNavigation($artist['uid']);
 
 		$_albums = $databaseCL->fetchAlbum($artist['uid'], 1);
@@ -33,6 +47,9 @@ function mainContent() {
 			$PTMPL['list_albums'] = notAvailable('This '.$role.' has no albums yet', 'no-padding ');
 		}
 
+		// Show the send message link 
+	    $chat_link = showMessageLink($artist['uid'], 'fa-2x');
+
 		// Count and show the sidebar follows
 		$follower_c = $databaseCL->fetchFollowers($artist['uid'], 1);
 		$follower_f = $databaseCL->fetchFollowers($artist['uid'], 2);
@@ -41,16 +58,17 @@ function mainContent() {
 	    $PTMPL['followers'] = showFollowers($artist['uid'], 1);
 	    $PTMPL['following'] = showFollowers($artist['uid'], 2);
 
-		// Show the count and follow button of followers
-		$PTMPL['followers_display'] = display_likes_follows(null, $artist['uid']); 
-	    $PTMPL['follow_btn'] = clickFollow($artist['uid'], $user['uid']);
-
 		$databaseCL->username = $artist['username'];
 		$databaseCL->fname = $artist['fname'];
 		$databaseCL->lname = $artist['lname'];
 		$databaseCL->label = $artist['label'];
 		$PTMPL['related'] = relatedItems(2, $artist['uid']);
-	 	 
+
+		// Show the count and follow button of followers
+		$PTMPL['followers_display'] = display_likes_follows(null, $artist['uid']); 
+	    $PTMPL['follow_btn'] = clickFollow($artist['uid'], $user['uid']).$chat_link;
+
+	    // Fetch the user tracks
 	    $track_list = $databaseCL->fetchTracks($artist['uid']);
 	    if ($track_list) {
 	    	$track_list = $track_list;
@@ -69,10 +87,11 @@ function mainContent() {
 	    }
 	    $PTMPL['list_tracks'] = $list_tracks;
 
+	    // Show the most popular track
 	    $PTMPL['most_popular'] = mostPopular($artist['uid']);
 
 	    // Artist stats
-	    $track_list = $databaseCL->fetchTracks($artist['uid'], 5); 
+	    $track_list = $databaseCL->fetchTracks($artist['uid'], 5);
 	    $databaseCL->track_list = implode(',', $track_list);
 	    $fetch_stats = $databaseCL->fetchStats(null, $artist['uid'])[0];
 	    if ($fetch_stats['last_month']) {
@@ -86,10 +105,12 @@ function mainContent() {
 		    $PTMPL['show_monthly_viewers'] = showViewers();
 	    }
 
+	    // Set the seo tags
+	    $PTMPL['seo_meta_plugin'] = seo_plugin($artist['photo'], $PTMPL['page_title'], $PTMPL['introduction']);
+
     } else {
     	$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=homepage&notice=true&response=403'), 1);
     }
-
 
 	// Set the active landing page_title 
 	$theme = new themer('artists/artist');

@@ -331,6 +331,18 @@ class marxTime
         }    
         return $arr;    
     }
+
+    function retitle($title = '', $break_pos = 0) {
+        $pos1 = $break_pos;
+        $pos2 = ($pos1 + 1);
+        $retitle = explode(' ', $title);
+        if (count($retitle) > ($break_pos + 1)) {
+            $pre_title = $retitle[$pos1].' '.$retitle[$pos2];
+        } else {
+            $pre_title = $retitle[$pos1];
+        }
+        return str_replace($pre_title, $pre_title.'<br>', $title);
+    }
 }
 $marxTime = $mxtm = new marxTime;
 ?>

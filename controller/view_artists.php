@@ -3,11 +3,14 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+    $PTMPL['page_title'] = $LANG['view_artists'];   
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
 	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($user) ? $user['uid'] : '');
+    if (!$artist_id) {
+        $framework->redirect('account&view=access&login=user&referrer='.urlrecoder($SETT['url'].$_SERVER['REQUEST_URI']));
+    }
     $artist = $framework->userData($artist_id, 1);
 
     $cl = $databaseCL->userLikes($artist_id, 0, 3);
@@ -20,6 +23,8 @@ function mainContent() {
     		$last_track = $row['artist_id'];
     	}
         $PTMPL['load_more_btn'] = count($cl) > $configuration['page_limits'] ? '<button onclick="loadMore($(this))" data-last-type="3" data-last-personal="" data-last-artist="'.$artist_id.'" data-last-track="'.$last_track.'" class="show-more button-light" id="load-more">Load More</button>' : '';
+    } else {
+        $_artists = notAvailable('No artists to show', 'no-padding ');
     }
 
     $PTMPL['artist_card'] = $_artists;

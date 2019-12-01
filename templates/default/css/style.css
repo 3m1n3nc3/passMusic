@@ -1,6 +1,6 @@
 .dark-background {
   background-color: #333;
-  color: white;
+  color: white; 
 }
 
 .navbar-logo {
@@ -38,45 +38,39 @@
 }
 
 :root {
-	--ck-image-style-spacing: 1.5em;
+	--ck-image-style-spacing: 1.5em!important;
 }
 
-.ck-content {
-	& .image-style-side,
-	& .image-style-align-left,
-	& .image-style-align-center,
-	& .image-style-align-right {
-		max-width: 50%;
-	}
+.ck-content { 
 
 	& .image-style-side {
-		float: right;
+		float: right!important;
 		margin-left: var(--ck-image-style-spacing);
 	}
 
 	& .image-style-align-left {
-		float: left;
+		float: left!important;
 		margin-right: var(--ck-image-style-spacing);
 	}
 
 	& .image-style-align-center {
-		margin-left: auto;
-		margin-right: auto;
+		margin-left: auto!important;
+		margin-right: auto!important;
 	}
 
 	& .image-style-align-right {
-		float: right;
+		float: right!important;
 		margin-left: var(--ck-image-style-spacing);
 	}
 }
 
 .ck-content .image > figcaption {
-	display: table-caption;
-	caption-side: bottom;
-	word-break: break-word;
-	color: hsl(0, 0%, 20%);
-	background-color: hsl(0, 0%, 97%);
-	padding: .6em;
-	font-size: .75em;
-	outline-offset: -1px;
+	display: table-caption!important;
+	caption-side: bottom!important;
+	word-break: break-word!important;
+	color: hsl(0, 0%, 20%)!important;
+	background-color: hsl(0, 0%, 97%)!important;
+	padding: .6e!importantm;
+	font-size: .75em!important;
+	outline-offset: -1px!important;
 }

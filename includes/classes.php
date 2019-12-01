@@ -70,6 +70,7 @@ class framework {
                 $sql = sprintf("SELECT * FROM " . TABLE_USERS . " WHERE username = '%s'", $user);
 	    	}
 	    }
+	    $this->filter = $this->limited = $this->limiter = $this->limit = null;
         // Process the information
         $results = $this->dbProcessor($sql, 1);
         if ($type !== 0) {
@@ -190,12 +191,18 @@ class framework {
 
         $var_email = $this->checkEmail($email, 1);
 		$var_user = $this->userData($username, 2); 
-        if ($firstname == '' || $lastname == '' || $email == '' || $intro == '') {
-            $msg = messageNotice($LANG['_all_required']);
-        } elseif ($var_email && $var_email['email'] !== $user['email']) {
-        	$msg = messageNotice($LANG['email_used']);
+        if (mb_strlen($username) < 5) {
+            $msg = messageNotice($LANG['username_short'], 0, 2);
         } elseif ($var_user && $var_user['username'] !== $user['username']) {
-        	$msg = messageNotice($LANG['username_used']);
+        	$msg = messageNotice($LANG['username_used'], 0, 2);
+        } elseif ($firstname == '' || $lastname == '' || $email == '') {
+            $msg = messageNotice($LANG['_all_required'], 0, 2);
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $msg = messageNotice($LANG['invalid_email'], 0, 2);   
+        } elseif ($var_email && $var_email['email'] !== $user['email']) {
+        	$msg = messageNotice($LANG['email_used'], 0, 2);
+        } elseif ($var_user && $var_user['username'] !== $user['username']) {
+        	$msg = messageNotice($LANG['username_used'], 0, 2);
         } else {
             $sql = sprintf("UPDATE " . TABLE_USERS . " SET `username` = '%s', `fname` = '%s', `lname` = '%s', " .
                 "`email` = '%s', `country` = '%s', `state` = '%s', `city` = '%s', `intro` = '%s', `newsletter` = '%s'%s WHERE " .
@@ -450,7 +457,7 @@ class framework {
     function captchaVal($captcha) {
         global $configuration;
         if ($configuration['captcha']) {
-            if ($captcha == "{$_SESSION['captcha']}" && !empty($captcha)) {
+            if ($captcha === "{$_SESSION['captcha']}") {
                 return true;
             } else {
                 return false;
@@ -966,19 +973,6 @@ class framework {
 	} 
 
 	/* 
-	* Create url referer to safely redirect users
-	*/
-	function urlReferrer($url, $type) {
-	    if ($type == 0) {
-	        $url = str_replace('/', '@', $url); 
-	    } else {
-	        $url = str_replace('@', '/', $url); 
-	    }
-	 
-	    return $url;
-	} 
-
-	/* 
 	* Try to create the title of the url from link
 	* This assumes that there is a predefined :title:title on the link
 	*/
@@ -1004,10 +998,54 @@ class framework {
 	    return $tit;	
 	}
 
+	/**
+	 * generateButton this function will try to parse parameters 
+	 * available in the provided link and generate a button
+	 * @param  string $link this is the link to try to parse
+	 * @param  integer $type this is to determine the type of button to generate
+	 * @return string       this contains formated html representing the requested button
+	 */
+	function generateButton($button_link = '', $type = 0, $disabled = 0) {
+		global $framework;
+
+		$role = '';
+	    if ($button_link) {
+	        $button_link = explode(',', $button_link);
+	        $button_linked = '';
+	        if (is_array($button_link)) {
+	            foreach ($button_link as $link) {
+	            	$btn_type = $class = $framework->urlTitle($link, 2);
+	            	if ($type == 1) {
+	            		$scroll = strpos($link, '#') !== false ? ' scroll' : '';
+	            		$class_append = ($btn_type == 1 ? 'mt-4'.$scroll : ($btn_type == 3 ? 'btn-block w-50' : 'abt_card_btn'.$scroll));
+	            		$class = 'btn btn-agile '.$class_append;
+	            		$role = ' role="button"';
+	            		$disabled = $disabled ? ' disabled' : '';
+	            	} else {;
+	                	$class = $btn_type == 1 ? 'btn-get-started' : 'btn-services';
+	            	}
+	                $link_title = $framework->urlTitle($link);
+	                $linked = str_ireplace('-', ' ', $link);
+	                $linked = str_ireplace('_', ' ', $linked);
+	                $link = $framework->urlTitle($link, 1);
+	                $button_linked .= '<a href="'.$link.'" class="'.$class.'"'.$role.$disabled.'>'.$link_title.'</a>';
+	            }
+	        }
+	        return $button_linked;
+	    } 
+	}
+
 	function urlRequery($query = '') {
-	    global $SETT;
-		$set = '';
-		if (isset($_GET['view'])) {
+	    global $SETT; 
+		$set = ''; $rel = '';
+		if (strripos($query, 'rel=search')) {
+			$_GET['page'] = 'search';
+		}
+		if (isset($_GET['q']) && isset($_GET['rel'])) {
+			$rel = $_GET['rel'];
+			$_GET['page'] = $_GET['rel'];
+		}
+		if (isset($_GET['view']) && $rel == '') {
 			$set .= '&view='.$_GET['view'];
 		} 
 		if (isset($_GET['set'])) {
@@ -1016,7 +1054,7 @@ class framework {
 		if (isset($_GET['q']) && $_GET['page'] == 'search') {
 			$_GET['page'] = 'search';
 		}
-		if (isset($_GET['pagination'])) {
+		if (isset($_GET['pagination']) && $rel == '') {
 			$set .= '&pagination='.$_GET['pagination'];
 		} 
 		return cleanUrls($SETT['url'] . '/index.php?page=' . $_GET['page'].$set.$query);
@@ -1128,13 +1166,13 @@ class framework {
 	//Get users real name
 	function realName($username, $first = null, $last = null) { 
 		if($first && $last) {
-			$name = ucfirst($first).' '.ucfirst($last);
+			$name = ucwords($first).' '.ucwords($last);
 		} elseif($first) {
-			$name = ucfirst($first);
+			$name = ucwords($first);
 		} elseif($last) {
-			$name = ucfirst($last);
+			$name = ucwords($last);
 		} else {
-			$name = ucfirst($username);
+			$name = ucwords($username);
 		}
 		return $name;
 	}
@@ -1559,9 +1597,9 @@ class framework {
 			$all_rows = [];
 		}
 		$count = count($all_rows);
-		if (isset($_GET['page']) && $_GET['page'] == 'homepage' && !isset($_GET['archive'])) {
-			$count = $count - 1;
-		}
+		// if (isset($_GET['page']) && $_GET['page'] == 'homepage' && !isset($_GET['archive'])) {
+		// 	$count = $count - 1;
+		// }
 		$this->limiter = $databaseCL->limiter = $perpage; 
 		$this->start = $databaseCL->start = $start;	
 
@@ -1649,19 +1687,23 @@ class social extends framework {
 		$timeNow = time();
 		$data = $this->userData($user, 1);
 		$online_time = $gettime ? $gettime : $configuration['online_time']; 
+		$data_online_time = (isset($this->data_online) ? $this->data_online : $data['online']);
+		$title = (isset($this->data_online) ? $LANG['last_msg'] : $LANG['last_seen']);
 
 		// Set icon to show online status
-		if(($timeNow - strtotime($data['online'])) > $online_time) {
+		if(($timeNow - strtotime($data_online_time)) > $online_time) {
 			$info = $LANG['offline'];
 			$icon = '<i class="small-icon fa fa-circle text-warning" data-toggle="tooltip" data-placement="right" data-title="'.$info.'"></i>';
-			$last = $LANG['last_seen'].' '.$marxTime->timeAgo($data['online'], 1);
+			$last = $title.' '.$marxTime->timeAgo($data_online_time, 1);
 			$status = 0;
 		} else {
 			$info = $LANG['online'];
 			$icon = '<i class="small-icon fa fa-circle text-success" data-toggle="tooltip" data-placement="right" data-title="'.$info.'"></i>';
-			$last = $LANG['last_seen'].' '.$LANG['just_now'];
+			$last = $title.' '.$LANG['just_now'];
 			$status = 1;
 		}
+		// Reset the online time
+		$this->data_online = null;
 		if ($type == 0) {
 			return array('icon' => $icon, 'text' => $info, 'last_seen' => $last);
 		} else {
@@ -1737,6 +1779,7 @@ class social extends framework {
 				ORDER BY sender ASC%s", $user['uid'], $status, $limit); 
 			return $this->dbProcessor($sql, 1); 	//
 		} elseif ($type == 6) {
+			// Fetch group thread
 			return $this->dbProcessor(sprintf("SELECT thread FROM messenger WHERE `thread` LIKE '%s' AND `receiver` = '$receiver'", '%grpc_%'), 1)[0];	
 		}	
 	}
@@ -1943,14 +1986,18 @@ class social extends framework {
 			// Show the follow link 
 			$follow = clickFollow($receiver, $user['uid']);
 		}
-		// Show the user's online status 
-		$online = $this->online_state($receiver);
 		// Check and block chat follower 
 		$blocked = $databaseCL->manageBlock($receiver);
 		// Check if logged user is blocked 
 		// Fetch messages
 		$fetch_messages = $this->messenger(0, $receiver);
 		$fetch_messages = $fetch_messages ? $fetch_messages : $this->messageError($LANG['too_quiet']);
+
+		// Show the user's online status 
+		if (isset($_SESSION['group_thread'])) {
+			$this->data_online = $this->fetchGroupMessages(0, $receiver)[0]['date'];
+		}
+		$online = $this->online_state($receiver);
 
 		// Show the input if the user is not blocked
 		if ($blocked['status'] && $blocked['user'] == $user['uid']) {
@@ -1981,7 +2028,7 @@ class social extends framework {
         	<a href="'.$profile_link.'" class="px-1">'.$profile_name.'</a>
         	'.$follow.'
         	'.$blocked['link_icon'].'
-        	<span class="float-right">'.(!isset($project) ? $online['last_seen'] : '').'</span>
+        	<span class="float-right">'.$online['last_seen'].'</span>
         </div>
         <div class="type_msg">
           <div class="input_msg_write">
@@ -2123,15 +2170,20 @@ class social extends framework {
 		global $SETT, $LANG, $configuration, $user, $marxTime, $framework, $databaseCL; 
 
 		$process = $databaseCL->fetchFollowers($user_id, 1);
-		$person = '';
+		$person = $chat_btn = '';
 		if ($process) {
 			foreach ($process as $followers) {
 				$_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$followers['username']);
+			    $chat_link = showMessageLink($followers['uid'], 'mx-5 pc-font-1_5'); 
+
 				$person .= '
-				<a href="'.$_link.'" class="friend">
-					<i class="ion-ios-person"></i>
-					'.$framework->realName($followers['username'], $followers['fname'], $followers['lname']).'
-				</a>';
+				<div class="friend">
+					<a href="'.$_link.'">
+						<i class="ion-ios-person"></i>
+						'.$framework->realName($followers['username'], $followers['fname'], $followers['lname']).'
+					</a> 
+					'.$chat_link.'
+				</div>';
 			}
 		}
 		return $person;
@@ -2190,6 +2242,7 @@ class social extends framework {
 						$projc = $databaseCL->fetchProject($message['receiver'])[0];
 						$profile = $this->userData($message['sender'], 1);
 						$last_msg = $messaging->fetchGroupMessages(4, $message['sender'])[0];
+						$last_msg['message'] = $message['message'];
 						$user_profile_id = ($projc['id'] ? $projc['id'] : $last_msg['receiver']);
 						$prjt = ' on Project '.$projc['title'];
 						$last_msg_thread = $message['thread'];
@@ -2775,11 +2828,12 @@ class databaseCL extends framework {
 				}
 			}
 			return $rows;
-		} elseif (6) {
+		} elseif ($type == 6) {
 			$sql = sprintf("SELECT * FROM users, tracks WHERE users.uid = tracks.artist_id%s%s", $filter, $limit);
 		} else {
 			$sql = sprintf("SELECT * FROM users,tracks WHERE tracks.artist_id = '%s' AND users.uid = tracks.artist_id AND tracks.id NOT IN (SELECT track FROM albumentry WHERE 1)", $this->db_prepare_input($artist_id));
 		}
+		$this->limiter = $this->filter = null;
 		return $this->dbProcessor($sql, 1);
 	}
 
@@ -2890,7 +2944,8 @@ class databaseCL extends framework {
 		if ($type == 3) {
 			$type = isset($this->like_type) ? $this->like_type : 2;
 			$sql = sprintf("SELECT (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND `type` = '%s') as total, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND CURDATE() = date(`time`) AND `type` = '%s') as today, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND CURDATE()-1 = date(`time`) AND `type` = '%s') as yesterday, (SELECT count(`item_id`) FROM `likes` WHERE `item_id` = '%s' AND `time` BETWEEN DATE_SUB( CURDATE( ) ,INTERVAL 14 DAY ) AND DATE_SUB( CURDATE( ) ,INTERVAL 7 DAY ) AND `type` = '%s') as last_week", $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type, $this->db_prepare_input($id), $type);
-				return $this->dbProcessor($sql, 1);
+			$user = null;
+			return $this->dbProcessor($sql, 1);
 		} else {
 			$sql = sprintf("SELECT COUNT(item_id) AS likes_count,item_id FROM likes WHERE `item_id` = '%s' AND `type` = '%s'", $id, $type);
 
@@ -2902,6 +2957,7 @@ class databaseCL extends framework {
 	  				<i class="ion-ios-heart text-danger"></i> 
 	  				<span id="likes-count-'.$id.'">'.$likes_count.'</span>
 	  			</span>';
+			$user = null;
 	  		return $likes_count;
 	  	}
 	}
@@ -2954,6 +3010,7 @@ class databaseCL extends framework {
 		} else {
 			$sql = sprintf("SELECT * FROM albums WHERE `id` != '%s' AND `public` = '1' AND (`title` LIKE '%s' OR `pline` LIKE '%s' OR `cline` LIKE '%s' OR `tags` LIKE '%s') ORDER BY RAND() %s", $id, '%'.$this->title.'%', '%'.$this->pline.'%', '%'.$this->cline.'%', '%'.$this->tags.'%', $limit);
 		}
+		$this->limit = null;
   		return $this->dbProcessor($sql, 1);
 	}
 
@@ -3007,16 +3064,17 @@ class databaseCL extends framework {
 		// 3: Check if a user is following another ($user_id Can be null)
 		// 1: get Followers
 		// 0 or null: get Following
-		// 
+		//
 		$next = isset($this->last_id) ? " AND relationship.id > ".$this->last_id : '';
 		$limit = isset($this->limit) ? ($this->limit !== true ? " LIMIT ".$this->limit : " LIMIT ".$configuration['page_limits']) : ''; 
 		if ($type == 3) {
-			$sql = sprintf("SELECT follower_id FROM relationship WHERE `follower_id` = '%s' AND leader_id` = '%s'", $this->leader_id, $this->follower_id);
-		} if ($type == 1) {
+			$sql = sprintf("SELECT follower_id FROM relationship WHERE `follower_id` = '%s' AND `leader_id` = '%s'", $this->follower_id, $this->leader_id);
+		} elseif ($type == 1) {
 			$sql = sprintf("SELECT uid,username,fname,lname,label,photo, relationship.id AS order_id, (SELECT COUNT(`follower_id`) FROM relationship WHERE `leader_id` = '%s') AS counter FROM relationship LEFT JOIN users ON `relationship`.`follower_id` = `users`.`uid` WHERE `leader_id` = '%s'%s ORDER BY order_id%s", $user_id, $user_id, $next, $limit);
 		} else {
 			$sql = sprintf("SELECT uid,username,fname,lname,label,photo, relationship.id AS order_id, (SELECT COUNT(`leader_id`) FROM relationship WHERE `follower_id` = '%s') AS counter  FROM relationship LEFT JOIN users ON `relationship`.`leader_id` = `users`.`uid` WHERE `follower_id` = '%s'%s ORDER BY order_id%s", $user_id, $user_id, $next, $limit);
 		}
+		$this->limit = $this->last_id = null;
   		return $this->dbProcessor($sql, 1);
 	}
 
@@ -3041,7 +3099,9 @@ class databaseCL extends framework {
 			$extra = $this->extra == true ? ' `playlist`.`by` = \''.$user['uid'].'\' AND ' : $this->extra;
 		}
 		if ($type == 1) {
-			$sql = sprintf("SELECT * FROM users,playlist WHERE `playlist`.`by` = '%s' AND `users`.`uid` = `playlist`.`by`", $this->db_prepare_input($id));
+			$plby = $this->db_prepare_input($id);
+			$order = isset($this->order) ? $this->order : '';
+			$sql = sprintf("SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND (`playlist`.`by` = '$plby'%s)%s", $filter, $order);
 		} elseif ($type == 2) {
 			$private = !isset($this->get_all) ? ' AND `playlist`.`public` = 1': '';
 			$sql = sprintf("SELECT *, (SELECT count(track) FROM playlistentry WHERE `playlist` = playlist.id) AS track_count , (SELECT count(subscriber) FROM playlistfollows WHERE `playlist` = playlist.id) AS subscribers  FROM users,playlist WHERE `users`.`uid` = `playlist`.`by`%s%s%s", $private, $filter, $limit);
@@ -3054,6 +3114,7 @@ class databaseCL extends framework {
 				$sql = sprintf("SELECT * FROM users,playlist WHERE `users`.`uid` = `playlist`.`by` AND %s(`playlist`.`plid` = '%s') OR (`playlist`.`id` = '%s') OR (`playlist`.`title` = '%s')", $extra, $this->db_prepare_input($id), $this->db_prepare_input($id), $this->db_prepare_input($id));
 			}
 		}
+		$this->limiter = $this->limit = $this->filter = $this->get_all = $this->order = $this->extra = null;
 		return $this->dbProcessor($sql, 1);
 	}
 	
@@ -3361,10 +3422,11 @@ class databaseCL extends framework {
 	    // Show the regular results
 
 	    $limit = isset($this->limiter) ? sprintf(" ORDER BY id DESC LIMIT %s, %s", $this->start, $this->limiter) : '';
-
+	    $uqr = '';
         if (isset($this->tags)) {
-            $tags = sprintf("(`tags` LIKE '%s')", '%'.db_prepare_input($q).'%');
+            $tags = sprintf("(`tags` LIKE '%s')", '%'.$this->db_prepare_input($q).'%');
         } else { 
+        	$uqr = sprintf(" OR `by` IN (SELECT uid FROM users WHERE `username` LIKE '%s')", '%'.$this->db_prepare_input($q).'%');
             $tags = sprintf("(`title` LIKE '%s' OR `genre` LIKE '%s')", '%'.$this->db_prepare_input($q).'%', '%'.$this->db_prepare_input($q).'%');
         }
         $title_only = sprintf("(`title` LIKE '%s')", '%'.$this->db_prepare_input($q).'%');
@@ -3372,28 +3434,34 @@ class databaseCL extends framework {
 	    if (empty($filter)) {
 	 
 	        if ($x == 0) { 
-	            $users = sprintf("SELECT uid AS id, concat_ws(' ',fname,lname) AS title, username AS safe_link, photo AS art, intro AS description, 1 AS type FROM users WHERE `username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s'", '%'.$q.'%', '%'.$q.'%');
+	            $users = sprintf("SELECT uid AS id, concat_ws(' ',fname,lname) AS title, username AS safe_link, photo AS art, intro AS description, label AS `by`, 1 AS type FROM users WHERE `username` LIKE '%s' OR concat_ws(' ', `fname`, `lname`) LIKE '%s'", '%'.$q.'%', '%'.$q.'%');
 
-	            $tracks = sprintf("SELECT id, title, safe_link, art, description, 2 AS type FROM tracks WHERE `public` = '1' AND %s", $tags); 
+	            $tracks = sprintf("SELECT id, title, safe_link, art, description, artist_id AS `by`, 2 AS type FROM tracks WHERE `public` = '1' AND %s", $tags); 
 
-	            $albums = sprintf("SELECT id, title, safe_link, art, description, 3 AS type FROM albums WHERE `public` = '1' AND  %s", $tags); 
+	            $albums = sprintf("SELECT id, title, safe_link, art, description, `by`, 3 AS type FROM albums WHERE `public` = '1' AND  %s%s", $tags, $uqr); 
 
-	            $projects = sprintf("SELECT id, title, safe_link, cover AS art, details AS description, 4 AS type FROM projects WHERE `status` = '1' AND %s", $tags); 
+	            $projects = sprintf("SELECT id, title, safe_link, cover AS art, details AS description, creator_id AS `by`, 4 AS type FROM projects WHERE `status` = '1' AND %s", $tags); 
 
-	            $instrumentals = sprintf("SELECT id, title, file AS safe_links, 'music.png' AS art, tags AS description, 5 AS type FROM instrumentals WHERE `hidden` = '0' AND %s", $tags);  
+	            $instrumentals = sprintf("SELECT id, title, file AS safe_links, 'music.png' AS art, tags AS description, user AS `by`, 5 AS type FROM instrumentals WHERE `hidden` = '0' AND %s", $tags);  
 
-	            $playlist = sprintf("SELECT id, title, plid AS safe_links, 'playlist.png' AS art, title AS description, 6 AS type FROM playlist WHERE `public` = '1' AND %s", $title_only);  
+	            $playlist = sprintf("SELECT id, title, plid AS safe_links, 'playlist.png' AS art, title AS description, `by`, 6 AS type FROM playlist WHERE `public` = '1' AND %s%s", $title_only, $uqr);  
 
-	            $select =  sprintf("%s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s %s", $users, $tracks, $albums, $projects, $instrumentals, $playlist, $limit);
+	            $select = sprintf("%s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s UNION ALL %s%s", $users, $tracks, $albums, $projects, $instrumentals, $playlist, $limit);
 	        }
+	    } elseif ($filter === 'find') {
+	    	// Fetch users for who to follow
+	    	$limit = isset($this->limit) ? sprintf(" ORDER BY RAND() LIMIT %s", $this->limit) : ' ORDER BY RAND()';
+	        $select = sprintf("SELECT uid AS id, concat_ws(' ',fname,lname) AS title, username AS safe_link, photo AS art, intro AS description, label AS `by`, 1 AS type FROM users WHERE `role` >= '2'%s", $limit);
 	    } else {
-			$tracks = "SELECT id, title, safe_link, art, description, 2 AS type FROM tracks WHERE `public` = '1' AND `featured` = '1'"; 
+	    	$blimit = $limit ? $limit : sprintf(" ORDER BY RAND() LIMIT %s", 4);
+
+			$tracks = "SELECT id, title, safe_link, art, description, 2 AS type FROM tracks WHERE `public` = '1' AND (`featured` = '1' OR `upload_time` >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH))"; 
 	    	
 	    	$projects = "SELECT id, title, safe_link, cover AS art, details AS description, 4 AS type FROM projects WHERE `status` = '1' AND  `recommended` = '1'"; 
 
 	        $playlist = "SELECT id, title, plid AS safe_links, 'playlist.png' AS art, title AS description, 6 AS type FROM playlist WHERE `public` = '1' AND `featured` = '1'";  
 
-	        $select =  sprintf("%s UNION ALL %s UNION ALL %s %s", $tracks, $projects, $playlist, $limit);
+	        $select = sprintf("%s UNION ALL %s UNION ALL %s %s", $tracks, $projects, $playlist, $blimit);
 	    }
 
 	    return $this->dbProcessor($select,1);
@@ -3495,15 +3563,19 @@ class databaseCL extends framework {
 			return $table_row;
 	}
 
-	function categoryOptions($get_post = null) {
+	function categoryOptions($type = 0, $get_post = null) {
 		global $SETT, $framework;
 
 		// Set category select options for new posts
-		$option = '';
-		$category = $this->dbProcessor("SELECT id, title, value FROM categories", 1);
-		foreach ($category as $row) { 
-			$sel = (isset($_POST['category']) && $_POST['category'] == $row['value']) || ($get_post['category'] == $row['value']) ? ' selected="selected"' : ''; 
-			$option .= '<option value="'.$row['value'].'"'.$sel.'>'.$row['title'].'</option>';
+		$category = $this->dbProcessor("SELECT id, title, value, info FROM categories", 1);
+		if ($type == 0) {
+			$option = '';
+			foreach ($category as $row) { 
+				$sel = (isset($_POST['category']) && $_POST['category'] == $row['value']) || ($get_post['category'] == $row['value']) ? ' selected="selected"' : ''; 
+				$option .= '<option value="'.$row['value'].'"'.$sel.'>'.$row['title'].'</option>';
+			}
+		} else {
+			return $category;
 		}
 		return $option;
 	}

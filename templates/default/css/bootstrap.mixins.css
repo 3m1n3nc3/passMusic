@@ -6549,7 +6549,7 @@ fieldset:disabled a.btn {
 }
 
 .dropdown-notification .dropdown-notification-inner, .dropdown-message .dropdown-message-inner {
-  max-height: 500px;
+  max-height: 350px;
   overflow-y: scroll;
 }
 

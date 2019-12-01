@@ -20,6 +20,7 @@ $SETT['working_dir'] = $_SERVER["DOCUMENT_ROOT"];
 
 // $_SESSION['username'] = 'davidson';
 // Check who is logged in right now
+$user = $profile = $admin = null;
 if (isset($_SESSION['username'])) { 
 	$user = $framework->userData($_SESSION['username'], 2);
 	$user_role = $framework->userRoles();
@@ -35,4 +36,11 @@ if (isset($_SESSION['admin'])) {
 
 if (isset($_GET['profile']) && isset($_GET['username'])) { 
 	$profile = $framework->userData($framework->db_prepare_input($_GET['username']), 2); 
+}
+
+if (isset($_GET['referrer'])) {
+	$_SESSION['referrer'] = $_GET['referrer'];
+	$referrer = $_GET['referrer'];
+} else {
+	$referrer = null;
 }

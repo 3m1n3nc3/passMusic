@@ -3,7 +3,7 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	$PTMPL['page_title'] = $LANG['explore'].' '.$configuration['site_name'];	 
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
@@ -15,12 +15,14 @@ function mainContent() {
 
     // Choose to display sets or the explore page
     if (isset($_GET['sets']) && $_GET['sets'] !== '') {
+        $PTMPL['page_title'] = $LANG['explore'] .' '. $_GET['sets'] .' '.$_GET['go'];    
+
         $type = $_GET['sets'] == 'latest' ? 1 : null;
         $databaseCL->genre = $_GET['go']; 
         $top_tracks = $databaseCL->fetchTopTracks($type);
         
         $track_list = '';
-        if ($top_tracks) {
+        if ($top_tracks) { 
             foreach ($top_tracks as $rows) {  
                 $track_list .= trackDetail__card($rows, 1);
             }
@@ -58,7 +60,7 @@ function mainContent() {
         // Show artists you may know 
         if ($user) {
             $simi = $databaseCL->fetchFollowers($user['uid'])[0];
-            $related_artist_sub = 'Top tracks from artists similar to '.$simi['fname'].' '.$simi['lname'];
+            $related_artist_sub = 'Top tracks from artists similar to '.$framework->realName($simi['username'], $simi['fname'], $simi['lname']);
         } else {
             $related_artist_sub = 'Top selected tracks from artists you may know';
         }
@@ -66,14 +68,14 @@ function mainContent() {
         $PTMPL['show_artists_you_may_know'] = $show_new_charts ? sprintf($explore_bar, 'Artists you may know', $related_artist_sub, $you_may_know) : ''; 
 
         // Songs playlists
-        $pl_types = array('slow', 'Dog', 'food', 'way', 'play', 'song');
+        $pl_types = $databaseCL->categoryOptions(1);
         if ($pl_types) {
             $playlistster = '';
             foreach ($pl_types as $key => $value) {
-                $databaseCL->title = $value;
+                $databaseCL->title = $value['title'];
                 $playlist_one = topTracks(4);
-                $playlist_one_sub = 'Popular Playlist from our community';
-                $playlists = $playlist_one ? sprintf($explore_bar, ucfirst($value), $playlist_one_sub, $playlist_one) : ''; 
+                $playlist_one_sub = $value['info'];//'Popular Playlist from our community';
+                $playlists = $playlist_one ? sprintf($explore_bar, ucwords($value['title']), $playlist_one_sub, $playlist_one) : ''; 
                 $playlistster .= $playlist_one ? $playlists : '';
             }
             $PTMPL['playlist_one'] = $playlistster;
@@ -84,13 +86,16 @@ function mainContent() {
     $PTMPL['sidebar_statistics'] = sidebarStatistics($artist_id);
  
     // Fetch suggested users  
-    $PTMPL['sidebar_suggested_users'] = sidebar_userSuggestions($artist_id); 
+    $PTMPL['sidebar_suggested_users'] = sidebar_userSuggestions($artist_id);
 
     // Fetch suggested tracks
     $PTMPL['sidebar_suggested_tracks'] = sidebar_trackSuggestions($artist_id); 
 
     // Show the secondary navigation bar
     $PTMPL['secondary_navigation'] = secondaryNavigation($artist_id);
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title'], $PTMPL['page_title']);
     
 	// Set the active landing page_title 
 	$theme = new themer('explore/content');

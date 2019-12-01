@@ -41,7 +41,7 @@
           <div role="tabpanel" class="tab-pane active" id="artist-overview">
             <div class="overview">
               <div class="overview__artist">
-                
+                {$show_more_btn}
                 <!-- Project Details-->
                 <div class="section-title">Biography</div>
                 <div class="latest-release"> 
@@ -79,18 +79,7 @@
               <!-- related Artists section -->
               <div class="overview__related">
 
-                <div class="section-title">Social Links</div>
-                <div class="related__social">
-                  <div class="social__link">
-                    <a href="http://facebook.com/"><i class="fa fa-facebook-square"></i> Facebook</a>
-                  </div>
-                  <div class="social__link">
-                    <a href="http://twitter.com/"><i class="fa fa-twitter-square"></i> Twitter</a>
-                  </div>
-                  <div class="social__link">
-                    <a href="http://instagram.com/"><i class="fa fa-instagram"></i> Instagram</a>
-                  </div>
-                </div>
+                {$social_links}
 
                 <!-- Show relationships -->
                 {$followers} 

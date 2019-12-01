@@ -138,7 +138,7 @@ if (isset($_GET['action'])) {
             $new_image      = strtolower(mt_rand().'_'.mt_rand().'_'.mt_rand().'_n.'.$extension); 
             $file_location  = $files_path . $new_image;
 
-            if ($image_size[0] === $i_width & $image_size[1] === $i_height) {
+            if ($image_size[0] !== $i_width & $image_size[1] !== $i_height) {
                 $msg = messageNotice(sprintf($LANG['image_res_notice'], $i_width.' x '.$i_height), 3); 
                 $status = 'error';
                 $code = 0;

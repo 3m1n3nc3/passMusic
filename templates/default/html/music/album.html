@@ -23,22 +23,12 @@
       <div class="artist__content"> 
         <!-- Overview --> 
         <div class="overview">
-          <div class="overview__artist">
+          <div class="overview__artist"> 
             
             <!-- Project Details-->
             <div class="section-title track__actions">
               {$like_button}
-              <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
-                <button class="button-light more" type="button" id="moreDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">
-                <i class="ion-ios-more"></i> More
-                </button>
-                <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown">
-                  <li><a href="#">Start Radio</a></li>
-                  <li><a href="#">Add to playlist</a></li>
-                  <li><a href="#"id="copyable" data-clipboard-text="{$album_link}">Copy Album link</a></li>
-                  <li><a href="#">Delete</a></li> 
-                </ul>
-              </span>  
+              {$more_button} 
             </div>
             <div class="latest-release"> 
               <div class="project_details">

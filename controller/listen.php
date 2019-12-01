@@ -3,24 +3,36 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	$PTMPL['page_title'] = $LANG['listen'];	 
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
-	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($user) ? $user['uid'] : '');
+	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($user) ? $user['uid'] : null);
+	if (!$artist_id) {
+		$framework->redirect('account&view=access&login=user&referrer='.urlrecoder($SETT['url'].$_SERVER['REQUEST_URI']));
+	}
     $artist = $framework->userData($artist_id, 1);
     $databaseCL->personal_id = $personal = !isset($_GET['artist']) ? $user['uid'] : NULL;
 
 	$PTMPL['user_id'] = $artist['uid'];
-	$PTMPL['profile_photo'] = getImage($artist['photo'], 1, 1);
+	$PTMPL['profile_photo'] = getImage($artist['photo'], 1);
 	$PTMPL['cover_photo'] = getImage($artist['cover'], 1, 1);
 	$PTMPL['introduction'] = $artist['intro'] ? $artist['intro'] : 'New User';
 	$PTMPL['user_role'] = $role = $framework->userRoles($artist['role']);
-	$PTMPL['fullname'] = $artist['fname'].' '.$artist['lname'];
+	$PTMPL['fullname'] = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
 	$PTMPL['verified'] = $artist['verified'] ? ' is-verified' : '';
+	
+	$social_links = fetchSocialInfo($artist, 3);
+	$PTMPL['social_links'] = $social_links ? '
+	<div class="section-title">Social Links</div>
+	<div class="related__social">
+		'.$social_links.'
+	</div>' : '';
+
     $PTMPL['secondary_navigation'] = secondaryNavigation($artist_id);
  
 	if (isset($_GET['to'])) {
+		$PTMPL['page_title'] = $LANG['listen_to'].$_GET['to'];	 
 		// Listen to tracks
 		// 
 		if ($_GET['to'] == 'tracks') {
@@ -42,13 +54,13 @@ function mainContent() {
 		    		$list_tracks .= trackLister($rows, $n, 1); 
 		    	}
 		    } else {
-		        $list_tracks = notAvailable('No tracks here', 'no-padding ');
+		        $list_tracks = notAvailable('No tracks here');
 		    }
 		    $PTMPL['list_tracks'] = $list_tracks; 
 		} elseif ($_GET['to'] == 'albums') {
 			// Listen to albums
 			// 		 
-			$PTMPL['favorite_title'] = 'Favorite albums by '.$artist['fname'].' '.$artist['lname'];
+			$PTMPL['favorite_title'] = 'Favorite albums by '.$framework->realName($artist['username'], $artist['fname'], $artist['lname']);
 			$album_list = $databaseCL->listLikedItems($artist['uid'], 1);
 
 		    $list_albums = '';
@@ -66,7 +78,7 @@ function mainContent() {
 		    		$list_albums .= albumsLister($rows['by'], $rows);
 		    	}
 		    } else {
-		        $list_albums = notAvailable('No albums here', 'no-padding ');
+		        $list_albums = notAvailable('No albums here');
 		    }
 		    $PTMPL['list_tracks'] = $list_albums; 
 		} elseif ($_GET['to'] == 'artist') {
@@ -91,7 +103,7 @@ function mainContent() {
 		    		$list_tracks .= trackLister($rows, $n, 1); 
 		    	}
 		    } else {
-		        $list_tracks = notAvailable('No tracks here', 'no-padding ');
+		        $list_tracks = notAvailable('No tracks here');
 		    }
 		    $PTMPL['list_tracks'] = $list_tracks; 
 		} elseif ($_GET['to'] == 'artist-album') {
@@ -115,7 +127,7 @@ function mainContent() {
 		    		$list_albums .= albumsLister($rows['by'], $rows);
 		    	}
 		    } else {
-		        $list_albums = notAvailable('No albums here', 'no-padding ');
+		        $list_albums = notAvailable('No albums here');
 		    }
 		    $PTMPL['list_tracks'] = $list_albums; 
 		}
@@ -152,6 +164,15 @@ function mainContent() {
     if ($track_list) {
     	$PTMPL['show_monthly_viewers'] = showViewers();
     }
+
+	// Show the count and follow button of followers
+	$PTMPL['followers_display'] = display_likes_follows(null, $artist['uid']); 
+    $PTMPL['follow_btn'] = clickFollow($artist['uid'], $user['uid']);
+	
+	$PTMPL['page_title'] = $PTMPL['favorite_title'];
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin($artist['photo'], $PTMPL['page_title'], $LANG['listen_to'].$PTMPL['page_title']);
 
 	// Set the active landing page_title 
 	$theme = new themer('music/listen');

@@ -311,10 +311,11 @@ ul ul, ul ol, ol ol, ol ul {
   display: flex;
   flex-flow: row nowrap;
   align-items: center;
-  min-height: 60px;
+  max-height: 60px;
+  overflow-y: scroll;
 } 
 .playing__art img {
-  width: 60px;
+  min-width: 60px;
   height: 60px;
 }
 .playing__song {
@@ -2023,4 +2024,19 @@ img{
 
 /* ------------------------------- */
 /* End Messenger
+---------------------------------- */
+
+/* ------------------------------- */
+/* Extra Styles
+---------------------------------- */
+.inner-logo {
+  margin-top: 25px;
+  width: 150px !important;
+  height: auto;
+  border: none;
+  border-radius: unset; 
+}
+
+/* ------------------------------- */
+/* End Extra Styles
 ---------------------------------- */

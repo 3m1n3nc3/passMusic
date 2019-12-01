@@ -1,16 +1,14 @@
 <?php
 
 function mainContent() {
-	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL; 
-
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	global $PTMPL, $LANG, $SETT, $user, $configuration, $framework, $databaseCL;  
 	
 	$PTMPL['site_url'] = $SETT['url']; 
 
 	$artist_id = isset($_GET['artist']) ? $_GET['artist'] : (isset($user) ? $user['uid'] : '');
     $artist = $framework->userData($artist_id, 1);
 
-    $t = $user['uid'] == $artist_id ? 'you' : ucfirst($artist['fname']. ' '.$artist['lname']);
+    $t = $user['uid'] == $artist_id ? 'you' : $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $s = $user['uid'] == $artist_id ? '' : '\'s';
     if (isset($_GET['get']) && $_GET['get'] == 'followers') {
         // Fetch followers
@@ -21,6 +19,8 @@ function mainContent() {
         $type = 2;
         $PTMPL['follow_title'] = 'See people '.$t.' follow'.$s;
     }
+
+    $PTMPL['page_title'] = $PTMPL['follow_title']; 
  
     $databaseCL->limit = true;
     $follows = $databaseCL->fetchFollowers($artist_id, $type); 
@@ -33,19 +33,19 @@ function mainContent() {
         $follows_count = $databaseCL->fetchFollowers($artist_id, $type);
         $PTMPL['load_more_btn'] = count($follows_count) > $configuration['page_limits'] ? '<button onclick="loadMore($(this))" data-last-type="4" data-last-personal="'.$type.'" data-last-artist="'.$artist_id.'" data-last-track="'.$last_id.'" class="show-more button-light" id="load-more">Load More</button>' : '';
     } else {
-        $ts = $user['uid'] == $artist_id ? 'you have' : ucwords($artist['fname']. ' '.$artist['lname']).' has';
+        $ts = $user['uid'] == $artist_id ? 'you have' : $framework->realName($artist['username'], $artist['fname'], $artist['lname']).' has';
         $nmsg = isset($_GET['get']) && $_GET['get'] == 'following' ? sprintf($LANG['no_following'], $ts) : sprintf($LANG['no_followers'], $ts);
         if (isset($_GET['get']) && $_GET['get'] == 'following') {
             if ($user['uid'] == $artist_id) {
                 $nmsg = $LANG['you_no_following'];
             } else {
-                $nmsg = sprintf($LANG['no_following'], ucwords($artist['fname']. ' '.$artist['lname']));
+                $nmsg = sprintf($LANG['no_following'], $framework->realName($artist['username'], $artist['fname'], $artist['lname']));
             }
         } else {
             if ($user['uid'] == $artist_id) {
                 $nmsg = $LANG['you_no_followers'];
             } else {
-                $nmsg = sprintf($LANG['no_followers'], ucwords($artist['fname']. ' '.$artist['lname']));
+                $nmsg = sprintf($LANG['no_followers'], $framework->realName($artist['username'], $artist['fname'], $artist['lname']));
             } 
         }
         $PTMPL['no_followers'] = notAvailable($nmsg);
@@ -57,6 +57,9 @@ function mainContent() {
 
     // Fetch suggested users 
     $PTMPL['sidebar_suggested_users'] = sidebar_userSuggestions($artist_id); 
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title'], $PTMPL['page_title']);
      
 	$theme = new themer('artists/follow');
 	return $theme->make();

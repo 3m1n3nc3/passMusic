@@ -2,7 +2,7 @@
     
     <section class="navigation">
       <!-- Main -->
-      <div class="navigation__list">
+      <div class="navigation__list"> 
         <div class="navigation__list__header"
           role="button"
           data-toggle="collapse"
@@ -14,14 +14,14 @@
         
         <div class="collapse in" id="main">
           
-          <a href="index.php?page=explore" class="navigation__list__item">
+          <a href="{$explore_url}" class="navigation__list__item">
             <i class="ion-ios-browsers"></i>
             <span>Explore</span>
           </a>
-          <a href="#" class="navigation__list__item">
+<!--           <a href="#" class="navigation__list__item">
             <i class="ion-ios-pulse"></i>
             <span>Activity</span>
-          </a> 
+          </a>  -->
           
         </div>
       </div>
@@ -39,15 +39,15 @@
         
         <div class="collapse in" id="yourMusic">
           
-          <a href="index.php?page=listen&to=tracks" class="navigation__list__item">
+          <a href="{$listen_tracks_url}" class="navigation__list__item">
             <i class="ion-ios-headset"></i>
             <span>Songs</span>
           </a>
-          <a href="index.php?page=listen&to=albums" class="navigation__list__item">
+          <a href="{$listen_albums_url}" class="navigation__list__item">
             <i class="ion-ios-musical-notes"></i>
             <span>Albums</span>
           </a>
-          <a href="index.php?page=view_artists" class="navigation__list__item">
+          <a href="{$view_artists_url}" class="navigation__list__item">
             <i class="ion-ios-person"></i>
             <span>Artists</span>
           </a> 
@@ -76,27 +76,11 @@
     </section>
     
     <section class="playlist"> 
-      <a href="#"
-        class="playlist-modal-show"
-        id="playlist-modal-show"
-        data-toggle="modal" 
-        data-target="#playlistModal"
-        onclick="playlist_modal(2, {'action': 'c_list'})">
-        <i class="ion-ios-add-circle-outline"></i>
-        New Playlist
-      </a>
+      {$create_playlist_btn}
     </section>
+
     <section class="playing">
-      <div class="playing__art" id="artwork-container">
-        <img src="http://passcolabs.te/uploads/photos/cputh.jpg" alt="Album Art" />
-      </div>
-      <div class="playing__song">
-        <a class="playing__song__name" id="song-name">Some Type of Love</a>
-        <a class="playing__song__artist" id="author-name">Charlie Puth</a>
-      </div>
-      <div class="playing__add">
-        <i class="ion-ios-checkmark" style="font-size: 30px;"></i>
-      </div>
+      {$random_track}<!-- now playing divs and featured prefills on index.php -->
     </section>
     
   </div>

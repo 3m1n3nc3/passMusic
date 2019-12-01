@@ -3,7 +3,7 @@
 function mainContent() {
 	global $PTMPL, $LANG, $SETT, $configuration, $user, $admin, $framework, $databaseCL, $marxTime; 
 
-	$PTMPL['page_title'] = $LANG['homepage'];	 
+	$PTMPL['page_title'] = $LANG['distribution'];	 
 	
 	$msg = null; $t = 3; $errors = [];
 	$release_ids = isset($_GET['rel_id']) ? $_GET['rel_id'] : null;
@@ -13,6 +13,7 @@ function mainContent() {
 
 	// Set local links
 	$PTMPL['artists_services'] = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=artists-services');
+	$PTMPL['faq_link'] = cleanUrls($SETT['url'] . '/index.php?page=static&view=faq');
 
 	$rel = isset($_GET['rel']) ? $_GET['rel'] : null;
 
@@ -148,8 +149,8 @@ function mainContent() {
 				if (isset($_GET['modify'])) {
 					if ($_GET['modify'] == 'remove') {
 						// Remove this release from sales, without deleting files
-						if ($get_release['status'] != 10) {echo $get_release['status'];
-							echo $do = $databaseCL->salesAction($release_id, 2);
+						if ($get_release['status'] != 10) {
+							$do = $databaseCL->salesAction($release_id, 2);
 							if ($do == 1) {
 								$msg = $LANG['release_removed'];
 								$t = 1;
@@ -206,14 +207,14 @@ function mainContent() {
 											// Check if this user exist then save the users data instead of post data
 											$userdata = $databaseCL->userData($username, 2);
 											if ($userdata) { 
-												$name = $userdata['fname'].' '.$userdata['lname'];
+												$name = $framework->realName($userdata['username'], $userdata['fname'], $userdata['lname']);
 											}
 											$sql = sprintf("UPDATE new_release_artists SET `name` = '%s', `role` = '%s' WHERE `username` = '%s'", $databaseCL->db_prepare_input($name), $databaseCL->db_prepare_input($artist_role), $databaseCL->db_prepare_input($username));
 										} else { 
 											// Check if this user exist then save the users data instead of post data
 											$new_userdata = $databaseCL->userData($new_username, 2);
 											if ($new_userdata) { 
-												$name = $new_userdata['fname'].' '.$new_userdata['lname'];
+												$name = $framework->realName($new_userdata['username'], $new_userdata['fname'], $new_userdata['lname']);
 											}
 											$sql = sprintf("INSERT INTO new_release_artists (`name`, `role`, `release_id`, `username`, `by`) VALUES ('%s', '%s', '%s', '%s', '%s')", $databaseCL->db_prepare_input($name), $databaseCL->db_prepare_input($artist_role), $databaseCL->db_prepare_input($_GET['rel_id']), $new_username, $user['uid']);
 										}
@@ -269,16 +270,30 @@ function mainContent() {
 					}
 				} else {  
 					$release_id = $databaseCL->db_prepare_input($_GET['rel_id']);
-					if (isset($_GET['set']) && $_GET['set'] == 'publish') {
+					$pay_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=publish&pay=premium&rel_id='.$get_release['release_id']);
+					$curr = currency(3, 'USD' /*$configuration['currency']*/);
+					$PTMPL['premium_cost'] = $curr.'15 - Singles, '.$curr.'25 - EP, '.$curr.'35 - Albums, '.$curr.'40 - Ext. Albums, then '.$curr.'5 Annually';
+
+					if (isset($_GET['pay'])) {
+						$publisher = new themer('distribution/new_release_payment'); 
+
+						echo releaseType($get_release['release_id'], 3)['html'];
+						$PTMPL['publisher'] = $publisher->make();
+					} elseif (isset($_GET['set']) && $_GET['set'] == 'publish') {
 						if ($get_release['status'] != 1) {
 							$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$release_id), 1);
 						}
 						$publisher = new themer('distribution/new_release_publish'); 
 						$PTMPL['publisher'] = $publisher->make();
 					}
-					if (isset($_POST['free_distribution'])) {
-						$sql = sprintf("UPDATE new_release SET `status` = '2' WHERE `release_id` = '%s'", $release_id);
-						$set = $databaseCL->dbProcessor($sql, 0, 2);
+
+					if (isset($_POST['publish'])) {
+						if (isset($_POST['free_distribution'])) {
+							$sql = sprintf("UPDATE new_release SET `status` = '2' WHERE `release_id` = '%s'", $release_id);
+							$set = 1;//$set = $databaseCL->dbProcessor($sql, 0, 2);
+						} elseif (isset($_POST['premium_distribution'])) {
+							$set = 1;
+						}
 						if ($set == 1) {
 							$PTMPL['publisher'] = bigNotice($LANG['release_submited'], 1, 'bg-white shadow');
 						} elseif ($set == 0) {
@@ -286,8 +301,6 @@ function mainContent() {
 						} else {
 							$PTMPL['publisher'] = $set;
 						}
-					} elseif (isset($_POST['premium_distribution'])) {
-						# code...
 					}
 					$theme = new themer('distribution/new_release_home'); 
 				}
@@ -402,14 +415,22 @@ function mainContent() {
 									}
 								}
 								$a_id = $get_artist['username'];
-								if (!allowAccess($get_artist['by'])) {
-									$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=true&response=403'), 1);
-								}
 								$rau_string = '&artist='.$get_artist['username'];
 								$PTMPL['profile_photo_url'] = $SETT['url'].'/connection/uploader.php?release=profile&rel=artwork'.$rau_string;
-								$theme = new themer('distribution/artist_update'); 
+
+								if (allowAccess($get_artist['by'])) {
+									$theme = new themer('distribution/artist_update'); 
+								} else {
+									$error_notice = serverErrorNotice(403);
+									$PTMPL['page_title'] = $error_notice[2];
+									$PTMPL['error_notice'] = $error_notice[1];
+									$theme = $error_notice[0]; 
+								}
 							} else {
-								$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=403'), 1);
+								$error_notice = serverErrorNotice(403);
+								$PTMPL['page_title'] = $error_notice[2];
+								$PTMPL['error_notice'] = $error_notice[1];
+								$theme = $error_notice[0];  
 							}
 						} else {
 							// Show the list of all available artists
@@ -423,7 +444,7 @@ function mainContent() {
 	    								$profile_link = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$userdata['username']);
 										$profile = '<a href="'.$profile_link.'" class="btn btn-primary">See Profile</a>';
 										$photo = getImage($userdata['photo'], 1);
-										$name = $userdata['fname'].' '.$userdata['lname'];
+										$name = $framework->realName($userdata['username'], $userdata['fname'], $userdata['lname']);
 										$username = $artist['username'];
 									} else {
 										$profile = '';
@@ -586,12 +607,18 @@ function mainContent() {
 				} else {
 					// Show the 404 page
 					// 
-					$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=404'), 1);
+					$error_notice = serverErrorNotice(404);
+					$PTMPL['page_title'] = $error_notice[2];
+					$PTMPL['error_notice'] = $error_notice[1];
+					$theme = $error_notice[0]; 
 				}
 			} else {
 				// Show the 403 page
 				// 
-				$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&notice=error&response=403'), 1);
+				$error_notice = serverErrorNotice(403);
+				$PTMPL['page_title'] = $error_notice[2];
+				$PTMPL['error_notice'] = $error_notice[1];
+				$theme = $error_notice[0]; 
 			}
 		} else {
 			// Show the default landing page for the distribution section
@@ -599,6 +626,10 @@ function mainContent() {
 			$theme = new themer('distribution/content');
 		}
 	}
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title']);
+    
 	return $theme->make();
 }
 ?>

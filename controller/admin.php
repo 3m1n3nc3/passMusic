@@ -24,13 +24,15 @@ function mainContent() {
 		$option = $option_var = $opt_var = $class = $PTMPL['notification'] = '';
 		$excess_['ap'] = $excess_['cp'] = 0; 
 
-		// $PTMPL['categories'] = $databaseCL->categoryOptions($array_container_a_category_row);
+		$PTMPL['categories'] = $databaseCL->categoryOptions();
 		
 		$PTMPL['return_btn'] = cleanUrls($SETT['url'].'/index.php?page=moderate');
 		$delete_btn = '<button type="submit" name="delete" class="btn btn-danger my-4 btn-block"><i class="fa fa-trash"></i> Delete</a>';
 
 		// Set parents select options for static content
 		$parents = array(
+			'home' 		=> 	'Home Page Section', 
+			'home2' 	=> 	'Home Page Extra Section', 
 			'about' 	=> 	'About Page Section', 
 			'contact' 	=> 	'Contact Page Section',
 			'static' 	=> 	'New static Page',
@@ -57,6 +59,8 @@ function mainContent() {
 
 		if (isset($_GET['view'])) {
 			if ($_GET['view'] == 'config') {
+				$theme = new themer('admin/config'); $section = '';
+
 				$PTMPL['page_title'] = 'Site Configuration'; 
 
 				// Set config option to update
@@ -277,9 +281,6 @@ function mainContent() {
 						</div>';
 					} 
 				}
-
-				$theme = new themer('admin/config');
-
 			} 
 			elseif ($_GET['view'] == 'releases') {
 				// Show the list of created posts
@@ -1084,6 +1085,10 @@ function mainContent() {
 		// Set the active landing page_title 
 		$theme = new themer('admin/fullpage');
 	}
+
+    // Set the seo tags
+    $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title']);
+    
 		// $data = 'deserunt {$texp->davidson} in';
 		// echo $t = $framework->auto_template($data, 1);
 	return $theme->make();

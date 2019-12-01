@@ -44,14 +44,22 @@ $LANG['profile_updated'] = 'Your profile has successfully been updated';
 
 //Notifications
 $LANG['like'] = 'Like';
+$LANG['likes'] = 'Likes';
 $LANG['track'] = 'Track';
+$LANG['tracks'] = 'Tracks';
 $LANG['album'] = 'Album';
+$LANG['albums'] = 'Albums';
+$LANG['listen'] = 'Listen';
+$LANG['listen_to'] = 'Listen to ';
+$LANG['follow'] = 'Follow';
+$LANG['view_artists'] = 'View artists';  
 $LANG['liked_notice'] = '<b>%s</b> liked your %s: <b>%s</b>';
 $LANG['comment_notice'] = '<b>%s</b> commented your %s: <b>%s</b>';
 $LANG['follow_notice'] = '<b>%s</b> is now following you';
 $LANG['new_message_from'] = 'New message from <b>%s</b>: %s';
 
 // Messages
+$LANG['find_friends'] = 'Find People';
 $LANG['messenger'] = 'Messenger';
 $LANG['message'] = 'Message';
 $LANG['no_message'] = 'No Message';
@@ -71,14 +79,17 @@ $LANG['just_now'] = 'Just Now';
 $LANG['send'] = 'Send';
 $LANG['send_message'] = 'Send Message';
 $LANG['last_seen'] = 'Last Seen';
+$LANG['last_msg'] = 'Last Msg';
 $LANG['cant_reply'] = 'You cannot reply to this chat!';
 $LANG['message_self'] = 'You can\'t send a message to yourself';
 $LANG['user_not_exist'] = 'This user does not exist';
 $LANG['group_not_exist'] = 'This group does not exist';
 $LANG['message_too_long'] = 'The message was too long and could not be posted';
-$LANG['start_a_message'] = 'Start a chat';
+$LANG['start_a_message'] = 'Start a new chat';
 $LANG['project_chat'] = 'Project Chat';
 $LANG['unread_project_chat'] = 'You may have new unread project messages';
+$LANG['error_403'] = '<h2>You do not <br><span>have permission </span><br>to access the resource you requested!</h2>';
+$LANG['error_404'] = '<h2>The page you are <br><span>looking for </span><br>could not be found!</h2>';
 
 // Player controls
 $LANG['prev_track'] = 'Previous Track';
@@ -108,6 +119,12 @@ $LANG['open'] = 'Open';
 $LANG['closed'] = 'Closed';
 $LANG['click2update'] = ' Click to update state';
 $LANG['monthly_listeners'] = 'Monthly Listeners';
+$LANG['title_of_track'] = 'Title of Track';
+$LANG['isrc'] = 'ISRC';
+$LANG['view_tracklist'] = 'View Tracklist';
+$LANG['copy_link'] = 'Copy Link';
+$LANG['view_all'] = 'View all';
+$LANG['no_followers'] = 'No Followers';
 
 // Notices
 $LANG['information_saved'] = 'Your information has been saved';
@@ -154,7 +171,12 @@ $LANG['no_static_notice'] = 'If you are the site admin please go to the static c
 $LANG['use_image_btn'] = 'Use the image button on the editor to add more images to this publication.';
 $LANG['add_event_date_time'] = 'If this post is an Event or Exhibition do well to add a date and time';
 $LANG['banner_buttons_notice'] = 'Provide only the urls for the buttons, and specify the title by appending :title:Title to the end of the link. To specify whether the button will be filled or bordered append a :type:1 or :type:2, to specify multiple buttons separate them with a comma(,) for example: <b>https://www.facebook.com/guru:title:Guru:type:2,www.example.com/guru:title:Guru:type:1</b>';
-$LANG['static_content_notice'] = ' For content that appear at the top most of the about page, set the priority to 3, for the second row set the priority to 2, and for the others set priority to 1. Priority set at 0 won\'t be used. Be careful when creating or modifying content for the about and contact pages, certain features are unused and you may be required to remove excesses. Icons are only applicable to about page content with a priority of 2.';
+
+$LANG['static_content_notice'] = ' For content that appear at the top most of the about page, set the priority to 3, for the second row set the priority to 2, and for the others set priority to 1. Priority set at 0 won\'t be used. Be careful when creating or modifying content for the about and contact pages, certain features are unused and you may be required to remove excesses. Icons are only applicable to about page content with a priority of 2.<br>
+	<b>For content on the homepage, the priority starts from 5</b>';
+
+$LANG['premium_details'] = ' <strong>Premium</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management and other sharing sites and blogs, inclusion in our featured playlists and reviews on various blogs (In the future this would also allow you to put your music in stores, allowing you to make money from your music).';
+
 $LANG['excess_about_priority'] = 'You have more than one child content for \'about\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
 $LANG['excess_contact_priority'] = 'You have more than one child content for \'contact\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
 
@@ -164,9 +186,27 @@ $LANG['no_following'] = '%s has not followed anyone';
 $LANG['you_no_following'] = 'You have not followed anyone';
 $LANG['you_no_followers'] = 'You have no followers';
 
-// Playlists
+// Tools
+$LANG['recaptcha'] = 'Captcha';
+$LANG['invalid_capthca'] = 'Invalid Captcha';
+$LANG['playlists'] = 'Playlists';  
+$LANG['playlist'] = 'Playlist';  
+$LANG['projects'] = 'Projects';  
+$LANG['project'] = 'Project';  
+$LANG['explore'] = 'Explore';  
+$LANG['artist'] = 'Artist';  
+$LANG['error'] = 'Error';  
+$LANG['account'] = 'Account';
+$LANG['distribution'] = 'Distribution';	 
 $LANG['create_playlist'] = 'Create new Playlist';
 $LANG['add_to_playlist'] = 'Add to playlist';
+$LANG['edit_playlist'] = 'Edit playlist';
+$LANG['remove_from_sale'] = 'Remove from sale';
+$LANG['change_meta'] = 'Change meta data';
+$LANG['delete_permanent'] = 'Permanently Delete';
+$LANG['complete_release'] = 'Complete Release';
+$LANG['publish_release'] = 'Publish Release';
+$LANG['need_help'] = 'Need Help? <strong >Click here</strong>';
 $LANG['public_playlist_notice'] = '<small class="text-warning"> Public Playlists are available to every user of this site.</small>';
 $LANG['new_featured_playlist_created'] = 'Your %s has been created. Playlists created from this tool are featured playlists and are made available in such manner that more users of our sharing site are able to find them, you can login to the sharing site to manage and add tracks to your playlists!';
 

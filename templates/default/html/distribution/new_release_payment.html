@@ -1,0 +1,32 @@
+<div class="container">
+	<div class="row">
+		<div class="col-lg-12 rounded shadow-sm bg-white mx-auto m-2 p-3">
+			<h3 class="text-info">Premium Distribution</h3>
+			<p class="form-text text-muted">
+				Please review your distribution model before selecting your distribution method, further audio changes are not allowed after now, metadata can be changed but have a processing period of 30 days.
+			</p>
+			<hr>
+			<div class="font-weight-bold">I have read through, understood and accepted Passcolabs <a href="#">Terms and Conditions</a> and <a href="#">Artists/Labels Agreement</a></div>
+			<form method="post" action="{$release_home}">
+				<input type="hidden" name="publish">
+				<div class="row p-4">
+						<div class="col-lg-6 p-3 border bg-light text-center">
+							<div class="d-flex m-2"> 
+								<button type="submit" name="free_distribution" class="btn btn-warning flex-grow-1"><strong>Free Distribution</strong></button>
+							</div>
+							<strong>Free</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management with no further benefits attached.
+						</div>
+						<div class="col-lg-6 p-3 border bg-light text-center">
+							<div class="d-flex m-2">
+								<button type="submit" name="premium_distribution" class="btn btn-success flex-grow-1"><strong>Premium Distribution</strong></button>
+							</div>
+							{$lang->premium_details}
+							<div class="font-weight-bold">
+								{$premium_cost}
+							</div>
+						</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>

@@ -85,25 +85,65 @@ function bigNotice($str, $type = null, $alt = null) {
     return $string;
 }
 
-function seo_plugin($image, $twitter, $facebook, $desc, $title) {
-    global $SETT, $PTMPL, $configuration, $site_image;
+function serverErrorNotice($error = 404, $type = 0) {
+    global $LANG;
+   
+    // Format the error to display
+    if ($error == 404) {
+        $notice = $LANG['error_404'];
+    } elseif ($error == 403) {
+        $notice = $LANG['error_403'];
+    }
+    $page_title = $LANG['error']. ' ' .$error;
+    if ($type == 0) {
+        $theme = new themer('distribution/error');
+    }
+    return array($theme, $notice, $page_title);
+}
 
-    $twitter = ($twitter) ? $twitter : $configuration['site_name'];
-    $facebook = ($facebook) ? $facebook : $configuration['site_name'];
-    $title = ($title) ? $title . ' ' : '';
-    $titles = $title . 'On ' . $configuration['site_name'];
-    $image = ($image) ? $image : $site_image;
-    $alt = ($title) ? $title : $titles;
-    $desc = rip_tags(strip_tags(stripslashes($desc)));
-    $desc = strip_tags(myTruncate($desc, 350));
-    $url = (isset($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
+/**
+ * urlrecoder Recode urls to be safe with .htaccess
+ * @param  string  $url  the url to decode or encode
+ * @param  integer $type if type is set as 2 or 3 it will 
+ * encode and decode urlencode()ed strings
+ * @return string        returns the newly created string
+ */
+function urlrecoder($url, $type = 0) {
+    // (:, /, ?, &, =) ()
+    if ($type == 2 || $type == 3) {
+        $url = str_replace(array('%3A', '%2F', '%3F', '%26', '%3D'), array('__3A', '__2F', '__3F', '__26', '__3D'), $url); 
+        if ($type == 3) {
+            $url = str_replace(array('__3A', '__2F', '__3F', '__26', '__3D'), array('%3A', '%2F', '%3F', '%26', '%3D'), $url); 
+        }
+    } else {
+        $url = str_replace(array(':', '/', '?', '&', '='), array('__3A', '__2F', '__3F', '__26', '__3D'), $url); 
+        if ($type == 1) {
+            $url = str_replace(array('__3A', '__2F', '__3F', '__26', '__3D'), array(':', '/', '?', '&', '='), $url); 
+        }
+    }
+ 
+    return $url;
+} 
+
+function seo_plugin($image = null, $title = null, $description = null) {
+    global $SETT, $PTMPL, $configuration, $framework, $site_image;
+
+    $twitter = ($configuration['twitter']) ? $configuration['twitter'] : str_ireplace(' ', '', $configuration['site_name']); 
+    $facebook = ($configuration['facebook']) ? $configuration['facebook'] : str_ireplace(' ', '', $configuration['site_name']); 
+    $title = ($title) ? $title : $configuration['site_name'];   
+    $image = ($image) ? getImage($image, 1) : getImage($configuration['intro_banner']);
+    $alt = $title.' Banner Image'; 
+    $description = strtolower($description ? $description : $configuration['slug']);  
+    $desc = $framework->myTruncate($framework->rip_tags($description), 200, ' ', '');
+    $keywords = str_ireplace(' ', ', ', $desc);  
+    $url = $SETT['url'].$_SERVER['REQUEST_URI'];
 
     $plugin = '
     <meta name="description" content="' . $desc . '"/>
-    <link rel="canonical" href="' . $url . '" />
+    <meta name="keywords" content="'.$keywords.'" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="' . $titles . '" />
+    <meta property="og:title" content="' . $title . '" />
     <meta property="og:url" content="' . $url . '"/>
     <meta property="og:description" content="' . $desc . '" />
     <meta property="og:site_name" content="' . $configuration['site_name'] . '" />
@@ -116,10 +156,11 @@ function seo_plugin($image, $twitter, $facebook, $desc, $title) {
     <meta property="og:image:alt" content="' . $alt . '" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:description" content="' . $desc . '" />
-    <meta name="twitter:title" content="' . $titles . '" />
+    <meta name="twitter:title" content="' . $title . '" />
     <meta name="twitter:site" content="@' . $configuration['site_name'] . '" />
     <meta name="twitter:image" content="' . $image . '" />
-    <meta name="twitter:creator" content="@' . $twitter . '" />';
+    <meta name="twitter:creator" content="@' . $twitter . '" />
+    <link rel="canonical" href="' . $url . '" />';
     return $plugin;
 }
 
@@ -301,30 +342,48 @@ function getFiles($source, $t=null) {
     return;
 } 
 
-function fetchSocialInfo($profile, $type = null) {
+function fetchSocialInfo($profile, $type = null, $_style = null) {
     global $configuration, $framework, $user;
         
         // Array: database column name => url model
 
-        $links = '';
+        $links = ''; $i = $ii = 0;
         if ($type) {
             $social = array( 
                 'facebook'      => array('https://facebook.com/%s', 'fb-ic'), 
                 'twitter'       => array('https://twitter.com/%s', 'tw-ic'),
                 'instagram'     => array('https://instagram.com/%s', 'ins-ic')
-            );  
+            );
             foreach($social as $value => $url) { 
+                $ii++;
                 $class = $url[1];
-                if ($type == 1) { 
+                if ($type == 1) {
+                    if ($_style == null) {
+                        $extra_style = ' class="nav-item"';
+                        $extra_a_style = ' class="nav-link waves-effect waves-light"';
+                    } else { 
+                        if ($ii == 1) {
+                           $extra_style = ' class="'.$_style.'"';
+                        } else {
+                            $extra_style = '';
+                        }  
+                        $extra_a_style = '';
+                    }
                     $links .= ((!empty($profile[$value])) ? '
-                    <li class="nav-item">
-                        <a class="nav-link waves-effect waves-light" href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'">
-                            <i class="fa '.icon(3, $value).'"></i>
+                    <li'.$extra_style.'>
+                        <a'.$extra_a_style.' href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'">
+                            <i class="fab '.icon(3, $value).'"></i>
                         </a>
                     </li>' : ''); 
                 } elseif ($type == 2) {
                     $links .= ((!empty($profile[$value])) ? '
-                    <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow me on '.ucfirst($value).'" class="p-2 m-2 fa-lg '.$class.'"><i class="fa '.icon(3, $value).'"> </i></a>' : '');                        
+                    <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'" class="p-2 m-2 fa-lg '.$class.'"><i class="fa '.icon(3, $value).'"> </i></a>' : '');                        
+                } elseif ($type == 3) {
+                    $icon = $value !== 'instagram' ? icon(3, $value).'-square' : icon(3, $value);
+                    $links .= ((!empty($profile[$value])) ? '
+                    <div class="social__link">
+                        <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'"><i class="fa '.$icon.'"></i> '.ucfirst($value).'</a>
+                    </div>' : '');
                 } else {   
                     $links .= ((!empty($profile[$value])) ? '  
                         <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'" class="'.$value.'"><i class="fa '.icon(3, $value).'"></i></a>  ' : '');             
@@ -332,40 +391,35 @@ function fetchSocialInfo($profile, $type = null) {
             }
         } else {
             $social = array(
-                'site_office'   => array('%s', 'orange-text'),
-                'facebook'      => array('https://facebook.com/%s', 'fb-ic'),
-                'twitter'       => array('https://twitter.com/%s', 'tw-ic'),
-                'instagram'     => array('https://instagram.com/%s', 'ins-ic'),
-                'whatsapp'      => array('whatsapp:%s', 'green-text'),
-                'email'         => array('mailto:%s', 'red-text')
-            ); 
+                'facebook'      => array('https://facebook.com/%s', 'fab fa-facebook-f'),
+                'twitter'       => array('https://twitter.com/%s', 'fab fa-twitter'),
+                'instagram'     => array('https://instagram.com/%s', 'fab fa-instagram'),
+                'whatsapp'      => array('whatsapp:%s', 'fab fa-whatsapp'),
+                'email'         => array('mailto:%s', 'fas fa-envelope-open'),
+                'site_office'   => array('%s', 'fas fa-home')
+            );
             foreach($social as $value => $url) {
-                $_url = $url[0];
-                if ($profile[$value] == $profile['site_office']) {
-                    $icon = 'fa-map-marker'; 
-                    $links = '
-                    <li>
-                        <i class="fa '.icon(3, $icon).' fa-2x '.$url[1].'"></i>
-                        <p>
-                            '.ucfirst($profile['site_office']).'
-                        </p>
-                    </li>'; 
-                } else {
-                    $icon = $profile[$value] !== $profile['email'] ? $value : 'envelope';
-                    $links .= ((!empty($profile[$value])) ? '
-                    <li>
-                        <i class="fa '.icon(3, $icon).' fa-2x '.$url[1].'"></i>
-                        <p>
-                            <a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'">'.$profile[$value].'</a>
-                        </p>
-                    </li>' : ''); 
-                }
-            } 
-            $links = 
-            '<ul class="contact-icons text-center list-unstyled">
-                '.$links.'
-            </ul>
-            ';
+                $i++;
+                $_url = $url[0]; 
+                $icon = $url[1]; 
+                $item_title = $value == 'site_office' ? 'Address' : $value;
+                $url_link = $profile[$value] != $profile['site_office'] ? '<a href="'.sprintf($url[0], $profile[$value]).'" rel="nofllow" title="Follow us on '.ucfirst($value).'" class="text-dark">'.$profile[$value].'</a>' : $profile[$value];
+                $offset = (($i%2) == 0) ? ' my-4' : '';
+                $links .= '
+                <div class="fv3-contact'.$offset.'">
+                    <div class="row">
+                        <div class="col-2">
+                            <span class="'.$icon.'"></span>
+                        </div>
+                        <div class="col-10">
+                            <h6>'.$item_title.'</h6>
+                            <p>
+                                '.$url_link.'
+                            </p>
+                        </div>
+                    </div>
+                </div>';  
+            } ;
         }
         return $links;
 }
@@ -375,8 +429,8 @@ function userAction($type = null) {
 
     $dropdown = $user_profile = $sign_out = '';
     if ($admin || $user) {
-        $logout_url = cleanUrls($SETT['url'] . '/index.php?page=introduction&logout=admin');
-        $logout_user = cleanUrls($SETT['url'] . '/index.php?page=introduction&logout=user');
+        $logout_url = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=admin');
+        $logout_user = cleanUrls($SETT['url'] . '/index.php?page=homepage&logout=user');
 
         $user_link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$user['uid']);
         $user_update_link = cleanUrls($SETT['url'] . '/index.php?page=account&view=update');
@@ -411,7 +465,7 @@ function userAction($type = null) {
     } else {
         $dropdown = $configuration['allow_login'] ? '
         <li class="nav-item dropdown">
-            <a class="nav-link waves-effect waves-light" href="'.cleanUrls($SETT['url'] . '/index.php?page=admin&view=access&login=user').'" rel="nofllow" title="Login">
+            <a class="nav-link waves-effect waves-light" href="'.cleanUrls($SETT['url'].'/index.php?page=account&view=access&login=user&referrer='.urlrecoder($SETT['url'].$_SERVER['REQUEST_URI'])).'" rel="nofllow" title="Login">
                 <i class="fa fa-user-o text-light"></i>
             </a>
         </li>' : '';
@@ -425,16 +479,52 @@ function userAction($type = null) {
 function cleanUrls($url) {
     global $configuration; //$configuration['cleanurl'] = 1;
     if ($configuration['cleanurl']) {
-        $pager['homepage'] = 'index.php?page=homepage';
-        $pager['news'] = 'index.php?page=news';
-        $pager['trainings'] = 'index.php?page=trainings';
+        $pager['homepage']      = 'index.php?page=homepage';
+        $pager['explore']       = 'index.php?page=explore';
+        $pager['playlist']      = 'index.php?page=playlist';
+        $pager['listen']        = 'index.php?page=listen';
+        $pager['view_artists']  = 'index.php?page=view_artists';
+        $pager['track']         = 'index.php?page=track';
+        $pager['artist']        = 'index.php?page=artist';
+        $pager['follow']        = 'index.php?page=follow';
+        $pager['project']       = 'index.php?page=project';
+        $pager['album']         = 'index.php?page=album';
+        $pager['account']       = 'index.php?page=account';
+        $pager['static']        = 'index.php?page=static';
+        $pager['admin']         = 'index.php?page=admin';
+        $pager['distribution']  = 'index.php?page=distribution';
+        $pager['search']        = 'index.php?page=search';
 
         if (strpos($url, $pager['homepage'])) {
-            $url = str_replace(array($pager['homepage'], '&user=', '&read='), array('homepage', '/', '/'), $url);
-        } elseif (strpos($url, $pager['news'])) {
-            $url = str_replace(array($pager['news'], '&read=', '&id'), array('news', '/', '/'), $url);
-        } elseif (strpos($url, $pager['trainings'])) {
-            $url = str_replace(array($pager['trainings'], '&view=', '&id'), array('trainings', '/', '/'), $url);
+            $url = str_replace(array($pager['homepage'], '&user=', '&logout=', '&referrer='), array('homepage', '/', '/logout/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['explore'])) {
+            $url = str_replace(array($pager['explore'], '&sets=', '&go=', '&referrer='), array('explore', '/sets/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['playlist'])) {
+            $url = str_replace(array($pager['playlist'], '&playlist=', '&id', '&creator=', '&referrer='), array('playlist', '/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['listen'])) {
+            $url = str_replace(array($pager['listen'], '&artist=', '&to=', '&id', '&referrer='), array('listen', '/artist/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['view_artists'])) {
+            $url = str_replace(array($pager['view_artists'], '&artist=', '&id', '&referrer='), array('view_artists', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['track'])) {
+            $url = str_replace(array($pager['track'], '&likes=', '&track=', '&id=', '&referrer='), array('track', '/likes/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['artist'])) {
+            $url = str_replace(array($pager['artist'], '&artist=', '&id=', '&referrer='), array('artist', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['follow'])) {
+            $url = str_replace(array($pager['follow'], '&artist=', '&follow=', '&get=', '&referrer='), array('follow', '/artist/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['project'])) {
+            $url = str_replace(array($pager['project'], '&creator=', '&project=', '&get=', '&referrer='), array('project', '/creator/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['album'])) {
+            $url = str_replace(array($pager['album'], '&creator=', '&album=', '&get=', '&referrer='), array('album', '/creator/', '/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['account'])) {
+            $url = str_replace(array($pager['account'], '&view=access', '&view=', '&login=', '&pagination=', '&cid=', '&r_id=', '&thread=', '&referrer='), array('account', '/login', '/', '/', '/page/', '/', '/receiver/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['static'])) {
+            $url = str_replace(array($pager['static'], '&view=', '&pagination=', '&referrer=', '/referrer/'), array('static', '/', '/page/'), $url);
+        } elseif (strpos($url, $pager['admin'])) {
+            $url = str_replace(array($pager['admin'], '&view=', '&pagination=', '&referrer='), array('admin', '/', '/page/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['distribution'])) {
+            $url = str_replace(array($pager['distribution'], '&action=', '&rel=', '&rel_id=', '&artist=', '&stat=', '&modify=', '&set=', '&pagination=', '&pay=', '&referrer='), array('distribution', '/', '/', '/', '/', '/stat/', '/', '/set/', '/page/', '/', '/referrer/'), $url);
+        } elseif (strpos($url, $pager['search'])) {
+            $url = str_replace(array($pager['search'], '&q=', '&rel=', '&pagination=', '&referrer='), array('search', '/', '/rel/', '/page/', '/referrer/'), $url);
         }
     }
     return $url;
@@ -594,17 +684,19 @@ function notAvailable($string, $pad='', $type = null) {
         </div>';
     } elseif ($type == 2) {
         $return = 
-        '<div class="row mb-4"> 
-            <div class="my-5"> 
-                <div class="card"> 
-                    <div class="card-body p-5"> 
-                        <h1 class="card-title d-flex justify-content-center">
+        '<div class="container-fluid">
+            <div class="row mb-4">
+                <div class="my-5">
+                    <div class="card">
+                        <div class="card-body p-5">
+                            <h1 class="card-title d-flex justify-content-center">
                             <strong class="text-default">'.$title.'</strong>
-                        </h1>
-                        <hr>
-                        <h1 class="text-center"><i class="'.$pad.' fa fa-question-circle"></i></h1>
-                        <div class="row my-3 mx-3 d-flex justify-content-center">
-                            <h2 class="'.$pad.'">' . $string . '</h2> 
+                            </h1>
+                            <hr>
+                            <h1 class="text-center"><i class="'.$pad.' fa fa-question-circle"></i></h1>
+                            <div class="row my-3 mx-3 d-flex justify-content-center">
+                                <h2 class="'.$pad.'">' . $string . '</h2>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -615,7 +707,7 @@ function notAvailable($string, $pad='', $type = null) {
             $pad = 'display-1';
         }
         $return = 
-        '<div class="text-center">
+        '<div class="text-center container-fluid">
             <div class="p-4 m-4 border rounded border-info bg-light text-info">
                 <i class="'.$pad.' ion-ios-help-circle-outline"></i>
                 <p class="'.$pad.'">'.$string.'</p>
@@ -713,8 +805,11 @@ function globalTemplate($type) {
     }
     $login_link = cleanUrls($SETT['url'] . '/index.php?page=account&process=login');
     $PTMPL['dashboard_url'] = cleanUrls($SETT['url'] . '/index.php?page=homepage');
-    $PTMPL['account_url'] = $account_url = cleanUrls($SETT['url'] . '/index.php?page=account');
-    $PTMPL['username_url'] = simpleButtons('logout', 'Account', $account_url, 1);
+    $PTMPL['explore_url'] = cleanUrls($SETT['url'] . '/index.php?page=explore');
+    $PTMPL['listen_tracks_url'] = cleanUrls($SETT['url'] . '/index.php?page=listen&to=tracks');
+    $PTMPL['listen_albums_url'] = cleanUrls($SETT['url'] . '/index.php?page=listen&to=albums');
+    $PTMPL['view_artists_url'] = cleanUrls($SETT['url'] . '/index.php?page=view_artists');
+    $PTMPL['account_url'] = $account_url = cleanUrls($SETT['url'] . '/index.php?page=account'); 
     $PTMPL['site_title_'] = ucfirst($configuration['site_name']);
 
     $PTMPL['user_session'] = userNavContent();
@@ -723,6 +818,7 @@ function globalTemplate($type) {
       $PTMPL['management'] = simpleButtons("bordered background_green2", 'Manage Site <i class="fa fa-cog"></i>', $management);
     }
     $PTMPL['site_friends'] = $messaging->friendship($user['uid']);
+    $PTMPL['find_site_friends'] = cleanUrls($SETT['url'] . '/index.php?page=search&rel=find');
 
     $avatar_division = '
       <div class="top_avatar">
@@ -776,6 +872,51 @@ function admin_sidebar() {
     $section = $template->make(); 
     return $section; 
 } 
+
+function distroNavigation() {
+    global $LANG, $SETT, $PTMPL, $user, $admin, $user_role, $framework;
+
+    $login_url = cleanUrls($SETT['url'].'/index.php?page=account&view=access&login=user&referrer='.urlrecoder($SETT['url'].$_SERVER['REQUEST_URI']));
+    $acc_link = '<li><a href="'.$login_url.'">'.$LANG['account'].'</a></li>';
+
+    $linkers = array(
+        'distribution'  => array('releases' => 'Discography', 'new_release' => 'New Release'),
+        'artist-services' => 'Artist Services',
+        'sales-report' => 'Reports and Statistics',
+        'account' => array('My Account')
+    );   
+
+    $nav_link = '';
+    foreach ($linkers as $link => $title) { 
+        if (is_array($title)) {
+            $sub = '';
+            foreach ($title as $sub_link => $sub_title) {
+                if ($sub_link == 'account') {
+                    $sub = userAction(1);
+                } else {
+                    $sub .= '<li><a href="'.$sub_link.'">'.$sub_title.'</a></li>';
+                }
+            }
+            if ($link == 'account') {
+                $link = $title[0];
+            }
+            $nav_link .= '
+            <li class="drop-down"><a href="">'.ucfirst($link).'</a> 
+                <ul>
+                    '.$sub.'
+                </ul>
+            </li>';
+        } else {
+            $nav_link .= '<li><a href="'.$link.'">'.$title.'</a></li>';
+        }
+    }
+
+    if ($admin || $user_role >= 3) {
+        return $nav_link;
+    } else {
+        return $acc_link; 
+    }
+}
  
 function superGlobalTemplate($type = null) {
     global $LANG, $SETT, $PTMPL, $contact_, $configuration, $framework, $databaseCL, $user, $admin, $user_role;
@@ -792,9 +933,12 @@ function superGlobalTemplate($type = null) {
 
     $PTMPL['social_linkers'] = fetchSocialInfo($configuration, 3);  
     $PTMPL['social_links'] = fetchSocialInfo($configuration, 1);  
+    $PTMPL['fetch_home_nav_social'] = fetchSocialInfo($configuration, 1, 'ml-lg-5');
     $PTMPL['social_links'] .= userAction();       
     $PTMPL['distro_user_links'] = userAction(1);       
     $PTMPL['site_name'] = $configuration['site_name'];  
+
+    $PTMPL['distribution_navigation'] = distroNavigation();
 
     if ($admin || $user_role >= 4) {
         $moderate = cleanUrls($SETT['url'] . '/index.php?page=admin');
@@ -843,8 +987,16 @@ function superGlobalTemplate($type = null) {
             </div>
         </li>' : '';  
 
+        $account_link = cleanUrls($SETT['url'].'/index.php?page=account');
+        $jalt = $user ? 'Account' : 'Login/Register';
+        $PTMPL['just_account_link'] = ' 
+        <li class="nav-item mr-3 font-weight-bold">
+            <a class="nav-link" href="'.$account_link.'">'.$jalt.'</a>
+        </li> ';
+
         $PTMPL['distro_support_drop'] = isset($hs) ? $nav_list : '';
     } 
+
     $PTMPL['footer_list_var'] = $foot_list_var; 
     $PTMPL['footer_list'] = $foot_list;  
     
@@ -861,7 +1013,9 @@ function superGlobalTemplate($type = null) {
 
     $databaseCL->reverse = $databaseCL->limit = $databaseCL->start = $databaseCL->parent = $databaseCL->priority = null;
 
-    if ($type == 3) {
+    if ($type == 4) {
+        $theme = new themer('distribution/global/home-header'); $section = '';
+    } elseif ($type == 3) {
         $theme = new themer('distribution/global/footer'); $section = '';
     } elseif ($type == 2) {
         $theme = new themer('distribution/global/header'); $section = '';
@@ -874,21 +1028,38 @@ function superGlobalTemplate($type = null) {
     return $section;
 }  
 
+function showMessageLink($receiver, $i_size = '', $thread = null) {
+    global $SETT, $PTMPL, $LANG, $user; 
+    $messages = new social;
+
+    if ($thread) {
+        $thread = '&thread='.$thread;
+    } else {
+        $get_messages = $messages->fetchMessages(5, $receiver)[0];
+        if ($get_messages) {
+            $thread = '&cid='.$get_messages['cid'].'&thread='.$get_messages['thread'];
+        }
+    }
+
+    // Show the send message link
+    $chat_link = cleanUrls($SETT['url'].'/index.php?page=account&view=messages&r_id='.$receiver.$thread);
+    $chat_link = ($user && $user['uid'] !== $receiver ? 
+        '<a href="'.$chat_link.'" class="text-success" data-toggle="tooltip" title="'.$LANG['send_message'].'" data-placement="auto">
+            <i class="fa fa-envelope mx-1 '.$i_size.'"></i>
+        </a>' : ''); 
+    return $chat_link;
+}
+
 function bigBanner($image = '', $type = null, $title = '', $button_link = 'null') {
-    global $SETT, $PTMPL, $configuration, $user, $framework, $collage; 
+    global $SETT, $PTMPL, $configuration, $user, $framework, $collage, $marxTime; 
     $template = new themer('distribution/global/banner'); $section = ''; 
 
     if (!$title) {
         $title = $configuration['site_name'];
     }
-
-    $retitle = explode(' ', $title);
-    if (count($retitle) > 1) {
-        $pre_title = $retitle[0].' '.$retitle[1];
-    } else {
-        $pre_title = $retitle[0];
-    }
-    $retitle = str_replace($pre_title, $pre_title.'<br>', $title);
+    
+    // Put a line break on the title
+    $retitle =$marxTime->retitle($title);
 
     $banner_title = explode(' ', $retitle);
     if (count($banner_title) > 2) {
@@ -899,21 +1070,9 @@ function bigBanner($image = '', $type = null, $title = '', $button_link = 'null'
     }
     $PTMPL['banner_title'] = $banner_title;
 
-    if ($button_link) {
-        $button_link = explode(',', $button_link);
-        $button_linked = '';
-        if (is_array($button_link)) {
-            foreach ($button_link as $link) {
-                $class = $framework->urlTitle($link, 2) == 1 ? 'btn-get-started' : 'btn-services';
-                $link_title = $framework->urlTitle($link);
-                $linked = str_ireplace('-', ' ', $link);
-                $linked = str_ireplace('_', ' ', $linked);
-                $link = $framework->urlTitle($link, 1);
-                $button_linked .= '<a href="'.$link.'" class="'.$class.'">'.$link_title.'</a>';
-            }
-        }
-        $PTMPL['buttons'] = $button_linked;
-    }  
+    // Generate button from provided link
+    $PTMPL['buttons'] = $framework->generateButton($button_link);
+ 
     // 
     // <a href="#services" class="btn-services scrollto">Our Services</a>
 
@@ -981,12 +1140,16 @@ function playlistManager($type = null, $track = null) {
     global $SETT, $LANG, $user, $framework, $databaseCL, $marxTime;
     // Type 1: Show modal
     // Type 2: Create playlist form
+    // Type 4: Update playlist form
     // Type 3: Add to playlist form
     if ($type == 1) {
         $modal = modal('playlist', '<div class="modal-container"></div>', '<span id="modal-title">Playlist</span>', 2);
         $content = $modal;
-    } elseif ($type == 2) {
+    } elseif ($type == 2 || $type == 4) {
         $processor = $SETT['url'].'/connection/uploader.php?action=playlists';
+        $action = ($type == 2 ? 'create' : 'edit');
+        $action_label = ($type == 2 ? 'Create Playlist' : 'Edit Playlist');
+        $set_id = ($type == 4 ? ', \'id\': \''.$track.'\'' : '');
         $form = '
         <form id="create_playlist">
             <div id="save_message"></div> 
@@ -1002,8 +1165,8 @@ function playlistManager($type = null, $track = null) {
             <button  
                 type="button"
                 class="btn btn-block btn-info"
-                onclick="playlistAction(2, {\'action\': \'create\'})">
-                <i class="ion-ios-list"></i> Create Playlist
+                onclick="playlistAction(2, {\'action\': \''.$action.'\''.$set_id.'})">
+                <i class="ion-ios-list"></i> '.$action_label.'
             </button>            
         </form>';
         $content = $form;
@@ -1060,7 +1223,7 @@ function listTracks($_track, $n, $x=null) {
             </div>';
     }
     $artist = $framework->userData($_track['artist_id'], 1);
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $t_format = strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION));
 
     $count_views = $databaseCL->fetchStats(1, $_track['id'])[0]; 
@@ -1071,17 +1234,17 @@ function listTracks($_track, $n, $x=null) {
         <div class="track__number">'.$n.'</div>
         <div class="track__added subst"> 
             <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.$t_format.'"  data-hideable="0" class="track">
-                <div class="tracker__bg_art" style="background-image: url(&quot;'.getImage($_track['art'], 1, 2).'&quot;)">
+                <div class="tracker__bg_art" style="background-image: url(&quot;'.getImage($_track['art'], 1).'&quot;)">
                     <i class="ion-ios-play" id="icon_play'.$_track['id'].'"></i> 
-                    <img style="display: none;" src="'.getImage($_track['art'], 1, 2).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
+                    <img style="display: none;" src="'.getImage($_track['art'], 1).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
                 </div>
             </div>
         </div>
         <div class="track__title'.$small.'">
-            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> <div id="song-name'.$_track['id'].'">'.$_track['title'].'</div></a>
+            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=track&track='.$_track['safe_link'].'&id='.$_track['id']).'" id="song-url'.$_track['id'].'"> <div id="song-name'.$_track['id'].'">'.ucfirst($_track['title']).'</div></a>
         </div>
         <div class="track__author'.$small.'" id="song-author">
-            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.$artist_name.' </a>
+            <a href="'.cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$artist['username']).' " id="song-author'.$_track['id'].'"> '.ucfirst($artist_name).' </a>
         </div>
         <div class="track__download">
             '.showMore_button(1, $_track['id'], '').'
@@ -1098,7 +1261,7 @@ function listTracks($_track, $n, $x=null) {
 function hiddenPlayer($_track) {
     global $SETT, $user, $framework, $databaseCL;
     $artist = $framework->userData($_track['artist_id'], 1);
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $hidden = '
     <div class="hidden__item" id="track'.$_track['id'].'">
         <div data-track-name="'.$_track['title'].'" data-track-id="'.$_track['id'].'" id="play'.$_track['id'].'" data-track-url="'.getAudio($_track['audio']).'" data-track-format="'.strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION)).'"  data-hideable="0" class="track">
@@ -1116,7 +1279,7 @@ function hiddenPlayer($_track) {
 function hiddenInfo($_track) {
     global $SETT, $user, $framework, $databaseCL;
     $artist = $framework->userData($_track['artist_id'], 1);
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $hidden = '
     <div class="hidden__item">
         <img style="display: none;" src="'.getImage($_track['art'], 1, 2).'" id="song-art'.$_track['id'].'" alt="'.$_track['title'].'">
@@ -1130,7 +1293,7 @@ function hiddenInfo($_track) {
 function trackLister($_track, $n, $x=null) {
     global $SETT, $framework, $user, $databaseCL, $marxTime;
     $artist = $framework->userData($_track['artist_id'], 1);
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $t_format = strtolower(pathinfo($_track['audio'], PATHINFO_EXTENSION));
 
     $count_views = $databaseCL->fetchStats(1, $_track['id'])[0]; 
@@ -1197,7 +1360,7 @@ function albumsLister($artist, $rows) {
             <div class="album__info">
                 <a href="'.$link.'">
                     <div class="album__info__art">
-                        <img src="'.getImage($rows['art'], 1, 2).'" alt="When Its Dark Out" />
+                        <img src="'.getImage($rows['art'], 1, 2).'" alt="'.$rows['title'].' Art" />
                     </div>
                 </a>
                 <div class="album__info__meta">
@@ -1263,7 +1426,7 @@ function artistAlbums($artist) {
                 <div class="album__info">
                     <a href="'.$link.'">
                         <div class="album__info__art">
-                            <img src="'.getImage($rows['art'], 1).'" alt="When Its Dark Out" />
+                            <img src="'.getImage($rows['art'], 1).'" alt="'.$rows['title'].' Art" />
                         </div>
                     </a>
                     <div class="album__info__meta">
@@ -1329,6 +1492,7 @@ function topTracks($type=null, $id=null) {
         $databaseCL->label = $followers['label'];
         $master_list = $databaseCL->fetchRelated($followers['uid'], 1);
     } elseif ($type === 4) {  
+        $databaseCL->limit = 100;
         $master_list = $databaseCL->fetchPlaylist(null, 3);
     } else {
         $top = '50 ';
@@ -1339,12 +1503,12 @@ function topTracks($type=null, $id=null) {
     if ($master_list) {
         foreach ($master_list as $key => $value) { 
             if ($type == 2 || $type == 3) {
-                $title = $value['fname'].' '.$value['lname'];
+                $title = $framework->realName($value['username'], $value['fname'], $value['lname']);
                 $title = '<a href="'.cleanUrls($SETT['url'] . '/index.php?page=listen&to=artist&artist='.$value['uid']).'">'.$_title.$title.'</a>';
                 $databaseCL->genre = $value['uid'];
             } elseif ($type == 4) {
                 $v_user = $framework->userData($value['by'], 1);
-                $title = $value['title'].' By '.$v_user['fname'].' '.$v_user['lname'];
+                $title = $value['title'].' By '.$framework->realName($v_user['username'], $v_user['fname'], $v_user['lname']);
                 $title = '<a href="'.cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$value['plid']).'">'.$title.'</a>';
                 $databaseCL->genre = $value['by'];
                 $plst_id = $value['id'];
@@ -1437,7 +1601,7 @@ function relatedItems($type, $id) {
                   </span>
                     <span class="related-artist__name">'
                         .$rel['title']
-                        .' - <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
+                        .' - <span class="feature-artist">'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'</span>
                     </span>
                 </a>';
             }
@@ -1492,7 +1656,7 @@ function relatedItems($type, $id) {
                     </span>
                     <span class="related-artist__name">'
                         .$rel['title']
-                        .' By <span class="feature-artist">'.$artist['fname'].' '.$artist['lname'].'</span>
+                        .' By <span class="feature-artist">'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'</span>
                     </span>
                 </a>';
             }
@@ -1529,6 +1693,7 @@ function followCards($rows) {
     // $type = 0 or NULL: Show Followings
     //
     $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['username']);    
+    $fullname = $framework->realName($rows['username'], $rows['fname'], $rows['lname']);
     $carder = '
         <div class="media-card">
             <a href="%s">
@@ -1536,20 +1701,27 @@ function followCards($rows) {
                     <i class="ion-ios-open"></i>
                 </div>
             </a>
-            <a  href="%s" class="media-card__footer">%s %s</a>
+            <a  href="%s" class="media-card__footer">%s</a>
         </div>';
-    return sprintf($carder, $link, getImage($rows['photo'], 1), $link, $rows['fname'], $rows['lname']);
+    return sprintf($carder, $link, getImage($rows['photo'], 1), $link, $fullname);
 }
 
 function printSearch($rows) {
     global $SETT, $user, $configuration, $databaseCL, $framework;
-    // $type = 1: Show Followers
-    // $type = 0 or NULL: Show Followings 
+    // $type = 1: Show users
+    // $type = 2: Show Tracks
+    // $type = 3: Show Albums
+    // $type = 4: Show Albums
+    // $type = 5: Show Instrumental
 
     $description = ' data-toggle="tooltip" title="'.$framework->myTruncate($rows['description'], 150).'" data-placement="auto"';
     $type = $rows['type'];
-    if ($type == 1) {
+    $title = $rows['title'];
+    $chat_link = '';
+    if ($type == 1) { 
+        $follow_btn = clickFollow($rows['id'], $user['uid']);
         $link = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$rows['safe_link']);    
+        $title = $framework->realName($rows['safe_link'], $rows['title']).$follow_btn;
     } elseif ($type == 2) {
         $link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$rows['safe_link'].'&id='.$rows['id']);    
     } elseif ($type == 3) {
@@ -1559,6 +1731,9 @@ function printSearch($rows) {
     } elseif ($type == 5) {
         $link = '#download_'.$rows['safe_link'];    
     } else {
+        $databaseCL->user_id = $user['uid']; 
+        $featured = $databaseCL->playlistEntry($rows['id'], 1)[0]; 
+        $rows['art'] = $featured['art'];
         $link = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$rows['safe_link']);  
     }
     $carder = '
@@ -1570,16 +1745,19 @@ function printSearch($rows) {
             </a>
             <a  href="%s" class="media-card__footer">%s</a>
         </div>';
-    return sprintf($carder, $link, getImage($rows['art'], 1), $link, $rows['title']);
+    return sprintf($carder, $link, getImage($rows['art'], 1), $link, $title);
 }
 
 function showTags($str) {
+    global $SETT;
+
     $string = explode(',',$str);
-    $tags = '';
+    $tags = ''; 
     if ($str) {
         foreach ($string as $list) {
+            $link = cleanUrls($SETT['url'] . '/index.php?page=search&q='.urlencode('#'.$list).'&rel=search'); 
             $tags .= '
-              <a href="#"><span class="badge badge-secondary"># '.$list.'</span></a>';
+              <a href="'.$link.'"><span class="badge badge-secondary"># '.$list.'</span></a>';
         }
     } else {
         $tags .= '
@@ -1615,10 +1793,10 @@ function artistCard($artist_id) {
     <div class="artist__card">
         <div class="free-artist">
             <div class="album-artist__">
-                <img src="'.getImage($artist['photo'], 1, 1).'" alt="'.$artist['fname'].' '.$artist['lname'].'" />
+                <img src="'.getImage($artist['photo'], 1, 1).'" alt="'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'" />
             </div>
             <a href="'.$link.'">
-                <div class="artist__name">'.$artist['fname'].' '.$artist['lname'].'</div>
+                <div class="artist__name">'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'</div>
             </a>
             <div class="artist__followers">
                 <a href="'.$followers_link.'" title="'.$count_followers.' Followers" class="mr-3"><i class="ion-ios-people ui"></i> '.$count_followers.'</a>
@@ -1633,10 +1811,12 @@ function artistCard($artist_id) {
 }
 
 function playlistCard($artist_id) {
-    global $SETT, $user, $framework, $databaseCL, $marxTime;
+    global $SETT, $LANG, $user, $framework, $databaseCL, $marxTime;
     $artist = $framework->userData($artist_id, 1);
 
     $playlists = $databaseCL->fetchPlaylist($artist_id, 1);
+    $ud = $framework->userData($artist_id, 1);
+    $creator_fullname = $framework->realName($ud['username'], $ud['fname'], $ud['lname']);
 
     $show_playlists = '';
     if ($playlists) {
@@ -1653,7 +1833,8 @@ function playlistCard($artist_id) {
             $subcribers_ = $databaseCL->playlistSubscribers($rows['id'])[0]['total'];
             $subcribers_count = $marxTime->numberFormater($subcribers_);
             $subcribers_count_full = $marxTime->numberFormater($subcribers_, 1);
- 
+            
+            $creator_fullname = $framework->realName($rows['username'], $rows['fname'], $rows['lname']);
             $cards = '
             <div class="artist__card mb-2">
                 <div class="free-artist">
@@ -1671,11 +1852,13 @@ function playlistCard($artist_id) {
                         <a href="#" title="'.$subcribers_count_full.' Subscribers" class="mr-3"> <i class="ion-ios-people ui ml-3"></i> <span id="subscribers-count-'.$rows['id'].'">'.$subcribers_count.'</span></a>
                         <a href="#" title="'.$count_tracks.' Tracks" class="mr-3"> <i class="ion-ios-disc ui ml-3"></i> '.$count_tracks.'</a>
                     </div>
-                    '.$subscribe_btn.' Created by '.$rows['fname'].' '.$rows['lname'].'
+                    '.$subscribe_btn.' Created by '.$creator_fullname.'
                 </div>
             </div>';
             $show_playlists .= $cards;
         }
+    } else {
+        $show_playlists .= notAvailable($creator_fullname. ' has not created any ' .$LANG['playlists']);
     }
     return $show_playlists;
 }
@@ -1686,12 +1869,12 @@ function mostPopular($artist_id, $type=null) {
     if ($type) {
         $track = $artist_id;
         $userData = $framework->userData($track['artist_id'], 1); 
-        $artist_name = $userData['fname'].' '.$userData['lname'];
+        $artist_name = $framework->realName($userData['username'], $userData['fname'], $userData['lname']);
         $_artist_id = $track['artist_id'];
         $username = $userData['username'];
     } else {
         $track = $databaseCL->fetchTracks($artist_id, 1)[0];
-        $artist_name = $track['fname'].' '.$track['lname'];
+        $artist_name = $framework->realName($track['username'], $track['fname'], $track['lname']);
         $_artist_id = $artist_id;
         $username = $track['username'];
     }
@@ -1719,13 +1902,13 @@ function mostPopular($artist_id, $type=null) {
         
         <div class="hidden__item">
             <div class="hidden__item" id="song-name'.$track['id'].'">'.$track['title'].'</div>
-            <img class="hidden__item" src="'.getImage($track['art'], 1, 2).'" id="song-art'.$track['id'].'" alt="'.$track['title'].'">
+            <img class="hidden__item" src="'.getImage($track['art'], 1, 2).'" id="song-art'.$track['id'].'" alt="'.$track['title'].' Art">
             <a class="hidden__item"href="'.$track_url.'" id="song-url'.$track['id'].'"> <div id="song-name'.$track['id'].'">'.$track['title'].'</div></a>  
             <a class="hidden__item" href="'.$user_url.' " id="song-author'.$track['id'].'"> '.$artist_name.' </a>
         </div>
 
         <div class="latest-release__song">
-            <div class="latest-release__song__title__">
+            <div class="latest-release__song__title__ pc-font-1_6">
                 <a href="'.$user_url.'">'.$artist_name.'</a> - <a href="'.$track_url.'">'.$track['title'].'</a>
             </div>
             <div id="waveform'.$track['id'].'"></div>
@@ -1756,6 +1939,7 @@ function mostPopular($artist_id, $type=null) {
     <div id="now-waving" style="display: none;">0</div>
     <div id="real-play'.$track['id'].'" style="display: none;">0</div>
     <div class="wave_init" data-track-url="'.getAudio($track['audio']).'" data-track-id="'.$track['id'].'" data-track-format="'.$t_format.'"></div>';
+    $user = null;
     return $track ? $card : notAvailable('This '.$role.' has no popular tracks', 'no-padding ');
 }
 
@@ -1862,7 +2046,7 @@ function secondaryNavigation($user_id) {
             </div>
         </nav>
     </div>';
-    return $user ? $card : '';
+    return $user_id ? $card : '';
 }
 
 function showViewers($type = null, $id = null) { 
@@ -1878,7 +2062,7 @@ function showViewers($type = null, $id = null) {
                 break;
             }
             $user_url = cleanUrls($SETT['url'] . '/index.php?page=artist&artist='.$veiwers['username']);
-            $veiwers_name = $veiwers['fname'].' '.$veiwers['lname'].$veiwers['uid'];
+            $veiwers_name = $framework->realName($veiwers['username'], $veiwers['fname'], $veiwers['lname']).$veiwers['uid'];
             $tt = ' data-toggle="tooltip" title="'.$veiwers_name.'" data-placement="left"';
             $artists .= '
             <a href="'.$user_url.'"'.$tt.'>
@@ -1929,28 +2113,31 @@ function sidebar_userSuggestions($artist_id) {
         $framework->limited = $configuration['sidebar_limit'];
         $related = $framework->userData(null, 0);
     }
+    
+    $PTMPL['sidebar_title'] = 'Who to follow';
+    $PTMPL['who_to_follow_link'] = cleanUrls($SETT['url'].'/index.php?page=search&rel=find');
+    $PTMPL['refresher'] = '<i class="ion-ios-refresh-circle pc-type-h3"></i> Refresh';
     if ($related) { 
         shuffle($related);
         $suggested = '';
         foreach ($related as $rows) { 
-            $template = new themer('explore/special_users_cards'); $section = '';
-            $tracks_count = $databaseCL->fetchTracks($rows['uid'], 3)[0]['counter'];
-            $PTMPL['tracks_count'] = $marxTime->numberFormater($tracks_count, 1);
-            $PTMPL['tracks_link'] = cleanUrls($SETT['url'].'/index.php?page=listen&to=artist&artist='.$rows['uid']);
+            // $template = new themer('explore/special_users_cards'); $section = '';
+            // $tracks_count = $databaseCL->fetchTracks($rows['uid'], 3)[0]['counter'];
+            // $PTMPL['tracks_count'] = $marxTime->numberFormater($tracks_count, 1);
+            // $PTMPL['tracks_link'] = cleanUrls($SETT['url'].'/index.php?page=listen&to=artist&artist='.$rows['uid']);
 
-            $follower_count = $databaseCL->fetchFollowers($rows['uid'], 1)[0]['counter'];
-            $PTMPL['follower_count'] = $marxTime->numberFormater($follower_count, 1);
-            $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$rows['uid']);
-            $PTMPL['follow_btn'] = clickFollow($rows['uid'], $user['uid']);
+            // $follower_count = $databaseCL->fetchFollowers($rows['uid'], 1)[0]['counter'];
+            // $PTMPL['follower_count'] = $marxTime->numberFormater($follower_count, 1);
+            // $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$rows['uid']);
+            // $PTMPL['follow_btn'] = clickFollow($rows['uid'], $user['uid']);
 
-            $PTMPL['prof_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$rows['username']);
-            $PTMPL['prof_name'] = $rows['fname'] . ' ' . $rows['lname'];
-            $PTMPL['prof_photo'] = getImage($rows['photo'], 1);
-            $PTMPL['verif_badge'] = $rows['verified'] ? ' verifiedUserBadge' : '';
-            $PTMPL['sidebar_title'] = 'Who to follow';
-            $PTMPL['refresher'] = '<i class="ion-ios-refresh-circle pc-type-h3"></i> Refresh';
+            // $PTMPL['prof_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$rows['username']);
+            // $PTMPL['prof_name'] = $framework->realName($rows['username'], $rows['fname'], $rows['lname']);
+            // $PTMPL['prof_photo'] = getImage($rows['photo'], 1);
+            // $PTMPL['verif_badge'] = $rows['verified'] ? ' verifiedUserBadge' : '';
 
-            $suggested .= $template->make();
+            // $suggested .= $template->make();
+            $suggested .= smallUser_Card($rows['uid'], null, 1);
         }     
         $PTMPL['suggested_users'] = $suggested;  
     }
@@ -1991,18 +2178,26 @@ function releaseType($id, $type = null) {
         if ($r_audio_count >= 13) {
            $rt = 4;
            $ic = '<span class="mr-4"><i class="ion-ios-filing"></i> Extended Album</span>';
+           $rtn = ' Extended Album';
         } elseif ($r_audio_count > 5 && $r_audio_count < 13) {
            $rt = 3;
            $ic = '<span class="mr-4"><i class="ion-ios-albums"></i> Album</span>';
+           $rtn = ' Album';
         } elseif ($r_audio_count > 1 && $r_audio_count < 6) {
            $rt = 2;
            $ic = '<span class="mr-4"><i class="ion-ios-clock"></i> EP</span>';
+           $rtn = 'EP';
         } else {
            $rt = 1;
            $ic = '<span class="mr-4"><i class="ion-ios-disc"></i> Single</span>';
+           $rtn = 'Single';
         }
-        if ($type) {
+        if ($type == 1) {
             return $ic;
+        } elseif ($type == 2) {
+            return $rtn;
+        } elseif ($type == 3) {
+            return array('count' => $rt, 'type' => $rtn, 'html' => $ic);
         } else {
             return $rt;
         }
@@ -2051,11 +2246,17 @@ function releasesCard($id = null) {
     $missing_artist = !$r_artist && $progress == 60 ? ' '.$LANG['missing_artist'] : '';
 
     $PTMPL['release_progress_text'] = $progress == 100 ? sprintf($LANG['release_complete'], $progress) : sprintf($LANG['release_almost_complete'].$missing_artist, $progress);
-    $PTMPL['release_button'] = $progress !== $progress ? '<a href="'.$release_publ_url.'" class="btn btn-success float-right mx-2">Publish Release</a>' : '<a href="'.$release_home_url.'" class="btn btn-primary float-right mx-2">Complete Release</a>'; 
+    $PTMPL['release_button'] = $progress !== $progress ? 
+    '<a href="'.$release_publ_url.'" class="btn btn-success float-right mx-2">'.$LANG['publish_release'].'</a>' : '<a href="'.$release_home_url.'" class="btn btn-primary float-right mx-2">'.$LANG['complete_release'].'</a>'; 
 
-    $PTMPL['delete_button'] = $get_release['status'] == 1 ? '<a href="" title="Permanently Delete"><i class="fa fa-trash float-right m-3 text-white fa-3"></i></a>' : '';
-    $PTMPL['edit_button'] = $get_release['status'] == 3 ? '<a href="'.$release_home_url.'" title="Change meta data"><i class="fa fa-edit float-right m-3 text-white fa-3"></i></a>' : '';
-    $PTMPL['remove_button'] = $get_release['status'] == 3 ? '<a href="'.$release_remove_url.'" title="Remove From Sale"><i class="fa fa-times-circle float-right m-3 text-white fa-3"></i></a>' : '';
+    $PTMPL['delete_button'] = $get_release['status'] == 1 ? 
+    '<a href="" title="'.$LANG['delete_permanent'].'"><i class="fa fa-trash float-right m-3 text-white fa-3"></i></a>' : '';
+
+    $PTMPL['edit_button'] = $get_release['status'] == 3 ? 
+    '<a href="'.$release_home_url.'" title="'.$LANG['change_meta'].'"><i class="fa fa-edit float-right m-3 text-white fa-3"></i></a>' : '';
+
+    $PTMPL['remove_button'] = $get_release['status'] == 3 ? 
+    '<a href="'.$release_remove_url.'" title="'.$LANG['remove_from_sale'].'"><i class="fa fa-times-circle float-right m-3 text-white fa-3"></i></a>' : '';
 
     $PTMPL['footer_content'] = $get_release['status'] == 1 ?
     '<div class="pc_rel__footer"> 
@@ -2100,7 +2301,7 @@ function releasesTracklist($id = null, $hidden = null) {
     if ($hidden) {
         $button = 
         '<div class="pc_rel__tracks-header" id="track'.$get_release['id'].'" onclick="toggleList('.$get_release['id'].')">
-            <span>View Tracklist</span>
+            <span>'.$LANG['view_tracklist'].'</span>
             <span><i class="fa fa-chevron-down"></i></span>
         </div>';
         $hide = ' d-none';
@@ -2112,8 +2313,8 @@ function releasesTracklist($id = null, $hidden = null) {
         <div class="pc_rel__tracks-content'.$hide.'" id="track_list'.$get_release['id'].'">
             <div class="pc_rel__track-row-headers d-flex justify-content-between">
                 <span role="index">#</span> 
-                <span role="title">Title of Track</span> 
-                <span role="isrc">ISRC</span> 
+                <span role="title">'.$LANG['title_of_track'].'</span> 
+                <span role="isrc">'.$LANG['isrc'].'</span> 
                 <span role="duration">
                     <i class="fa fa-clock-o"></i>
                 </span>
@@ -2167,16 +2368,31 @@ function dataSet($type = null, $date = null) {
     return '['.$data_set.']';
 }
 
-function showMore_button($type = 0, $item_id = null, $x='More') {
+function showMore_button($type = 0, $item_id = null, $x='More', $sp = 0) {
     global $PTMPL, $LANG, $SETT, $configuration, $user, $framework, $databaseCL, $marxTime, $page_name;
-    $download = $un_playlist = $t_id = '';
+    $download = $un_playlist = $t_id = $public_status = '';
 
-    $databaseCL->track = $t_id = $item_id;  
-    $track = $type == 1 ? $databaseCL->fetchTracks(null, 2)[0] : $databaseCL->fetchAlbum($item_id)[0];
-    $creator = $type == 1 ? $track['artist_id'] : $track['by']; 
-    $artist = $type == 1 ? $framework->userData($creator, 1) : $framework->userData($creator, 1); 
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $databaseCL->track = $t_id = $item_id;
+    $track = $type == 1 ? $databaseCL->fetchTracks(null, 2)[0] : ($type == 2 ? $databaseCL->fetchAlbum($item_id)[0] : $databaseCL->fetchPlaylist($item_id)[0]);
+    $creator = $type == 1 ? $track['artist_id'] : $track['by'];
+    $artist = $framework->userData($creator, 1);
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $page = getPage($page_name);
+
+    // Show the add to playlist link
+    $playlister = ($user ? ' 
+        <li>
+          <a href="#"
+            class="playlist-modal-show"
+            id="playlist-modal-show"
+            data-toggle="modal" 
+            data-target="#playlistModal"
+            onclick="playlist_modal(2, {\'action\': \'a2list\', \'track\': \''.$t_id.'\', \'type\': '.$type.'})">
+            <i class="ion-ios-add-circle-outline"></i> '.$LANG['add_to_playlist'].'
+          </a>
+        </li>' : '');
+
+        $public_status = $sp ? ($track['public'] ? '<i class="fa fa-globe mx-2"></i>' : '<i class="fa fa-user mx-2"></i>') : '';
 
     if ($type == 1) {
         $track_link = cleanUrls($SETT['url'] . '/index.php?page=track&track='.$track['safe_link']);
@@ -2194,28 +2410,31 @@ function showMore_button($type = 0, $item_id = null, $x='More') {
             }
             $t_id = implode(',', $rows);
         }
+    } elseif ($type == 3) {
+        $track_link = cleanUrls($SETT['url'] . '/index.php?page=playlist&playlist='.$track['plid']); 
+
+        // Show the edit playlist button
+        $playlister = ($user ? ' 
+            <li>
+              <a href="#"
+                class="playlist-modal-show"
+                id="playlist-modal-show"
+                data-toggle="modal" 
+                data-target="#playlistModal"
+                onclick="playlist_modal(2, {\'action\': \'edlist\', \'track\': \''.$t_id.'\', \'type\': '.$type.'})">
+                <i class="fa fa-edit"></i> '.$LANG['edit_playlist'].'
+              </a>
+            </li>' : '');
     }
-    if ($page == 'playlist') {
+    if ($page == 'playlist' && $type != 3) {
         $playlist = $databaseCL->fetchPlaylist($_GET['playlist'])[0];
         $plst = $playlist['id'];
         $un_playlist = '
         <li><a href="#" onclick="deleteItem({\'type\': \'1\', \'action\': \'pl_entry\', \'track\': \''.$t_id.'\', \'pl\': \''.$plst.'\'})"><i class="ion-ios-remove-circle-outline"></i> Remove from playlist</a></li>';
     }
     $access = allowAccess($creator);
-    $delete = $access ? '
+    $delete = $access && $type != 3 ? '
     <li><a href="#"><i class="ion-ios-trash mx-2"></i> Delete</a></li>' : '';
-
-    $playlister = ' 
-    <li>
-      <a href="#"
-        class="playlist-modal-show"
-        id="playlist-modal-show"
-        data-toggle="modal" 
-        data-target="#playlistModal"
-        onclick="playlist_modal(2, {\'action\': \'a2list\', \'track\': \''.$t_id.'\', \'type\': '.$type.'})">
-        <i class="ion-ios-add-circle-outline"></i> '.$LANG['add_to_playlist'].'
-      </a>
-    </li>';
 
     $dropdown = '
     <span class="dropdown mx-3" style="text-transform: none; letter-spacing: normal; font-size: unset;">
@@ -2225,14 +2444,17 @@ function showMore_button($type = 0, $item_id = null, $x='More') {
         <ul class="dropdown-menu dropdown-menu-left" aria-labelledby="moreDropdown"> 
             '.$playlister.'
             '.$un_playlist.'
-            <li><a href="#"id="copyable" data-clipboard-text="'.$track_link.'">
-                    <i class="ion-ios-copy mx-2"></i> Copy Link 
-                </a>    
+            <li>
+                <a href="#"id="copyable" data-clipboard-text="'.$track_link.'">
+                    <i class="fa fa-copy mx-2"></i> '.$LANG['copy_link'].'
+                </a>
             </li>
             '.$download.'
             '.$delete.'
         </ul>
+        '.$public_status.'
     </span>';
+    $databaseCL->track = null;
     return $user ? $dropdown : ''; 
 }
 
@@ -2282,7 +2504,7 @@ function clickFollow($leader_id, $follower_id, $x = 1) {
 
     $databaseCL->leader_id = $leader_id;
     $databaseCL->follower_id = $follower_id;
-    $follows = $databaseCL->fetchFollowers($leader_id, 1);
+    $follows = $databaseCL->fetchFollowers($leader_id, 3); 
     if ($follows) {
         $followed = $e = $uclass = '';
         $text = 'Unfollow';
@@ -2301,6 +2523,7 @@ function clickFollow($leader_id, $follower_id, $x = 1) {
 
     $button = $x == 1 ? $button : $div_button; 
     $button = $leader_id !== $follower_id ? $button : ''; 
+    $databaseCL->leader_id = $databaseCL->follower_id = null;
     return $user ? $button : '';
 }
 
@@ -2342,7 +2565,7 @@ function display_likes_follows($type = null, $item_id = null) {
 }
 
 function showFollowers($user_id, $type=null) {
-    global $SETT, $framework, $configuration, $databaseCL, $marxTime;
+    global $SETT, $LANG, $framework, $configuration, $databaseCL, $marxTime;
     // 2: Sidebar following
     // 1: Sidebar followers
     // 0: Inner followers
@@ -2368,7 +2591,7 @@ function showFollowers($user_id, $type=null) {
                         <span id="'.strtolower($rel).'-count-'.$user_id.'">'.$follower_count.'</span> '.$rel.'
                     </span>
                 </h3>
-                <span class="sidebarHeader__more pc-type-h3">View all</span>
+                <span class="sidebarHeader__more pc-type-h3">'.$LANG['view_all'].'</span>
             </a> 
             <div class="related-artists pb-3">';
             foreach ($followership as $rows) { 
@@ -2383,7 +2606,7 @@ function showFollowers($user_id, $type=null) {
             </div>
         </article>';
     } else {
-        $card .= notAvailable('No Followers', 'no-padding ');
+        $card .= notAvailable($LANG['no_followers'], 'no-padding ');
     } 
     $databaseCL->limit = null;
     return $followership ? $card : '';
@@ -2391,6 +2614,9 @@ function showFollowers($user_id, $type=null) {
 
 function showPlaylist($id = null) {
     global $LANG, $SETT, $PTMPL, $user, $configuration, $framework, $databaseCL, $marxTime; 
+
+    $databaseCL->order = ' ORDER BY RAND() LIMIT 12'; 
+    $databaseCL->filter = ' OR `playlist`.`featured` = \'1\' AND `playlist`.`public` = \'1\'';
     $playlists = $databaseCL->fetchPlaylist($id, 1);
 
     $show_playlists = '';
@@ -2405,6 +2631,7 @@ function showPlaylist($id = null) {
             $show_playlists .= $cards;
         }
     }
+    $databaseCL->filter = $databaseCL->limit = null;
     return $show_playlists;
 }
 
@@ -2415,7 +2642,7 @@ function smallUser_Card($id, $button = null, $extra = null) {
 
     $artist = $framework->userData($id, 1);
 
-    $PTMPL['follow_btn'] = !$button ? clickFollow($artist['uid'], $user['uid']) : $button;
+    $PTMPL['follow_btn_card'] = !$button ? clickFollow($artist['uid'], $user['uid']) : $button;
 
     $tracks_count = $databaseCL->fetchTracks($artist['uid'], 3)[0]['counter'];
     $PTMPL['tracks_count'] = $marxTime->numberFormater($tracks_count, 1);
@@ -2426,7 +2653,7 @@ function smallUser_Card($id, $button = null, $extra = null) {
     $PTMPL['followers_link'] = cleanUrls($SETT['url'].'/index.php?page=follow&get=followers&artist='.$artist['uid']);
 
     $PTMPL['prof_link'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist='.$artist['username']);
-    $PTMPL['prof_name'] = $artist['fname'] . ' ' . $artist['lname'];
+    $PTMPL['prof_name'] = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $PTMPL['prof_photo'] = getImage($artist['photo'], 1);
     $PTMPL['verif_badge'] = $artist['verified'] ? ' verifiedUserBadge' : '';
 
@@ -2635,7 +2862,7 @@ function projectAudio($_track, $type = null, $creator_id=null) {
     } 
     $project = $databaseCL->fetchProject($pid)[0];
     $artist = $framework->userData($creator, 1);
-    $artist_name = $artist['fname'].' '.$artist['lname'];
+    $artist_name = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
     $t_format = strtolower(pathinfo($audio, PATHINFO_EXTENSION)); 
 
     $allow_access = allowAccess($pid, 2, $project['published']);
@@ -2692,18 +2919,19 @@ function projectStems($rows) {
             $list_tracks = notAvailable($LANG['pending_user_stem']);
         }
 
+        $realName = $framework->realName($artist['username'], $artist['fname'], $artist['lname']);
         $card .= '
         <div class="album">
             <div class="album__info">
                 <a href="'.$link.'">
                     <div class="project__stems__art">
-                        <img src="'.getImage($artist['photo'], 1).'" alt="'.$artist['fname'].'" />
+                        <img src="'.getImage($artist['photo'], 1).'" alt="'.$realName.'" />
                     </div>
                 </a>
                 <div class="album__info__meta">
                     <div class="album__year"> JOINED '.date('d M Y', strtotime($colaber['time'])).'</div>
                     <div class="album__name">
-                        <a href="'.$link.'">'.$artist['fname'].' '.$artist['lname'].'</a>
+                        <a href="'.$link.'">'.$realName.'</a>
                     </div>
                     <div class="album__actions">
                         '.$like_button.' 
@@ -2746,9 +2974,9 @@ function notSpecialCard() {
     $card = '
     <a href="'.$link.'" class="related-artist">
         <span class="related-artist__img">
-            <img src="'.getImage($artist['photo'], 1, 1).'" alt="'.$artist['fname'].' '.$artist['lname'].'" />
+            <img src="'.getImage($artist['photo'], 1, 1).'" alt="'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'" />
         </span>
-        <span class="related-artist__name">'.$artist['fname'].' '.$artist['lname'].'</span>
+        <span class="related-artist__name">'.$framework->realName($artist['username'], $artist['fname'], $artist['lname']).'</span>
     </a>';
     return $card;
 }
@@ -2787,7 +3015,7 @@ function projectsCard($rows, $artist_id = null) {
                     <a href="#" title="'.$count_instrumentals.' Instrumentals" class="mr-3"> <i class="ion-ios-musical-notes ui ml-3"></i> '.$count_instrumentals.'</a>
                     <a href="#" title="'.$count_stems.' Stems" class="mr-3"> <i class="ion-ios-pulse ui ml-3"></i> '.$count_stems.'</a>
                 </div>
-                '.$enter_btn.' By '.$creator['fname'].' '.$creator['lname'].'
+                '.$enter_btn.' By '.$framework->realName($creator['username'], $creator['fname'], $creator['lname']).'
             </div>
         </div>
     </div>';
@@ -2904,4 +3132,56 @@ function showNotifications($type = null, $msgs = null, $only_paging = null) {
 
         return $notification_list;
     }
+}
+
+/* 
+* Set the extra form fields for login
+*/
+function extra_fields() {
+    global $SETT, $PTMPL, $LANG, $configuration, $referrer;
+
+    $fbconnect = $recaptcha = $invite_code = $phone_number = '';
+    if($configuration['fbacc']) {
+        // Generate a session to prevent CSFR attacks
+        if (!isset($_SESSION['state'])) {
+            $_SESSION['state'] = md5(uniqid(rand(), TRUE)); 
+        }
+        // Facebook Login Url
+        $fbconnect = '<a class="btn btn-fb" href="https://www.facebook.com/dialog/oauth?client_id='.$configuration['fb_appid'].'&redirect_uri='.$SETT['url'].'/connection/connect.php?facebook=true&state='.$_SESSION['state'].'&scope=public_profile,email">Facebook <i class="fa fa-facebook ml-1"></i></a>';
+    }
+    $captcha_url = '/includes/vendor/goCaptcha/goCaptcha.php?gocache='.strtotime('now');
+    if($configuration['captcha']) {
+        // Captcha
+        $recaptcha = ' 
+        <label for="recaptcha_div">'.$LANG['recaptcha'].'</label>
+        <div class="d-flex mb-4" id="recaptcha_div"> 
+            <input name="recaptcha" type="text" id="recaptcha2" class="form-control mr-5" autocomplete="off">
+            <span class="ml-2" id="recaptcha-img"><img width="auto" height="35px" src="'.$SETT['url'].$captcha_url.'" /></span>
+        </div> ';
+    }  
+    if ($configuration['invite_only']) {
+        $invite_code_post = (isset($_POST['invite_code'])) ? $_POST['invite_code'] : '';
+        $info = ($configuration['fbacc']) ? '<small class="d-flex justify-content-center red-text border grey lighten-4 p-1">'.$LANG['invite_only_info'].'</small>' : '';
+        $invite_code = '
+        '.$info.'
+        <div class="md-form form-sm mb-3">
+            <i class="fa fa-key prefix"></i>
+            <input name="invite_code" type="text" id="invite_code" class="form-control form-control-sm" autocomplete="off" value="'.$invite_code_post.'">
+            <label for="invite_code">'.$LANG['invite_code'].'</label> 
+        </div>';
+    }
+    if ($configuration['activation'] == 'phone') { 
+        $_phone = isset($_POST['phone']) ? $_POST['phone'] : '+';
+        $phone_number = ' 
+        <div class="md-form form-sm mb-3">
+            <i class="fa fa-phone prefix"></i>
+            <input name="phone" type="text" id="phone" class="form-control form-control-sm" value="'.$_phone.'">
+            <label for="phone">'.$LANG['phone_number'].'</label> 
+        </div>';
+    } 
+
+    $fields =  
+        array('fbconnect' => $fbconnect, 'recaptcha' => $recaptcha, 'invite_code' => $invite_code,
+            'phone_number' => $phone_number);
+    return $fields;
 }

@@ -161,10 +161,11 @@ $('.manage-modal-show').on('click', function() {
 });
 
 function playlistAction(type, data) {
-  if (data.action == 'create') {  
+  if (data.action == 'create' || data.action == 'edit') {  
     var public = checkbox('make_public'); 
     var title = $('input[name="title"]').val();
-    var data = {action: data.action, title: title, public: public};
+    var id = data.action == 'edit' ? data.id : null;
+    var data = {action: data.action, title: title, public: public, id:id};
   } else {
     var playlist = $('select[name="playlist"] option:selected').val();
     var data = {action: data.action, track: data.track, playlist: playlist};

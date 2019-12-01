@@ -5,7 +5,7 @@ function mainContent() {
 
 	$PTMPL['page_title'] = 'Account'; 
 	
-	$PTMPL['site_url'] = $SETT['url'];
+	$PTMPL['site_url'] = $SETT['url']; 
     $messaging = new social;
 
     $mod = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=new_release');
@@ -24,9 +24,9 @@ function mainContent() {
     $PTMPL['side_links'] .= $user_role > 2 ? '<a href="'.$mod.'" class="btn btn-info btn-block" for="upload_photo">New Release</a>' : '';
     $PTMPL['side_links'] .= $admin ? '<a href="'.$adn.'" class="btn btn-info btn-block" for="upload_photo">Admin</a>' : '';
 
-
+    $allow_admin_login = isset($_GET['login']) && $_GET['login'] == 'admin' && !$admin ? 1 : 0;
     $full_container = '';
-	if ($user) { 
+	if ($user && !$allow_admin_login) { 
         $PTMPL['page_title'] = ucfirst($user['username']); 
         $PTMPL['page_titler'] = 'Your profile'; 
 
@@ -74,6 +74,10 @@ function mainContent() {
             <input type="text" id="label" class="form-control mb-4" name="label" placeholder="Record Label" value="'.$PTMPL['label'].'"> 
         ' : '';
         $PTMPL['user_username_url'] = cleanUrls($SETT['url'].'/index.php?page=artist&artist=').'<span id="repusr">'.$PTMPL['username'].'</span>';  
+
+
+        // Set the seo tags
+        $PTMPL['seo_meta_plugin'] = seo_plugin($user['photo'], $PTMPL['page_title'], $PTMPL['intro']);
 
         if (isset($_GET['view'])) { 
             if ($_GET['view'] == 'update') {
@@ -127,7 +131,6 @@ function mainContent() {
                 } else {
                     $rcvr = $framework->userData($message_reciever, 1);
                     $page_title = $rcvr ? ' | '.$framework->realName($rcvr['username'], $rcvr['fname'], $rcvr['lname']) : ''; 
-
                 }
 
                 $PTMPL['page_title'] = 'Messages' . $page_title; 
@@ -152,11 +155,14 @@ function mainContent() {
                     $PTMPL['messages'] = $messaging->messenger_master($message_sender, $message_reciever);
                 } else {
                     // Show ads if user id is not set
-                    $PTMPL['messages'] = '<div class="mt-3 m-2">Start a chat</div>';
+                    $PTMPL['messages'] = '<div class="mt-3 m-2 message-error">'.$LANG['start_a_message'].'</div>';
                 }  
                 // $social->onlineTime = $settings['online_time']; 
                 $PTMPL['follows'] = $messaging->activeChats($user['uid'], 1);         
-                $PTMPL['recent_chats'] = $messaging->activeChats($user['uid'], 0);         
+                $PTMPL['recent_chats'] = $messaging->activeChats($user['uid'], 0);   
+
+                // Set the seo tags
+                $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title']);      
             } else {
                 $theme = new themer('account/account'); 
             }
@@ -174,6 +180,8 @@ function mainContent() {
             $PTMPL['username'] = $username = isset($_POST['username']) ? $framework->db_prepare_input($_POST['username']) : '';
             $PTMPL['password'] = $password = isset($_POST['password']) ? $framework->db_prepare_input($_POST['password']) : '';
             $PTMPL['email'] = $email = isset($_POST['email']) ? $framework->db_prepare_input($_POST['email']) : '';
+            $recaptcha2x = isset($_POST['recaptcha']) ? $framework->db_prepare_input($_POST['recaptcha']) : null;
+
             if (isset($_POST['remember']) && $_POST['remember'] == 'on') {
                 $PTMPL['remember'] = ' checked';
                 $framework->remember = 1;
@@ -189,12 +197,15 @@ function mainContent() {
             $framework->email = $email;
             $framework->password = hash('md5', $password); 
 
-            if (isset($_GET['login']) && $_GET['login'] == 'user') {
-                $login = $framework->authenticateUser();
+            if (isset($_GET['login']) && $_GET['login'] == 'admin') {
+                $login = $framework->administrator(1);
                 $notice = messageNotice($login, 3, 2);
-            } elseif (isset($_GET['login']) && $_GET['login'] == 'register') { 
+            } elseif (isset($_GET['login']) && $_GET['login'] == 'register') {
                 $ver_user = $framework->userData($username, 1);
-                if (mb_strlen($username) < 5) {
+                if (!$framework->captchaVal($recaptcha2x)) {
+                    $reg = messageNotice($LANG['invalid_capthca'], 0, 2);
+                }
+                elseif (mb_strlen($username) < 5) {
                     $reg = messageNotice($LANG['username_short'], 0, 2);
                 }
                 elseif ($username == $ver_user['username']) {
@@ -215,20 +226,40 @@ function mainContent() {
                 }
                 $notice = $reg;
             } else {
-                $login = $framework->administrator(1);
+                $login = $framework->authenticateUser();
                 $notice = messageNotice($login, 3, 2);
             }
             if (isset($login['username']) && $login['username'] == $username) {
                 $notice = messageNotice('Login Successful', 1, 2);
-                if (isset($_GET['login']) && $_GET['login'] == 'user') {
-                    $framework->redirect(cleanUrls('account'));
+
+                // Save the referrer session to a new session
+                if (isset($_SESSION['referrer'])) { 
+                    $_SESSION['temp_referrer'] = urlrecoder($_SESSION['referrer'], 1);
+                }
+
+                if (isset($_GET['login']) && $_GET['login'] == 'admin') {
+                    if (isset($_SESSION['referrer'])) {
+                        unset($_SESSION['referrer']);
+                        $framework->redirect(cleanUrls($_SESSION['temp_referrer']), 1);
+                    } else {
+                        $framework->redirect(cleanUrls('admin'));
+                    }
                 } else {
-                    $framework->redirect(cleanUrls('admin'));
+                    if (isset($_SESSION['referrer'])) {
+                        unset($_SESSION['referrer']);
+                        $framework->redirect(cleanUrls($_SESSION['temp_referrer']), 1);
+                    } else {
+                        $framework->redirect(cleanUrls('account'));
+                    }
+                    $framework->redirect(cleanUrls('account'));
                 }
             } else {
                 $notice = $notice;
             }
             $PTMPL['notification'] = $notice; 
+
+            // Set the seo tags
+            $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title']);
         }
 
         if (isset($_GET['view']) && $_GET['view'] == 'access') {
@@ -237,10 +268,15 @@ function mainContent() {
                 if ($_GET['login'] == 'register') {
                     $theme = new themer('account/register');
                     $PTMPL['page_title'] = 'Register'; 
+                    $PTMPL['recaptcha'] = extra_fields()['recaptcha'];
                 } else {
                     $theme = new themer('account/login');
                 }
+                $PTMPL['page_title'] = $_GET['login'] == 'admin' ? 'Admin Login' : $PTMPL['page_title'];
             }  
+
+            // Set the seo tags
+            $PTMPL['seo_meta_plugin'] = seo_plugin(null, $PTMPL['page_title']);
         }
     } 
  
@@ -248,7 +284,7 @@ function mainContent() {
 
     $theme = new themer('account/container'.$full_container); 
 	return $theme->make();
-}
+} 
 // Send notifications from
 // Follow
 // Track Likes

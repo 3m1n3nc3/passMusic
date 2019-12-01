@@ -24,6 +24,12 @@
 .pc-font-1 {
   font-size: 10px!important;
 }
+.pc-font-1_5 {
+  font-size: 15px!important;
+}
+.pc-font-1_6 {
+  font-size: 16px!important;
+}
 .pc-font-2 {
   font-size: 20px!important;
 }
@@ -873,7 +879,6 @@ ul.pc-card__Arrange {
 .box.box-success {
   border-top-color: #00a65a;
 }
-
 
 /*Distribution Specific styles*/
 .artist__photo_updateBlock {

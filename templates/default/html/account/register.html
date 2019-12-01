@@ -32,6 +32,8 @@
                         <span id="password_check" class="mb-4"></span>
                     </div> 
 
+                    {$recaptcha}
+
                     <!-- Newsletter -->
                     <div class="custom-control custom-checkbox">
                         <input type="checkbox" class="custom-control-input" id="newsletter" name="newsletter"{$newsletter}>
@@ -39,6 +41,7 @@
                     </div>
                     <!-- Sign up button -->
                     <button class="btn btn-info my-4" type="submit" name="register">Register</button>  
+                    <a href="{$login_url}" class="h3 mx-5"><span class="font-weight-bold"> Already registered? </span></a>
 
                     <hr>
                     <!-- Terms of service -->

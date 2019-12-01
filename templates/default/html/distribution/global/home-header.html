@@ -1,0 +1,44 @@
+	<!-- header -->
+	<header>
+		<div class="container">
+			<nav class="navbar navbar-expand-lg navbar-light">
+				<img alt="{$site_title} Logo" src="{$site_logo}" style="max-height: 35px;">
+				<a class="ml-2 navbar-brand" href="#">
+					{$site_title}
+				</a>
+				<button class="navbar-toggler ml-lg-auto ml-sm-5" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+				    aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<ul class="social-iconsv2 agileinfo ml-lg-5 mx-auto text-center">
+					<!-- {$fetch_home_nav_social} -->
+				</ul>
+				<div class="collapse navbar-collapse" id="navbarSupportedContent">
+					<ul class="navbar-nav text-center ml-auto">
+						<li class="nav-item active mr-3">
+							<a class="nav-link" href="{$site_url}">Home
+								<span class="sr-only">(current)</span>
+							</a>
+						</li> 
+						<li class="nav-item mr-3">
+							<a class="nav-link" href="{$explore_url}">Explore</a>
+						</li> 
+						<li class="nav-item dropdown mr-3">
+							<a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true"
+							    aria-expanded="false">
+								Community And Support
+							</a>
+							<div class="dropdown-menu" aria-labelledby="navbarDropdown">
+								{$distro_support_drop}
+								<a class="dropdown-item scroll font-weight-bold" href="{$about_page_url}">About us</a>
+								<!-- <div class="dropdown-divider"></div> -->
+								<a class="dropdown-item scroll font-weight-bold" href="{$contact_page_url}">Contact us</a>
+							</div>
+						</li> 
+						{$just_account_link}
+					</ul>
+				</div>
+			</nav>
+		</div>
+	</header>
+	<!-- //header -->
