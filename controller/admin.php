@@ -288,7 +288,7 @@ function mainContent() {
 				$PTMPL['page_title'] = 'Manage Releases';
 
 				$theme = new themer('distribution/global/scripts');
-				$PTMPL['body_scripts'] = $theme->make();
+				$PTMPL['body_scripts'] = $theme->make(); 
 
 				if (isset($_GET['delete'])) {
 					$did = $databaseCL->db_prepare_input($_GET['delete']);
@@ -302,8 +302,8 @@ function mainContent() {
 					}
 				}
 
-		        $create_post_link = cleanUrls($SETT['url'].'/index.php?page=distribution&action=new_release');
-		        $PTMPL['create_rel_btn'] = '<a href="'.$create_post_link.'" class="btn btn-primary font-weight-bolder mb-2">Create new release</a>';
+		        $create_rel_link = base_url('distribution&action=new_release');
+		        $PTMPL['create_rel_btn'] = '<a href="'.$create_rel_link.'" class="btn btn-primary font-weight-bolder mb-2">Create new release</a>';
 
 				if (isset($_POST['search'])) {  
 					$q = $framework->urlRequery('&q='.$_POST['q']);

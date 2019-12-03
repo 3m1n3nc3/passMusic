@@ -130,6 +130,7 @@ $LANG['no_followers'] = 'No Followers';
 $LANG['information_saved'] = 'Your information has been saved';
 $LANG['information_no_update'] = 'You did not make any changes';
 $LANG['image_res_notice'] = 'Image resolution must be %s Pixels';
+$LANG['payment_for_premium'] = 'Payment for premium publishing of ';
 
 // Form Inputs
 $LANG['no_fname'] = 'First Name can not be empty';
@@ -175,7 +176,8 @@ $LANG['banner_buttons_notice'] = 'Provide only the urls for the buttons, and spe
 $LANG['static_content_notice'] = ' For content that appear at the top most of the about page, set the priority to 3, for the second row set the priority to 2, and for the others set priority to 1. Priority set at 0 won\'t be used. Be careful when creating or modifying content for the about and contact pages, certain features are unused and you may be required to remove excesses. Icons are only applicable to about page content with a priority of 2.<br>
 	<b>For content on the homepage, the priority starts from 5</b>';
 
-$LANG['premium_details'] = ' <strong>Premium</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management and other sharing sites and blogs, inclusion in our featured playlists and reviews on various blogs (In the future this would also allow you to put your music in stores, allowing you to make money from your music).';
+$LANG['premium_details'] = ' <strong>Premium</strong> distribution allows you to upload your music to our full stack music delivery suit and other music sharing sites and blogs, inclusion in our featured playlists and honest reviews from various blogs and authorities (In the future this would also send your music to stores, allowing you to make money from your music).';
+$LANG['free_details'] = '<strong>Free</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management with no further benefits attached.';
 
 $LANG['excess_about_priority'] = 'You have more than one child content for \'about\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
 $LANG['excess_contact_priority'] = 'You have more than one child content for \'contact\' with a priority of \'3\', either delete the rest or change their priority to anything but \'3\'!';
@@ -208,7 +210,7 @@ $LANG['complete_release'] = 'Complete Release';
 $LANG['publish_release'] = 'Publish Release';
 $LANG['need_help'] = 'Need Help? <strong >Click here</strong>';
 $LANG['public_playlist_notice'] = '<small class="text-warning"> Public Playlists are available to every user of this site.</small>';
-$LANG['new_featured_playlist_created'] = 'Your %s has been created. Playlists created from this tool are featured playlists and are made available in such manner that more users of our sharing site are able to find them, you can login to the sharing site to manage and add tracks to your playlists!';
+$LANG['new_featured_playlist_created'] = 'Your %s has been created. Playlists created from this tool are featured playlists and are made available in such manner that more users of our sharing site are able to find them, you can login to our play portal to manage and add tracks to your playlist! (Please note that we may push related premium tracks into these playlists without notification, you can remove these later).';
 
 // Releases
 $LANG['release_almost_complete'] = 'Your release is almost there! It is %s%% complete.';
@@ -216,6 +218,8 @@ $LANG['release_complete'] = 'Your release is %s%% complete, you can now publish'
 $LANG['release_already_submited'] = 'Your release has already been submitted for moderation, if you made changes we are also tracking those changes!';
 $LANG['release_removed'] = 'This release has been removed from sales, if you ever want this release back up, you would need to raise a support ticket';
 $LANG['release_submited'] = 'Your release has been submitted for moderation!';
+$LANG['release_submited_payment'] = 'Your payment was successful and your release has been submitted for moderation!';
+$LANG['release_submited_failed_payment'] = 'We are unable to process your payment at this time, please contact our site administration, or try later. Sorry for the inconvenience...';
 $LANG['no_releases'] = 'You have no %s releases';
 $LANG['no_releases_var'] = 'You have no releases %s';
 $LANG['missing_artist'] = 'Your release is missing a primary artist!';

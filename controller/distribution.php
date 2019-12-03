@@ -270,33 +270,113 @@ function mainContent() {
 					}
 				} else {  
 					$release_id = $databaseCL->db_prepare_input($_GET['rel_id']);
-					$pay_url = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=publish&pay=premium&rel_id='.$get_release['release_id']);
+					$PTMPL['premium_payment_url'] = base_url('distribution&action=manage&set=publish&pay=premium&rel_id='.$get_release['release_id']);
+					
 					$curr = currency(3, 'USD' /*$configuration['currency']*/);
+
+					// Check what type of release this is
+					$release_type = releaseType($get_release['release_id'], 3);
+
+					// Set the cost of the premium
+					if ($release_type['int'] == 4) {
+						$cost = 40;
+					} elseif ($release_type['int'] == 3) {
+						$cost = 35;
+					} elseif ($release_type['int'] == 2) {
+						$cost = 25;
+					} elseif ($release_type['int'] == 1) {
+						$cost = 25;
+					} else {
+						$cost = 5;
+					}
+
 					$PTMPL['premium_cost'] = $curr.'15 - Singles, '.$curr.'25 - EP, '.$curr.'35 - Albums, '.$curr.'40 - Ext. Albums, then '.$curr.'5 Annually';
 
 					if (isset($_GET['pay'])) {
 						$publisher = new themer('distribution/new_release_payment'); 
 
-						echo releaseType($get_release['release_id'], 3)['html'];
+						if ($_GET['pay'] === 'success') {
+							if (isset($_GET['invoice'])) { 
+								$invoice = $databaseCL->fetchPayments(1, $_GET['invoice']);
+								if ($invoice['rid'] === $release_id) {
+									// Update the release status
+									$process = $framework->dbProcessor(sprintf("UPDATE new_release SET `status` = '2' WHERE `release_id` = '%s'", $invoice['rid']), 0, 1);
+
+									if ($process === 1) {
+										// Show the successful notification
+										$PTMPL['payment_details'] = bigNotice($LANG['release_submited_payment'], 1, 'bg-white shadow');
+
+										$PTMPL['payment_details'] .= '
+										<div class="col-12 p-3 border bg-light">	
+											<div class="h3 text-center text-info"> <strong>Payment Summary</strong></div>						
+											<div class="d-flex flex-column justify-content-start m-2">
+												<div class="m-2"> <strong>Total: </strong>'.$curr.$invoice['amount'].'</div>
+												<div class="m-2"> <strong>Payment Reference: </strong>'.$invoice['reference'].'</div>
+												<div class="m-2"> <strong>Release ID: </strong>'.$invoice['rid'].'</div>
+												<div class="m-2"> <strong>Payment Detail: </strong>'.$invoice['details'].'</div>
+											</div>
+										</div>
+										<span id="paybtn"></span>';
+									} elseif ($process === 'No changes were made') {
+										$PTMPL['payment_details'] = bigNotice($LANG['release_already_submited'], 2, 'bg-white shadow');
+									} else {
+										$PTMPL['payment_details'] = $process;
+									}
+								} else {
+									$PTMPL['payment_details'] = bigNotice($LANG['release_submited_failed_payment'], 3, 'bg-white shadow');
+								}
+							}
+						} else {
+							if ($framework->has_userdata('params')) {
+								$params = $_SESSION['params'];
+								$PTMPL['payment_details'] = '
+								<div class="col-12 p-3 border bg-light">	
+									<div class="h3 text-center text-info"> <strong>Payment Summary</strong></div>						
+									<div class="d-flex flex-column justify-content-start m-2">
+										<div class="m-2"> <strong>Total: </strong>'.$curr.$params['total'].'</div>
+										<div class="m-2"> <strong>Payment Reference: </strong>'.$params['reference'].'</div>
+										<div class="m-2"> <strong>Release ID: </strong>'.$params['release_id'].'</div>
+										<div class="m-2"> <strong>Payment Detail: </strong>'.$params['payment_detail'].'</div>
+									</div>
+								</div>
+								<button type="button" id="paybtn" class="btn btn-success flex-grow-1"><strong>Pay Now</strong></button>';
+
+								$PTMPL['total'] = ($params['total']*100); 
+								$PTMPL['reference'] = $params['reference']; 
+								$PTMPL['currency'] = $params['currency']; 
+								$PTMPL['public_key'] = $params['public_key']; 
+								$PTMPL['release_id'] = $params['release_id']; 
+								$PTMPL['email'] = $params['email']; 
+								$PTMPL['payer_fname'] = $framework->realName($user['username'], $user['fname']); 
+								$PTMPL['payer_lname'] = $framework->realName($user['username'], '', $user['lname']); 
+							}
+						}
+
 						$PTMPL['publisher'] = $publisher->make();
 					} elseif (isset($_GET['set']) && $_GET['set'] == 'publish') {
 						if ($get_release['status'] != 1) {
-							$framework->redirect(cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&rel_id='.$release_id), 1);
+							$framework->redirect(base_url('distribution&action=manage&rel_id='.$release_id), 1);
 						}
 						$publisher = new themer('distribution/new_release_publish'); 
 						$PTMPL['publisher'] = $publisher->make();
 					}
 
+					$set = '';
 					if (isset($_POST['publish'])) {
 						if (isset($_POST['free_distribution'])) {
 							$sql = sprintf("UPDATE new_release SET `status` = '2' WHERE `release_id` = '%s'", $release_id);
-							$set = 1;//$set = $databaseCL->dbProcessor($sql, 0, 2);
+							$set = $databaseCL->dbProcessor($sql, 0, 2);
 						} elseif (isset($_POST['premium_distribution'])) {
-							$set = 1;
+							$payment_details = $LANG['payment_for_premium'].$get_release['title'].' '.$release_type['str'];
+							$framework->payer = $user;
+							$framework->amount = $cost;
+							$framework->payment_details = $payment_details;
+							$framework->release_id = $release_id; 
+							$PTMPL['publisher'] = $framework->paymentData($PTMPL['premium_payment_url']);
 						}
-						if ($set == 1) {
+						if ($set === 1) {
 							$PTMPL['publisher'] = bigNotice($LANG['release_submited'], 1, 'bg-white shadow');
-						} elseif ($set == 0) {
+						} elseif ($set === 0) {
 							$PTMPL['publisher'] = bigNotice($LANG['release_already_submited'], 2, 'bg-white shadow');
 						} else {
 							$PTMPL['publisher'] = $set;
@@ -304,6 +384,12 @@ function mainContent() {
 					}
 					$theme = new themer('distribution/new_release_home'); 
 				}
+				// Show the 404 page
+				// 
+				// $error_notice = serverErrorNotice(404);
+				// $PTMPL['page_title'] = $error_notice[2];
+				// $PTMPL['error_notice'] = $error_notice[1];
+				// $theme = $error_notice[0]; 
 			}
 		}
 	} else {

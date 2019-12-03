@@ -8,9 +8,8 @@
 
 use Gumlet\ImageResize;
 
-$framework = new framework;
-$recovery = new doRecovery;
-$databaseCL = new databaseCL;  
+$framework = new framework; 
+$databaseCL = new databaseCL;   
 
 //Fetch settings from database
 function configuration() {
@@ -22,7 +21,7 @@ function configuration() {
 /**
  * This class holds all major functions of this framework
  */
-class framework {
+class framework extends Not_CIClass {
 	public $username; 
 	public $email;
     public $password;
@@ -1037,7 +1036,7 @@ class framework {
 
 	function urlRequery($query = '') {
 	    global $SETT; 
-		$set = ''; $rel = '';
+		$set = $rel = $page = '';
 		if (strripos($query, 'rel=search')) {
 			$_GET['page'] = 'search';
 		}
@@ -1050,14 +1049,11 @@ class framework {
 		} 
 		if (isset($_GET['set'])) {
 			$set .= '&set='.$_GET['set'];
-		} 
+		}  
 		if (isset($_GET['q']) && $_GET['page'] == 'search') {
 			$_GET['page'] = 'search';
 		}
-		if (isset($_GET['pagination']) && $rel == '') {
-			$set .= '&pagination='.$_GET['pagination'];
-		} 
-		return cleanUrls($SETT['url'] . '/index.php?page=' . $_GET['page'].$set.$query);
+		return cleanUrls($SETT['url'] . '/index.php?page=' . $_GET['page'].$set.$query.$page);
 	}
 
 	/* 
@@ -1460,9 +1456,9 @@ class framework {
 		}		
 	}
 
-/**
- * Rave Payment processing and validation class 
- */ 
+	/**
+	 * Rave Payment processing and validation class 
+	 */ 
 	function raveValidate() {
 		$ravemode = $this->ravemode;
 		$query = $this->query;
@@ -1490,6 +1486,34 @@ class framework {
 	    curl_close($ch);
 
 	    return json_decode($response, true);	
+	}
+
+	function paymentData($location = '') {
+		global $SETT, $PTMPL, $user, $configuration;
+		$payer = $this->payer;
+
+        if ($configuration['pay_public_key'] == "" || $configuration['pay_private_key'] == "") {
+            return bigNotice('<b>error:</b> Paystack settings not available', 3, 'bg-white shadow');
+            // redirect($_SERVER['HTTP_REFERER']);
+        } else {
+			$reference = 'PREMIUM-'.$this->generateToken(10, 5);
+            $params = array(
+                'public_key' => $configuration['pay_public_key'],
+                'private_key' => $configuration['pay_private_key'], 
+                'currency' => $configuration['currency'],
+                'email' => $payer['email'],
+                'firstname' => $payer['fname'],
+                'lastname' => $payer['lname'],
+                'user_id' => $payer['uid'],
+                'total' => $this->amount, 
+                'reference' => $reference,
+                'release_id' => $this->release_id, 
+                'payment_detail' => $this->payment_details
+            );
+
+            $_SESSION['params'] = $params;
+            $this->redirect($location, 1);
+        }
 	}
 
 	function auto_template($string, $type = null) {
@@ -1523,7 +1547,9 @@ class framework {
 		// Type 1 = Select 
 		// Type 2 = Just return the response
 		// Response 5 = Debug
-		// Response 1 = Debug
+		// Response 1 = Return 1 on success or error notice on fail
+		// Response 2 = Return 0 on fail or 1 on success
+		// Response 3 = Return last insert id on success or 0 on fail
 
 		$data = null; 
 		if ($type == 2) {
@@ -1532,6 +1558,7 @@ class framework {
 			try {
 				$stmt = $DB->prepare($sql);	 	
 				$stmt->execute();
+				$last_id = $DB->lastInsertId();
 			} catch (Exception $ex) {
 			   $error = messageNotice($ex->getMessage(), 3);
 			}
@@ -1542,11 +1569,13 @@ class framework {
 					if ($stmt->rowCount() > 0) {  
 						if ($response == 2) {
 							$data = 1;
+						} elseif ($response == 3) {
+							$data = $last_id;
 						} else {
 							$data = $response;
 						}
 					} else {
-						if ($response == 2) {
+						if ($response == 2 || $response == 3) {
 							$data = 0;
 						} else {
 							$data = 'No changes were made';
@@ -1564,6 +1593,7 @@ class framework {
 			$data .= messageNotice('Debug is on, response is set to : '.$data, 2);
 			$data .= messageNotice('Query String: '.$sql);
 		}
+		$data = (isset($error) ? $error : $data);
 		return $data;
 	}
 
@@ -1574,6 +1604,7 @@ class framework {
 		if (isset($_GET['pagination'])) {
 			$page = str_replace('&pagination='.$_GET['pagination'], '', $page);
 		}
+		$page = $this->urlRequery();
 		if (isset($this->limit_records)) {
 			$perpage = $this->limit_records;
 		} else {
@@ -1612,7 +1643,7 @@ class framework {
 		$navigation = '';
 		if ($endpage > 1) {
 			if ($curpage != $startpage) {
-				$pager = cleanUrls($page.'&pagination='.$startpage);
+				$pager = $this->urlRequery('&pagination='.$startpage);
 				$navigation .= '
 					<li class="page-item">
 						<a class="page-link" aria-label="Previous" href="'.$pager.'">
@@ -1624,7 +1655,7 @@ class framework {
 			}
 
 			if ($curpage >= 2) {
-				$pager = cleanUrls($page.'&pagination='.$previouspage);
+				$pager = $this->urlRequery('&pagination='.$previouspage);
 			    $navigation .= '
 					<li class="page-item">
 						<a class="page-link" href="'.$pager.'">Prev</a>
@@ -1632,7 +1663,7 @@ class framework {
 			    ';
 			}
 
-			$pager = cleanUrls($page.'&pagination='.$curpage);
+			$pager = $this->urlRequery('&pagination='.$curpage);
 		    $navigation .= '
 				<li class="page-item active">
 					<a class="page-link" href="'.$pager.'">'.$curpage.'</a>
@@ -1640,14 +1671,14 @@ class framework {
 		    '; 
 
 			if($curpage != $endpage){
-				$pager = cleanUrls($page.'&pagination='.$nextpage);
+				$pager = $this->urlRequery('&pagination='.$nextpage);
 			    $navigation .= '
 					<li class="page-item">
 						<a class="page-link" href="'.$pager.'">Next</a>
 					</li>
 			    ';  
  
-				$pager = cleanUrls($page.'&pagination='.$endpage);
+				$pager = $this->urlRequery('&pagination='.$endpage);
 			    $navigation .= '                
 					<li class="page-item">
 						<a class="page-link" aria-label="Next" href="'.$pager.'">
@@ -1672,6 +1703,7 @@ class framework {
 		return $navigation;	 
 	}
 }
+
 /**
  * Manage viewing and sending of messages
  */
@@ -2609,7 +2641,12 @@ class databaseCL extends framework {
 		// If type == 1: Approve (Set status to 3)
 		// If type == 2: Remove from sale (Set status to 0)
 		$status = $type == 1 ? 3 : 0; 
-		$date = date('Y-m-d', strtotime('today'));
+		$date = date('Y-m-d', strtotime('today')); 
+
+		// Check if this is a premium release then set the premium variable to 1
+		$invoice = $this->fetchPayments(1, $id);
+		$premium = ($invoice['rid'] === $id ? 1 : 0);
+
 		if ($type == NUll || $type == 0) {
 			// This completes Type: 0 (Delete Files) Without actually making any changes
 			$update = 1;
@@ -2619,7 +2656,7 @@ class databaseCL extends framework {
 			$update = $this->dbProcessor($sql, 0, 1);
 		}
 
-		if ($update == 1 && ($type == NUll || $type == 0)) { 
+		if ($update == 1 && !$type) { 
 
 			// Delete tracks
 			$trs4 = $this->dbProcessor("SELECT art,audio FROM tracks WHERE `release_id` = '{$id}'", 1);
@@ -2640,9 +2677,12 @@ class databaseCL extends framework {
 			// Delete associated records 
 		    $this->dbProcessor("DELETE FROM new_release_tracks WHERE `release_id` = '{$id}'", 0);
 		    $this->dbProcessor("DELETE FROM `new_release_artists` WHERE `release_id` = '{$id}'", 0);
-		    $this->dbProcessor("DELETE FROM new_release WHERE `release_id` = '{$id}'", 0);
+		    $delete_release = $this->dbProcessor("DELETE FROM new_release WHERE `release_id` = '{$id}'", 0, 2);
 
-			return true;
+		    if ($delete_release) {
+				return true;
+		    }
+		    return false;
 		} elseif ($type == 2 && $update == 1) {
 		    // Delete all related records of this track 
 		    // Remove from sale
@@ -2704,9 +2744,19 @@ class databaseCL extends framework {
 							$r_data['p_line'], $r_data['c_line'], $date, $date, $r_data['art'], $r_tracks['audio'], 
 							$r_data['release_id'], $safelink, $r_data['tags'], 1
 					);
-					$cu = $this->dbProcessor($sql, 0, 1);
-					if ($cu != 1) {
-						echo bigNotice($cu, null, 'mt-5');
+					$new_track = $this->dbProcessor($sql, 0, 3);
+
+					if (strpos($this->rip_tags($new_track), 'SQLSTATE') == null) {
+						// If the release is premium add to the curated playlists
+						if ($premium) {
+							$_playlists = $this->dbProcessor("SELECT * FROM playlist WHERE `featured` = '1' AND MATCH (title) AGAINST ('{$r_data['p_genre']}, {$r_data['tags']}, {$configuration['curated_keyword']}, {$r_tracks['title']}, {$r_data['s_genre']}' IN NATURAL LANGUAGE MODE)", 1);
+							$this->dbProcessor("UPDATE tracks SET `featured` = '1' WHERE `id` = '$new_track'", 0);
+							foreach ($_playlists as $playlist) {
+								$this->dbProcessor("INSERT INTO playlistentry (`playlist`, `track`) VALUES ('{$playlist['id']}', '$new_track')", 0, 3); 
+							}
+						}
+					} else {
+						echo bigNotice($new_track, null, 'mt-5');
 					}
 				}
 			}
@@ -3266,6 +3316,32 @@ class databaseCL extends framework {
 		}
 	}
 
+	/**
+	 * get payment history and details
+	 * @param  integer $type if 1: return payment for id or release_id, if 2: return the users payment history
+	 *                       if 0: return all payment history
+	 * @param  integer of numeric string  $id   set the id of the payment to retrieve
+	 * @return array       	An array containing the requested payment data
+	 */
+	function fetchPayments($type = 0, $id = null) {
+		global $user, $configuration, $user_role, $admin;	
+		$id = $this->db_prepare_input($id);
+		
+		if (isset($this->limiter)) {
+			$limit = sprintf(' ORDER BY `date` DESC  LIMIT %s, %s', $this->start, $this->limiter);
+		} else {
+			$limit = ' ORDER BY `date` DESC';
+		}
+
+		if ($type == 2) {
+			return $this->dbProcessor(sprintf("SELECT * FROM payments WHERE `uid` = '$id' OR `email` = '$id'%s", $limit), 1);
+		} else if ($type == 1) {
+			return $this->dbProcessor("SELECT * FROM payments WHERE `id` = '$id' OR `rid` = '$id'", 1)[0];
+		} else {
+			return $this->dbProcessor(sprintf("SELECT * FROM payments WHERE 1%s", $limit), 1);
+		}
+	}
+
 	function fetchReleases($type = null, $id = null) {
 		global $user, $configuration, $user_role, $admin;	
 		
@@ -3487,7 +3563,7 @@ class databaseCL extends framework {
 	}
 
 	function manageRealeases() {
-		global $SETT;
+		global $SETT, $framework;
 
 		if (isset($_GET['q'])) {
 			$this->search_query = $_GET['q'];
@@ -3507,42 +3583,35 @@ class databaseCL extends framework {
 				$i++;
 				$page = $SETT['url'].$_SERVER['REQUEST_URI'];
 
-				$edit_link = cleanUrls($SETT['url'] . '/index.php?page=distribution&action=manage&set=details&rel_id='.$releases['release_id']); 
+				$edit_link = base_url('distribution&action=manage&set=details&rel_id='.$releases['release_id']); 
 				$creator = $this->userData($releases['by'], 1);
-				$set_status = $this->releaseStatus($releases['release_id']); 
+				$set_status = $this->releaseStatus($releases['release_id']);
 				$upc = $releases['upc'] ? $releases['upc'] : 'N/L';
 				$copyright = $releases['c_line_year'].' '.$releases['c_line'];
 				$recording = $releases['p_line_year'].' '.$releases['p_line'];
 				$this->type = 3;
 				$views = $this->releaseStats($releases['release_id'])[0]; 
 
-				if (isset($_GET['action'])) {
-					if ($set_status[1] == 3) {
-						$set_state_link = cleanUrls(str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page).'&action=remove&rel_id='.$releases['release_id']);
-					} else {
-						$set_state_link = cleanUrls(str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page).'&action=approve&rel_id='.$releases['release_id']);
-					}
-					$state_class = $set_status[1] == 3 ? 'fa-times-circle text-warning' : 'fa-check-circle text-success';
-					$pager = str_replace('&action='.$_GET['action'].'&rel_id='.$_GET['rel_id'], '', $page);
-				} else {
-					if ($set_status[1] !== 3) {
-						$set_state_link = cleanUrls($page.'&action=approve&rel_id='.$releases['release_id']);
-						$state_class = 'fa-check-circle text-success';
-					} else {
-						$set_state_link = cleanUrls($page.'&action=remove&rel_id='.$releases['release_id']);
-						$state_class = 'fa-times-circle text-warning';
-					}
-					$pager = $page;
+				// Check if this is a premium release then set the premium class
+				$invoice = $this->fetchPayments(1, $releases['release_id']);
+				$premium_class = ($invoice['rid'] === $releases['release_id'] ? 'text-success' : 'text-danger');
+				$premium_title = ($invoice['rid'] === $releases['release_id'] ? ' (PREMIUM RELEASE)' : '');
+
+				if ($set_status[1] == 3) { 
+					$set_state_link = $framework->urlRequery('&action=remove&rel_id='.$releases['release_id']);
+					$state_class = 'fa-times-circle text-warning';
+				} else { 
+					$set_state_link = $framework->urlRequery('&action=approve&rel_id='.$releases['release_id']);
+					$state_class = 'fa-check-circle text-success';
 				}
-				if (isset($_GET['delete'])) {
-					$delete_link = cleanUrls(str_replace('&action=delete&rel_id='.$_GET['delete'], '', $pager).'&action=delete&rel_id='.$releases['release_id']);
-				} else {
-					$delete_link = cleanUrls($pager.'&action=delete&rel_id='.$releases['release_id']);
-				} 
+				$pager = $page;
+
+				$delete_link = $framework->urlRequery('&action=delete&rel_id='.$releases['release_id']);
+
 				$table_row .= '
 				<tr>
 					<th scope="row">'.$i.'</th>
-					<td><a href="'.$edit_link.'" title="View Content">'.$releases['title'].'</a></td>
+					<td><a href="'.$edit_link.'" title="View Content'.$premium_title.'" class="'.$premium_class.'">'.$releases['title'].'</a></td>
 					<td>'.ucfirst($creator['username']).'</td>
 					<td>'.$set_status[0].'</td>
 					<td>'.$upc.'</td>
@@ -3558,7 +3627,7 @@ class databaseCL extends framework {
 			}
 		} else {
 			$table_row .= '
-			<tr><td colspan="9">'.notAvailable('You have not created any posts', '', 1).'</td></tr>';
+			<tr><td colspan="9">'.notAvailable('No release data to show', '', 1).'</td></tr>';
 		}		
 			return $table_row;
 	}

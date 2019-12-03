@@ -125,6 +125,17 @@ function urlrecoder($url, $type = 0) {
     return $url;
 } 
 
+function base_url($query = null) {
+    global $SETT;
+    
+    $query = str_replace(array('/'), array('&'), $query); 
+    if($query) {
+        return cleanUrls($SETT['url'] . '/index.php?page=' . $query);
+    } else {
+       return cleanUrls($SETT['url'] . '/index.php');
+    }   
+}
+
 function seo_plugin($image = null, $title = null, $description = null) {
     global $SETT, $PTMPL, $configuration, $framework, $site_image;
 
@@ -520,9 +531,9 @@ function cleanUrls($url) {
         } elseif (strpos($url, $pager['static'])) {
             $url = str_replace(array($pager['static'], '&view=', '&pagination=', '&referrer=', '/referrer/'), array('static', '/', '/page/'), $url);
         } elseif (strpos($url, $pager['admin'])) {
-            $url = str_replace(array($pager['admin'], '&view=', '&pagination=', '&referrer='), array('admin', '/', '/page/', '/referrer/'), $url);
+            $url = str_replace(array($pager['admin'], '&view=', '&action=', '&rel_id=', '&pagination=', '&referrer='), array('admin', '/', '/', '/', '/page/', '/referrer/'), $url);
         } elseif (strpos($url, $pager['distribution'])) {
-            $url = str_replace(array($pager['distribution'], '&action=', '&rel=', '&rel_id=', '&artist=', '&stat=', '&modify=', '&set=', '&pagination=', '&pay=', '&referrer='), array('distribution', '/', '/', '/', '/', '/stat/', '/', '/set/', '/page/', '/', '/referrer/'), $url);
+            $url = str_replace(array($pager['distribution'], '&action=', '&rel=', '&rel_id=', '&artist=', '&stat=', '&modify=', '&set=', '&pagination=', '&pay=', '&invoice=', '&referrer='), array('distribution', '/', '/', '/', '/', '/stat/', '/', '/set/', '/page/', '/', '/invoice/', '/referrer/'), $url);
         } elseif (strpos($url, $pager['search'])) {
             $url = str_replace(array($pager['search'], '&q=', '&rel=', '&pagination=', '&referrer='), array('search', '/', '/rel/', '/page/', '/referrer/'), $url);
         }
@@ -873,7 +884,7 @@ function admin_sidebar() {
     return $section; 
 } 
 
-function distroNavigation() {
+function distroNavigation() { 
     global $LANG, $SETT, $PTMPL, $user, $admin, $user_role, $framework;
 
     $login_url = cleanUrls($SETT['url'].'/index.php?page=account&view=access&login=user&referrer='.urlrecoder($SETT['url'].$_SERVER['REQUEST_URI']));
@@ -894,7 +905,8 @@ function distroNavigation() {
                 if ($sub_link == 'account') {
                     $sub = userAction(1);
                 } else {
-                    $sub .= '<li><a href="'.$sub_link.'">'.$sub_title.'</a></li>';
+                    $url = base_url('distribution&action='.$sub_link);
+                    $sub .= '<li><a href="'.$url.'">'.$sub_title.'</a></li>';
                 }
             }
             if ($link == 'account') {
@@ -907,7 +919,8 @@ function distroNavigation() {
                 </ul>
             </li>';
         } else {
-            $nav_link .= '<li><a href="'.$link.'">'.$title.'</a></li>';
+            $url = base_url('distribution&action='.$link);
+            $nav_link .= '<li><a href="'.$url.'">'.$title.'</a></li>';
         }
     }
 
@@ -2197,7 +2210,7 @@ function releaseType($id, $type = null) {
         } elseif ($type == 2) {
             return $rtn;
         } elseif ($type == 3) {
-            return array('count' => $rt, 'type' => $rtn, 'html' => $ic);
+            return array('int' => $rt, 'str' => $rtn, 'htm' => $ic);
         } else {
             return $rt;
         }

@@ -3,30 +3,74 @@
 		<div class="col-lg-12 rounded shadow-sm bg-white mx-auto m-2 p-3">
 			<h3 class="text-info">Premium Distribution</h3>
 			<p class="form-text text-muted">
-				Please review your distribution model before selecting your distribution method, further audio changes are not allowed after now, metadata can be changed but have a processing period of 30 days.
+				{$lang->premium_details}
 			</p>
+
 			<hr>
-			<div class="font-weight-bold">I have read through, understood and accepted Passcolabs <a href="#">Terms and Conditions</a> and <a href="#">Artists/Labels Agreement</a></div>
+			<div class="d-flex justify-content-center">
+				<img src="{$full_template_url}/img/paystack_secured.png" class="thumbnail w-50" alt="PaymentLogo">
+			</div>
+
 			<form method="post" action="{$release_home}">
 				<input type="hidden" name="publish">
-				<div class="row p-4">
-						<div class="col-lg-6 p-3 border bg-light text-center">
-							<div class="d-flex m-2"> 
-								<button type="submit" name="free_distribution" class="btn btn-warning flex-grow-1"><strong>Free Distribution</strong></button>
-							</div>
-							<strong>Free</strong> distribution allows you to upload your music to music sharing sites and blogs under our control and management with no further benefits attached.
-						</div>
-						<div class="col-lg-6 p-3 border bg-light text-center">
-							<div class="d-flex m-2">
-								<button type="submit" name="premium_distribution" class="btn btn-success flex-grow-1"><strong>Premium Distribution</strong></button>
-							</div>
-							{$lang->premium_details}
-							<div class="font-weight-bold">
-								{$premium_cost}
-							</div>
-						</div>
+				<div id="notification"></div>
+				<div class="row p-4" id="payment-title">
+					{$payment_details}
 				</div>
 			</form>
 		</div>
 	</div>
 </div>
+
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script type="text/javascript">
+    
+    var $loader = '<div class="loader"><div id="loader-1"> <span></span> <span></span> <span></span> </div></div>'; 
+    // var paymentForm = document.getElementById('paymentForm');
+    var paymentBtn = document.getElementById('paybtn');
+    // paymentForm.addEventListener("submit", payWithPaystack, false);
+   	if (paymentBtn) {
+    	paymentBtn.addEventListener("click", payWithPaystack);
+    }
+  
+    function payWithPaystack() {
+
+        $('#payment-title').prepend($loader);
+
+        var handler = PaystackPop.setup({
+            key: '{$public_key}', // Replace with your public key
+            email: '{$email}',
+            currency: '{$currency}',
+            amount: '{$total}',
+            firstname: '{$payer_fname}',
+            lastname: '{$payer_fname}',
+            ref: '{$reference}',
+            // label: "Optional string that replaces customer email"
+            onClose: function(){
+                $('.loader').remove();
+            },
+            callback: function(response){
+                $.ajax({
+                    url: site_url+'/connection/paystack.php?reference=' + response.reference,
+                    method: 'post',
+                    dataType: 'json',
+                    success: function (data) {
+                        if (data.status === 0 && data.header !== '') {
+                            window.location.href = data.header+'{$release_id}';
+                        } else if (data.status === 1 && data.header !== '') {
+                            // successMsg(data.response.short_message);
+                            $('#notification').html('<div class="alert alert-success m-2 font-weight-bold text-center">'+data.response.message+'</div>');
+                            window.location.replace(data.header);
+                        } else {
+                            $('#notification').html('<div class="alert alert-info m-2 font-weight-bold text-center">'+data.response+'</div>');
+                        }
+                        $('.loader').remove();
+                    }
+                });
+            }
+        });
+          
+        handler.openIframe();
+    }
+
+</script>

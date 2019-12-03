@@ -16,7 +16,7 @@
 	require_once(__DIR__ . '/database.php');
 	require_once(__DIR__ . '/extend_class.php');
 	require_once(__DIR__ . '/misc.php');  
-	require_once(__DIR__ . '/countries.php');   
+	require_once(__DIR__ . '/countries.php');  
 	$framework = new framework; 
 
 	require_once($framework->getLanguage(null, (isset($_GET['lang']) && !empty($_GET['lang']) ? $_GET['lang'] : (isset($_COOKIE['lang']) ? $_COOKIE['lang'] : null)), null));
