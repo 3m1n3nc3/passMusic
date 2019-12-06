@@ -199,7 +199,9 @@ function mainContent() {
 
             if (isset($_GET['login']) && $_GET['login'] == 'admin') {
                 $login = $framework->administrator(1);
-                $notice = messageNotice($login, 3, 2);
+                if (! is_array($login)) {
+                    $notice = messageNotice($login, 3, 2);
+                }
             } elseif (isset($_GET['login']) && $_GET['login'] == 'register') {
                 $ver_user = $framework->userData($username, 1);
                 if (!$framework->captchaVal($recaptcha2x)) {
@@ -227,7 +229,9 @@ function mainContent() {
                 $notice = $reg;
             } else {
                 $login = $framework->authenticateUser();
-                $notice = messageNotice($login, 3, 2); 
+                if (! is_array($login)) {
+                    $notice = messageNotice($login, 3, 2); 
+                }
             }
             if (isset($login['username']) && $login['username'] == $username) {
                 $notice = messageNotice('Login Successful', 1, 2);
