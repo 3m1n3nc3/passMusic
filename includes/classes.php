@@ -3639,9 +3639,11 @@ class databaseCL extends framework {
 		$category = $this->dbProcessor("SELECT id, title, value, info FROM categories", 1);
 		if ($type == 0) {
 			$option = '';
-			foreach ($category as $row) { 
-				$sel = (isset($_POST['category']) && $_POST['category'] == $row['value']) || ($get_post['category'] == $row['value']) ? ' selected="selected"' : ''; 
-				$option .= '<option value="'.$row['value'].'"'.$sel.'>'.$row['title'].'</option>';
+			if ($category) { 
+				foreach ($category as $row) { 
+					$sel = (isset($_POST['category']) && $_POST['category'] == $row['value']) || ($get_post['category'] == $row['value']) ? ' selected="selected"' : ''; 
+					$option .= '<option value="'.$row['value'].'"'.$sel.'>'.$row['title'].'</option>';
+				}
 			}
 		} else {
 			return $category;
