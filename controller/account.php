@@ -227,7 +227,7 @@ function mainContent() {
                 $notice = $reg;
             } else {
                 $login = $framework->authenticateUser();
-                $notice = messageNotice($login, 3, 2);
+                $notice = messageNotice($login, 3, 2); 
             }
             if (isset($login['username']) && $login['username'] == $username) {
                 $notice = messageNotice('Login Successful', 1, 2);
@@ -293,5 +293,3 @@ function mainContent() {
 // Album Comments
 // Admin
 ?>
-
-

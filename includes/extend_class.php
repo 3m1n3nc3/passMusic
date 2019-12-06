@@ -18,7 +18,7 @@ function messageNotice($str, $type = null, $size = '3', $iS = '2') {
             $alert = 'danger';
             $i = 'times-circle';
             break;
-
+ 
         case 4:
             $alert = null;
             $i = 'times-circle';

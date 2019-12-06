@@ -129,7 +129,7 @@ class framework extends Not_CIClass {
         }
 
         if (isset($logged) && $logged == true) {
-            return $auth;
+            return true;
         } elseif (isset($logged) && $logged == false) {
             $this->sign_out();
             return $LANG['data_unmatch'];
@@ -253,7 +253,7 @@ class framework extends Not_CIClass {
 			}
  
 	        if (isset($logged) && $logged == true) {
-	            return $auth;
+	            return true;
 	        } elseif (isset($logged) && $logged == false) {
 	            $this->sign_out(null, 1);
 	            return $LANG['data_unmatch'];
