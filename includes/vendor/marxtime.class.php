@@ -193,7 +193,7 @@ class marxTime
 
         return $new_string;
     }
-
+ 
     // Time to go function
     function dateDifference($date_1 , $date_2 , $differenceFormat = '%a' ) {
         $datetime1 = date_create($date_1);

@@ -36,6 +36,21 @@
  * @filesource
  */
 
+
+/**
+ * This is not a Code Igniter class
+ */
+class Not_CIClass extends CI_Session
+{
+    /**
+     * summary
+     */
+    public function __construct()
+    {
+        
+    }
+}
+
 class CI_Session {
 
 	/**
@@ -168,18 +183,4 @@ class CI_Session {
 	{
 		return isset($_SESSION[$key]);
 	}
-}
-
-/**
- * This is not a Code Igniter class
- */
-class Not_CIClass extends CI_Session
-{
-    /**
-     * summary
-     */
-    public function __construct()
-    {
-        
-    }
 }
